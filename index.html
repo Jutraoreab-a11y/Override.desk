@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>OVERRIDE.DESK</title>
+<script src="https://cdn.jsdelivr.net/npm/lightweight-charts@4.1.3/dist/lightweight-charts.standalone.production.js"></script>
+<link rel="stylesheet" href="css/style.css">
+
+</head>
+<body>
+<div class="app" id="app">
+  <header class="top">
+    <div class="brand"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="1" y="1" width="22" height="22" rx="4" fill="#FAFAFA"/><path d="M6 16.5l4-4.5 3 3 5-6.5" stroke="#09090B" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/><circle cx="18" cy="8.5" r="1.6" fill="#09090B"/></svg><b>OVERRIDE<i>.DESK</i></b></div>
+    <div class="ctx" id="ctx"></div>
+    <div class="acts">
+      <button class="tbtn" id="editBtn" data-act="edit" aria-pressed="false"></button>
+      <button class="tbtn" data-act="recalc" id="recalcBtn"></button>
+      <span class="vsep"></span>
+      <button class="btn pri" data-act="print" id="pdfBtn"></button>
+    </div>
+  </header>
+  <nav class="rail" id="rail" aria-label="Modules"></nav>
+  <main class="main" id="main">
+    <div class="banner">
+      <span>Override actif : forcez n'importe quelle variable. Chaque valeur forcée est marquée d'un trait <span class="dot"></span> et appliquée au clic sur Recalculer ou avec Entrée.</span>
+      <button class="btn sm" data-act="reset">Réinitialiser ce volet</button>
+    </div>
+    <div class="print-head" id="printHead"></div>
+    <section class="panel" id="p-bp"></section>
+    <section class="panel" id="p-an"></section>
+    <section class="panel" id="p-sc"></section>
+    <section class="panel" id="p-pf"></section>
+    <section class="panel" id="p-ab"></section>
+  </main>
+  <aside class="side" id="side" aria-label="Panneau latéral"></aside>
+  <footer class="status" id="status"></footer>
+</div>
+<div id="toast" role="status" aria-live="polite"></div>
+
+<script src="js/data.js"></script>
+<script src="js/core.js"></script>
+<script src="js/business-plan.js"></script>
+<script src="js/analyse-financiere.js"></script>
+<script src="js/selecteur.js"></script>
+<script src="js/suivi-portefeuille.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
