@@ -1,5 +1,5 @@
 /* ============ Volet 5 : Commodities & flows ============ */
-const CM_ASSETS={brent:'Brent',wti:'WTI',gold:'Or',silver:'Argent'};
+const CM_ASSETS={brent:'Brent / WTI',gold:'Or',silver:'Argent'};
 const CM_INST={brent:'Brent spot',wti:'WTI spot',brentF:'Brent futur M1',gold:'Or spot',goldF:'Or futur',silver:'Argent spot',silverF:'Argent contrat',cnh:'USD/CNH',spx:'S&P 500'};
 function cmP(){return S.cm.p;}
 const cmStrip=t=>String(t||'').replace(/^[^\p{L}\p{N}]+/u,'').replace(/\s+/g,' ').trim();
@@ -78,24 +78,36 @@ function cmImport(txt,inst){
   return n;
 }
 function renderCM(){
-  const C=cmCalc(),{s,R,N}=C,a=ui.cmA||'brent',tab=ui.cmT||'t',last=R[N-1],E=ui.edit,P=cmP();
+  if(!CM_ASSETS[ui.cmA])ui.cmA='brent';
+  const C=cmCalc(),{s,R,N}=C,a=ui.cmA,oil=a==='brent',tab=ui.cmT||'t',last=R[N-1],E=ui.edit,P=cmP();
   const li=(()=>{for(let i=N-1;i>=0;i--)if(s[a][i]!==null)return i;return N-1;})(),r=R[li];
   const px=s[a][li],pv=s[a+'V'][li],lastD=s.d[N-1],age=Math.round((new Date()-new Date(lastD+'T00:00:00'))/864e5);
   const fd=d=>new Date(d+'T00:00:00').toLocaleDateString('fr-FR',{day:'2-digit',month:'2-digit',year:'numeric'});
   const ind={brent:['Basis Brent (spot − M1)','bB','bBSt','bBRk'],wti:['Spread Brent − WTI','spread','spSt','spRk'],gold:['Basis Or (spot − futur)','bG','bGSt','bGRk'],silver:['Basis Argent (spot − contrat)','bS','bSSt','bSRk']}[a];
-  const sigMain=a==='brent'||a==='wti'?r.sigChine:a==='gold'?r.sigGold:r.sigSilver,sigStruct=a==='brent'||a==='wti'?r.sigStruct:a==='gold'?r.sigGoldSt:'';
+  const sigMain=oil?r.sigChine:a==='gold'?r.sigGold:r.sigSilver,sigStruct=oil?r.sigStruct:a==='gold'?r.sigGoldSt:'';
   const tag=t=>`<span class="tag ${cmCls(t)}">${esc(cmStrip(t).split(' : ')[0])}</span>`;
   const nRows=ui.cmAll?N:Math.min(N,60),rows=R.slice(-nRows).reverse();
   let table,chartId='cm-ch',chartMake;
-  if(tab==='t'){
+  const prevOf=(k,i)=>{for(let j=i-1;j>=0;j--)if(s[k][j]!==null)return s[k][j];return null;};
+  if(tab==='t'&&oil){
+    table=`<table class="tbl fin"><thead><tr><th>Date</th><th class="n">Ouv.</th><th class="n">En cours</th><th class="n">Ferm. (veille)</th><th class="n">Var.</th><th class="n">WTI</th><th class="n">Var. WTI</th><th class="n">Spread Brent − WTI</th><th class="n">Basis Brent (spot − M1)</th><th>État du marché</th><th>Risque et interprétation</th></tr></thead><tbody>${rows.map(x=>{const i=x.i,v=s.brentV[i],w=s.wtiV[i],st=(a,b)=>a==='NO DATA'?'':`<span class="tag ${cmCls(b)}">${esc(a)}</span>`;return`<tr><td>${fd(x.d)}</td><td class="n">${nf(s.brentO[i],2)}</td><td class="n">${nf(s.brent[i],2)}</td><td class="n">${nf(prevOf('brent',i),2)}</td><td class="n ${nn(v)?cls(v):''}">${nn(v)?sgn(v*100,2):'—'}</td><td class="n">${nf(s.wti[i],2)}</td><td class="n ${nn(w)?cls(w):''}">${nn(w)?sgn(w*100,2):'—'}</td><td class="n">${nf(x.spread,2)}</td><td class="n">${nf(x.bB,2)}</td><td><div class="col" style="gap:4px;align-items:flex-start">${st(x.spSt,x.spRk)}${st(x.bBSt,x.bBRk)}</div></td><td class="wrap">${x.spRk?'<b>Spread :</b> '+esc(x.spRk):''}${x.bBRk?'<br><b>Basis :</b> '+esc(x.bBRk):''}</td></tr>`;}).join('')}</tbody></table>`;
+    chartMake=el=>{const ch=lwBase(el,p=>nf(p,2)),pts=k=>s.d.map((d,i)=>s[k][i]!==null?{time:d,value:s[k][i]}:null).filter(Boolean);
+      const b=ch.addLineSeries({color:'#E4E4E7',lineWidth:2,priceLineVisible:false,title:'Brent'});b.setData(pts('brent'));
+      const w=ch.addLineSeries({color:'#6B8AB8',lineWidth:1,lineStyle:0,priceLineVisible:false,title:'WTI'});w.setData(pts('wti'));
+      ch.priceScale('right').applyOptions({scaleMargins:{top:.06,bottom:.34}});
+      const h=ch.addHistogramSeries({priceScaleId:'ind',priceLineVisible:false,lastValueVisible:true,title:'Spread'});ch.priceScale('ind').applyOptions({scaleMargins:{top:.72,bottom:0}});
+      h.setData(R.filter(x=>nn(x.spread)).map(x=>({time:x.d,value:+x.spread.toFixed(3),color:x.spread>6?'rgba(220,38,38,.45)':x.spread>3?'rgba(16,185,129,.45)':'rgba(245,158,11,.45)'})));
+      const bb=ch.addLineSeries({priceScaleId:'ind',color:'#A1A1AA',lineWidth:1,lineStyle:2,priceLineVisible:false,title:'Basis'});bb.setData(R.filter(x=>nn(x.bB)).map(x=>({time:x.d,value:+x.bB.toFixed(3)})));
+      ch.timeScale().fitContent();return ch;};
+  }else if(tab==='t'){
     table=`<table class="tbl fin"><thead><tr><th>Date</th><th class="n">Ouv.</th><th class="n">En cours</th><th class="n">Ferm. (veille)</th><th class="n">Var.</th><th class="n">${ind[0]}</th><th>État du marché</th><th>Risque et interprétation</th></tr></thead><tbody>${rows.map(x=>{const i=x.i,prev=(()=>{for(let j=i-1;j>=0;j--)if(s[a][j]!==null)return s[a][j];return null;})();return`<tr><td>${fd(x.d)}</td><td class="n">${nf(s[a+'O'][i],2)}</td><td class="n">${nf(s[a][i],2)}</td><td class="n">${nf(prev,2)}</td><td class="n ${nn(s[a+'V'][i])?cls(s[a+'V'][i]):''}">${nn(s[a+'V'][i])?sgn(s[a+'V'][i]*100,2):'—'}</td><td class="n">${nf(x[ind[1]],2)}</td><td>${x[ind[2]]==='NO DATA'?'<span class="meta">pas de donnée</span>':`<span class="tag ${cmCls(x[ind[3]])}">${esc(x[ind[2]])}</span>`}</td><td class="wrap">${esc(x[ind[3]])}</td></tr>`;}).join('')}</tbody></table>`;
     chartMake=el=>{const ch=lwBase(el,p=>nf(p,2));const l=ch.addLineSeries({color:'#E4E4E7',lineWidth:2,priceLineVisible:false,title:CM_ASSETS[a]});
       l.setData(s.d.map((d,i)=>s[a][i]!==null?{time:d,value:s[a][i]}:null).filter(Boolean));
       const h=ch.addHistogramSeries({priceScaleId:'ind',priceLineVisible:false,lastValueVisible:true,title:ind[0].split(' (')[0]});ch.priceScale('ind').applyOptions({scaleMargins:{top:.72,bottom:0}});
       h.setData(R.filter(x=>nn(x[ind[1]])).map(x=>({time:x.d,value:+x[ind[1]].toFixed(4),color:x[ind[1]]>=0?'rgba(16,185,129,.45)':'rgba(220,38,38,.45)'})));ch.timeScale().fitContent();return ch;};
-  }else if(a==='brent'||a==='wti'){
+  }else if(oil){
     table=`<table class="tbl fin"><thead><tr><th>Date</th><th class="n">Brent</th><th class="n">WTI</th><th class="n">USD/CNH</th><th class="n">Spread</th><th class="n">Z-score ${P.zWin} j</th><th class="n">Percentile ${P.pctWin} j</th><th class="n">Corr. CNH/Brent ${P.cS} j</th><th class="n">${P.cM} j</th><th class="n">Corr. WTI/Brent ${P.cS} j</th><th>Structure</th><th>Brent vs Chine</th></tr></thead><tbody>${rows.map(x=>`<tr><td>${fd(x.d)}</td><td class="n">${nf(s.brent[x.i],2)}</td><td class="n">${nf(s.wti[x.i],2)}</td><td class="n">${nf(s.cnh[x.i],4)}</td><td class="n">${nf(x.spread,2)}</td><td class="n">${nf(x.zSp,2)}</td><td class="n">${nn(x.pct)?pct(x.pct*100,0):'—'}</td><td class="n">${nf(x.cC20,2)}</td><td class="n">${nf(x.cC60,2)}</td><td class="n">${nf(x.cWB,2)}</td><td>${tag(x.sigStruct)}</td><td>${tag(x.sigChine)}</td></tr>`).join('')}</tbody></table>`;
-    chartMake=el=>zChart(el,R.map(x=>({time:x.d,value:x.zSp})),'Z-score du spread');
+    chartMake=el=>{const ch=zChart(el,R.map(x=>({time:x.d,value:x.zSp})),'Z-score du spread');return ch;};
   }else if(a==='gold'){
     table=`<table class="tbl fin"><thead><tr><th>Date</th><th class="n">Or</th><th class="n">Argent</th><th class="n">Ratio Or/Argent</th><th class="n">Ratio Or/Brent</th><th class="n">USD/CNH</th><th class="n">Corr. CNH/Or ${P.cS} j</th><th class="n">Z-score Or ${P.zWin} j</th><th class="n">DXY</th><th class="n">Perf. vs S&P 500</th><th>Signal Or / USD</th><th>Structure</th></tr></thead><tbody>${rows.map(x=>`<tr><td>${fd(x.d)}</td><td class="n">${nf(s.gold[x.i],2)}</td><td class="n">${nf(s.silver[x.i],2)}</td><td class="n">${nf(x.gs,1)}</td><td class="n">${nf(x.gb,1)}</td><td class="n">${nf(s.cnh[x.i],4)}</td><td class="n">${nf(x.cCG,2)}</td><td class="n">${nf(x.zG,2)}</td><td class="n meta">n.d.</td><td class="n ${nn(x.perf)?cls(x.perf):''}">${nn(x.perf)?sgn(x.perf,2):'—'}</td><td>${tag(x.sigGold)}</td><td>${tag(x.sigGoldSt)}</td></tr>`).join('')}</tbody></table>`;
     chartMake=el=>zChart(el,R.map(x=>({time:x.d,value:x.zG})),'Z-score de l\'or');
@@ -104,15 +116,15 @@ function renderCM(){
     chartMake=el=>zChart(el,R.map(x=>({time:x.d,value:x.zS})),'Z-score de l\'argent');
   }
   const k=(l,v,d,c)=>`<div class="stat"><div class="k">${l}</div><div class="x ${c||''}">${v}</div><div class="d">${d||''}</div></div>`;
-  const kpis=a==='brent'||a==='wti'?k('Spread Brent − WTI',nf(r.spread,2),r.spSt)+k('Basis Brent',nf(r.bB,2),r.bBSt)+k(`Z-score spread ${P.zWin} j`,nf(r.zSp,2),Math.abs(r.zSp)>P.zCrit?'critique':Math.abs(r.zSp)>P.zAlert?'alerte':'normal')+k(`Corr. CNH/Brent ${P.cS} j`,nf(r.cC20,2),cmCorrLab(r.cC20))+k(`Corr. CNH/Brent ${P.cM} j`,nf(r.cC60,2),cmCorrLab(r.cC60))
+  const kpis=oil?k('WTI',nf(s.wti[li],2),nn(s.wtiV[li])?sgn(s.wtiV[li]*100,2)+' sur la séance':'',nn(s.wtiV[li])?cls(s.wtiV[li]):'')+k('Spread Brent − WTI',nf(r.spread,2),r.spSt)+k('Basis Brent',nf(r.bB,2),r.bBSt)+k(`Z-score spread ${P.zWin} j`,nf(r.zSp,2),Math.abs(r.zSp)>P.zCrit?'critique':Math.abs(r.zSp)>P.zAlert?'alerte':'normal')+k(`Corr. CNH/Brent ${P.cS} j`,nf(r.cC20,2),cmCorrLab(r.cC20))+k(`Corr. CNH/Brent ${P.cM} j`,nf(r.cC60,2),cmCorrLab(r.cC60))
     :a==='gold'?k('Basis Or',nf(r.bG,2),r.bGSt)+k('Ratio Or/Argent',nf(r.gs,1),r.gs>P.gsRef?'zone refuge (> '+P.gsRef+')':'sous le seuil refuge')+k('Ratio Or/Brent',nf(r.gb,1),r.gb>P.gbDis?'déséquilibre (> '+P.gbDis+')':'')+k(`Z-score Or ${P.zWin} j`,nf(r.zG,2),Math.abs(r.zG)>P.zCrit?'critique':Math.abs(r.zG)>P.zAlert?'alerte':'normal')+k(`Corr. CNH/Or ${P.cS} j`,nf(r.cCG,2),cmCorrLab(r.cCG))
     :k('Basis Argent',nf(r.bS,3),r.bSSt)+k('Z-score 20 j',nf(r.zS,2),Math.abs(r.zS)>1.7?'extrême':'normal')+k('Distance à la moyenne 20 j',nf(r.sDist,2))+k('Ratio Or/Argent',nf(r.gs,1));
   $('#p-cm').innerHTML=`<div class="grid">
     ${age>7?`<div class="card s12 msg"><b style="color:var(--hi)">Données arrêtées au ${fd(lastD)}</b> (${age} jours). Importez les derniers exports Investing.com pour actualiser les signaux. <button class="btn sm noprint" data-act="cmimp">Importer un export (CSV)</button></div>`:''}
     <div class="card s12"><div class="symhead">
-      <div class="sh-id"><div class="sh-t">${CM_ASSETS[a]}</div><div class="sh-n">${tab==='t'?'Pression et approvisionnement':'Confirmation et corrélations macro'}</div><div class="sh-m">séance du ${fd(s.d[li])}</div></div>
+      <div class="sh-id"><div class="sh-t">${oil?'Brent':CM_ASSETS[a]}</div><div class="sh-n">${tab==='t'?'Pression et approvisionnement':'Confirmation et corrélations macro'}</div><div class="sh-m">séance du ${fd(s.d[li])}</div></div>
       <div><div class="sh-px"><span class="v">${nf(px,2)}</span><em class="u">USD</em></div><div class="sh-d ${nn(pv)?cls(pv):''}">${nn(pv)?sgn(pv*100,2):''} sur la séance</div></div>
-      <div class="sh-kv"><div><span>${ind[0]}</span><b>${nf(r[ind[1]],2)}</b></div><div><span>État du marché</span><b>${esc(r[ind[2]])}</b></div></div>
+      <div class="sh-kv">${oil?`<div><span>WTI (complément)</span><b>${nf(s.wti[li],2)}</b></div><div><span>Spread Brent − WTI</span><b>${nf(r.spread,2)} · ${esc(r.spSt)}</b></div><div><span>Basis Brent</span><b>${nf(r.bB,2)} · ${esc(r.bBSt)}</b></div>`:`<div><span>${ind[0]}</span><b>${nf(r[ind[1]],2)}</b></div><div><span>État du marché</span><b>${esc(r[ind[2]])}</b></div>`}</div>
       <div class="badge ${cmCls(sigMain)==='ok'?'ok':cmCls(sigMain)==='ko'?'ko':'am'}">${esc(cmStrip(sigMain).split(' : ')[0].toUpperCase())}</div>
     </div></div>
     <div class="card s12"><h2>Signaux du jour</h2><div class="dec">
@@ -122,7 +134,7 @@ function renderCM(){
       ${a!=='silver'?`<div class="dc"><span class="dot ${cmCls(r.spRk)}"></span><div><b>Spread Brent − WTI : ${nf(r.spread,2)}</b><span>${esc(r.spRk)}</span></div></div>`:''}
     </div></div>
     <div class="card s12"><div class="stats">${kpis}</div></div>
-    <div class="card s12"><h2><span>${tab==='t'?CM_ASSETS[a]+' et '+ind[0]:'Z-score et bandes d\'alerte'}</span><span class="meta">${tab==='t'?'cours (ligne) et indicateur de structure (barres)':`seuils ±${P.zAlert} (alerte) et ±${P.zCrit} (critique)`}</span></h2><div class="lwc" id="${chartId}"></div></div>
+    <div class="card s12"><h2><span>${tab==='t'?(oil?'Brent et WTI, spread et basis':CM_ASSETS[a]+' et '+ind[0]):'Z-score et bandes d\'alerte'}</span><span class="meta">${tab==='t'?(oil?'Brent (blanc) et WTI (bleu) sur la même échelle · spread en barres et basis en pointillé':'cours (ligne) et indicateur de structure (barres)'):`seuils ±${P.zAlert} (alerte) et ±${P.zCrit} (critique)`}</span></h2><div class="lwc" id="${chartId}"></div></div>
     <div class="card s12"><h2><span>${tab==='t'?'Tableau chronologique':'Tableau de confirmation'} <span class="meta">${nRows} séances sur ${N}</span></span><span class="row noprint"><button class="btn sm" data-act="cmall">${ui.cmAll?'60 dernières séances':'Toutes les séances'}</button><button class="btn sm" data-act="cmimp">Importer un export (CSV)</button></span></h2><div class="tw" style="max-height:620px;overflow:auto">${table}</div></div>
     <div class="card s8"><h2>Paramètres des signaux <span class="meta">repris du classeur</span></h2>
       <div class="fields">${F('Fenêtre Z-score','cm.p.zWin','n',{u:'j'})}${F('Fenêtre percentile','cm.p.pctWin','n',{u:'j'})}${F('Corrélation court terme','cm.p.cS','n',{u:'j'})}${F('Corrélation moyen terme','cm.p.cM','n',{u:'j'})}${F('Corrélation forte au-delà de','cm.p.cStrong')}${F('Corrélation modérée au-delà de','cm.p.cMod')}${F('Z-score alerte','cm.p.zAlert')}${F('Z-score critique','cm.p.zCrit')}${F('Ratio Or/Argent refuge','cm.p.gsRef')}${F('Ratio Or/Brent déséquilibre','cm.p.gbDis')}</div></div>
