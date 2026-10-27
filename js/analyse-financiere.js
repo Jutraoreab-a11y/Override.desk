@@ -65,6 +65,7 @@ function renderAN(){
   const hrow=(lab,arr,fmt,key,cl)=>`<tr><td>${lab}</td>${arr.map((v,i)=>`<td class="n ${cl?(isFinite(v)?cls(v):''):''}">${key&&E?fld(`${P(key)}.${i}`,'n',{al:lab+' '+a.y[i]}):fmt(v)}</td>`).join('')}</tr>`;
   $('#p-an').innerHTML=`
   <div class="grid">
+    ${prjBar('an')}
     ${ui.qmsg?`<div class="card s12 msg">${ui.qmsg}</div>`:''}
     <div class="card s12"><div class="symhead">
       <div class="sh-id"><div class="sh-t">${esc(a.t)}</div><div class="sh-n">${esc(a.n)}</div><div class="sh-m">${esc(a.sec)}, exercice clos en ${esc(a.fy)}, comptes en ${esc(rc)}</div></div>

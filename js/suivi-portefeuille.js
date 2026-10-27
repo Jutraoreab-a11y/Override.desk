@@ -32,6 +32,7 @@ function renderPF(){
   const tkOpts=Object.fromEntries(Object.keys(A).map(k=>[k,A[k].t+' ('+A[k].n+')']));
   $('#p-pf').innerHTML=`
   <div class="grid">
+    ${mt5Card()}
     <div class="card s12 msg"><b style="color:var(--hi)">Portefeuille d'exemple.</b> Les quantités et prix de revient sont fictifs ; cours et résultats publiés sont réels (MarketScreener, 19-20/10/2026). Passez en Override pour saisir vos positions.</div>
     <div class="card s12"><div class="stats">
       <div class="stat"><div class="k">Valeur du portefeuille</div><div class="x">${big(K.V)}</div><div class="d">${ls.length} lignes, USD convertis à ${nf(+S.pf.eurusd,4)}</div></div>

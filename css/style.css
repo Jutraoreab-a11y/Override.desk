@@ -374,3 +374,32 @@ td .f{min-width:64px}
 .pr .meter{margin:6px 0 8px}
 @container (max-width:1000px){.porter{grid-template-columns:1fr 1fr}}
 @container (max-width:520px){.porter{grid-template-columns:1fr}}
+
+/* ===== v4 : dossiers projets, fiche, calculateur, journal ===== */
+.req{color:var(--amber);font-weight:600}
+.f.lf.miss{border-color:rgba(217,119,6,.6)}
+.prj{padding:10px 12px}
+.prj-h{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
+.prj-l{display:inline-flex;align-items:center;gap:6px;color:var(--mute);font-size:12px}
+.prj-l b{color:var(--hi);font-weight:600}
+.prj-l svg.i{width:16px;height:16px}
+.tbl tr.on td{background:var(--accentbg)}
+.bmq{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:1px;background:var(--line);border:1px solid var(--line);border-radius:4px;overflow:hidden}
+.bmq>div{background:var(--pane);padding:10px 12px}
+.bmq p{margin:4px 0 0;color:var(--text);line-height:1.5}
+.rbn{display:block;font:600 9px var(--mono);color:var(--mute2);margin-bottom:1px}
+.rb[aria-current="page"] .rbn{color:var(--up)}
+.cal{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px}
+.cal-h{font-size:11px;color:var(--mute);text-align:center;padding:2px 0}
+.cal-d{min-height:62px;display:flex;flex-direction:column;align-items:flex-start;gap:2px;padding:6px;border:1px solid var(--line);border-radius:4px;background:var(--raised);text-align:left}
+.cal-d.off{visibility:hidden}
+.cal-d:hover{border-color:var(--line2)}
+.cal-d .cal-n{font:11px var(--mono);color:var(--mute)}
+.cal-d b{font:600 12px var(--mono);font-variant-numeric:tabular-nums}
+.cal-d small{font-size:10px;color:var(--mute)}
+.cal-d.up{background:var(--upbg)}.cal-d.up b{color:var(--up)}
+.cal-d.down{background:var(--downbg)}.cal-d.down b{color:var(--down)}
+.cal-d.sel{border-color:var(--accent)}
+.cal-d.now .cal-n{color:var(--hi);font-weight:700}
+@media (max-width:760px){.cal-d{min-height:48px;padding:4px}.cal-d small{display:none}.prj-h .row{margin-left:0!important}}
+@media print{.prj,.cal-d small{display:none}}

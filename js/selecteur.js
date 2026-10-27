@@ -20,8 +20,21 @@ function geoSelect(){const v=ui.geo||'W',o=(k,l)=>`<option value="${esc(k)}"${k=
   return h+'</select>';}
 function coFlags(c){const prem=c.pre/(c.arr*c.mult)-1,a=attr(c);
   return{prem,a,gem:!c.lead&&a>=65&&prem<=0,end:!c.lead&&(a<55||(prem>0.3&&c.gr<40))};}
+function scPer(){const P=S.sc.per||(S.sc.per=clone(DEF.sc.per)),mo=P.mode;
+  const inP=c=>{if(c.lead||mo==='all')return true;const d=String(c.dt||'');if(!d)return false;
+    if(mo==='month')return d.slice(0,7)===P.m;if(mo==='year')return d.slice(0,4)===String(P.y);return(!P.from||d>=P.from)&&(!P.to||d<=P.to);};
+  const ml=m=>{const[y,mm]=String(m).split('-');return y&&mm?MONTHS[+mm-1]+' '+y:'—';};
+  const lab=mo==='all'?'toutes les dates':mo==='month'?ml(P.m):mo==='year'?'année '+P.y:`du ${fdate(P.from)} au ${fdate(P.to)}`;
+  return{P,inP,lab};}
+function perBar(){const{P,lab}=scPer(),L=S.sc.list.filter(c=>!c.lead),n=L.filter(scPer().inP).length,yrs=[...new Set(L.map(c=>String(c.dt||'').slice(0,4)).filter(Boolean).concat([String(new Date().getFullYear())]))].sort().reverse();
+  return`<div class="card s12 noprint"><div class="row" style="gap:12px;flex-wrap:wrap;align-items:center"><span class="lb" style="margin:0">Période d'analyse</span>
+    ${lin('sc.per.mode','s',{opts:{all:'Toutes les dates',month:'Un mois précis',year:'Une année complète',custom:'Période personnalisée'},style:'width:auto',al:'Type de période'})}
+    ${P.mode==='month'?lin('sc.per.m','m',{style:'width:170px',al:'Mois'}):''}
+    ${P.mode==='year'?lin('sc.per.y','s',{opts:Object.fromEntries(yrs.map(y=>[y,y])),style:'width:auto',al:'Année'}):''}
+    ${P.mode==='custom'?`<span class="meta">du</span>${lin('sc.per.from','d',{style:'width:160px',al:'Début'})}<span class="meta">au</span>${lin('sc.per.to','d',{style:'width:160px',al:'Fin'})}`:''}
+    <span class="meta" style="margin-left:auto">${n} dossier${n>1?'s':''} sur ${L.length} datés ${esc(lab)} · le filtre s'applique au tamis, au Mapping 2 et au tableau ; le Mapping 1 repose sur les données sectorielles FMI 2026 et Damodaran janvier 2026</span></div></div>`;}
 function renderSC(){
-  const L=S.sc.list,E=ui.edit,min=S.sc.min,D=L.filter(c=>!c.lead);
+  const L=S.sc.list,E=ui.edit,min=S.sc.min,PER=scPer(),D=L.filter(c=>!c.lead&&PER.inP(c));
   if(!SECT[ui.secTarget])ui.secTarget='energy';
   if(!L.find(c=>c.id===ui.sel)&&D.length)ui.sel=D[0].id;
   const secKeys=Object.keys(SECT);
@@ -30,7 +43,7 @@ function renderSC(){
   FKEYS.forEach((k,i)=>{cur=cur.filter(c=>c[k]>=min);steps.push([FQ[i][0],cur.length,FQ[i][1]]);});
   const G=geoAgg(ui.geo),SG=Object.fromEntries(secKeys.map(k=>[k,secInGeo(k,G)]));
   const m1=secKeys.map(k=>{const q=SG[k];return{x:q.liq*10,y:q.attr,label:SECT[k].l,id:k,act:'pickSec',r:3+clamp((Math.log10(q.tam/1e6)-2)*1.6,0,8),cls:(q.attr>=50&&q.liq>=5?'ok':'ko')+(k===ui.secTarget?' sel':'')};});
-  const inSec=L.filter(c=>c.sec===ui.secTarget);
+  const inSec=L.filter(c=>c.sec===ui.secTarget&&PER.inP(c));
   const m2=inSec.map(c=>{const f=coFlags(c);return{x:c.liq*10,y:f.a,label:c.n+(c.lead?'':f.gem?' (pépite)':f.end?' (fin de course)':''),id:c.id,r:3+clamp(Math.log10((+c.arr||0)+1)*2.2,0,7),sq:!!c.lead,cls:(c.lead?'lead':f.gem?'gem':f.end?'end':passes(c)?'ok':'ko')+(c.id===ui.sel?' sel':'')};});
   const q2=['Pari illiquide','Cibles prioritaires','À écarter','Liquide, peu attractif'];
   const ci=L.findIndex(c=>c.id===ui.sel),c=L[ci],P=k=>`sc.list.${ci}.${k}`;
@@ -40,7 +53,7 @@ function renderSC(){
   if(c){const f=coFlags(c),implied=c.arr*c.mult,ok=passes(c),cl=L.find(x=>x.lead&&x.sec===c.sec),mult=c.tgt&&c.pre?c.tgt/c.pre:NaN;
     const tile=(i,k,txt)=>`<div class="tm ${c[k]>=min?'ok':'ko'}"><div class="tm-h"><b>${FQ[i][0]}</b><span class="num">${fld(P(k),'n',{al:FQ[i][0]})}<span class="meta"> /10</span></span></div><div class="meter${c[k]<min?' lo':''}"><b style="width:${clamp(c[k],0,10)*10}%"></b></div><p class="tm-q">${FQ[i][1]}</p>${fld(P(txt),'a',{rows:2,al:FQ[i][0]})}</div>`;
     detail=`<div class="card s12"><h2><span>${esc(c.n)} <span class="meta">${esc((SECT[c.sec]||{}).l||c.sec)}${c.fromBP?', issu du business plan':''}</span></span><span class="tag ${c.lead?'':ok?'ok':'ko'}">${c.lead?'Leader de référence':ok?'Retenu par le tamis':'Écarté par le tamis'}</span></h2>
-      ${E?`<div class="fields" style="max-width:520px;margin-bottom:10px">${F('Nom',P('n'),'t')}${F('Secteur',P('sec'),'s',{opts:Object.fromEntries(secKeys.map(k=>[k,SECT[k].l]))})}</div>`:''}
+      ${E?`<div class="fields" style="max-width:520px;margin-bottom:10px">${F('Nom',P('n'),'t')}${F('Date du dossier',P('dt'),'t',{ph:'AAAA-MM-JJ'})}${F('Secteur',P('sec'),'s',{opts:Object.fromEntries(secKeys.map(k=>[k,SECT[k].l]))})}</div>`:''}
       <h3 class="h3">I. Tamis d'entrée</h3>
       <div class="tamis four">${tile(0,'liq','liqTxt')}${tile(1,'cat','catTxt')}${tile(2,'conc','faille')}${tile(3,'tam','tamTxt')}</div>
       <h3 class="h3">III. Grille d'analyse fondamentale et equity story</h3>
@@ -61,6 +74,7 @@ function renderSC(){
       </div></div>`;}
   $('#p-sc').innerHTML=`
   <div class="grid">
+    ${perBar()}
     <div class="card s12"><h2><span>I. Tamis d'entrée <span class="meta">chaque dossier doit franchir les 4 filtres, note minimale ${fld('sc.min')}/10</span></span><span class="meta">${steps[4][1]} retenu${steps[4][1]>1?'s':''} sur ${D.length}</span></h2>
       <div class="funnel5">${steps.map((s,i)=>`<div class="fs"><div class="fs-n">${s[1]}</div><div class="fs-b"><b style="width:${D.length?s[1]/D.length*100:0}%"></b></div><div class="fs-l">${i?`Filtre ${i} : ${s[0]}`:'Dossiers étudiés'}</div>${i?`<p class="tm-q">${s[2]}</p>`:''}</div>`).join('')}</div></div>
     <div class="card s6"><h2><span>II. Mapping 1 : marché global <span class="meta">secteurs, ${esc(G.lab)}</span></span>${geoSelect()}</h2>
@@ -79,8 +93,8 @@ function renderSC(){
       <div class="legend"><span><i style="background:#71717A;border-radius:1px"></i>Leader de référence</span><span><i style="background:var(--up)"></i>Pépite sous-évaluée</span><span><i style="background:var(--down)"></i>Fin de course</span><span><i style="background:#A1A1AA"></i>Autres</span></div>
       <p class="note">${secLead?`Leader : ${esc(secLead.n)}. `:''}Pépite : attractivité ≥ 65 et dernière levée sans surcote. Fin de course : attractivité < 55, ou surcote > 30 % avec une croissance < 40 %.</p></div>
     <div class="card s8"><h2>Dossiers <span class="meta">classés par attractivité</span></h2>
-      <div class="tw"><table class="tbl"><thead><tr><th>Entreprise</th><th>Secteur</th>${['Liq.','Cat.','Conc.','Taille'].map((l,i)=>`<th class="n" title="${FQ[i][0]}">${l}</th>`).join('')}<th class="n">Attract.</th><th class="n">Surcote</th><th>Tamis</th></tr></thead><tbody>
-      ${rows.map(x=>{const f=coFlags(x);return`<tr class="click${x.id===ui.sel?' hl':''}" data-act="pick" data-id="${esc(x.id)}"><td><b>${esc(x.n)}</b>${f.gem?' <span class="tag ok">Pépite</span>':f.end?' <span class="tag ko">Fin de course</span>':''}</td><td>${esc((SECT[x.sec]||{}).l||x.sec)}</td>${FKEYS.map(k=>`<td class="n ${x[k]<min?'down':''}">${auto(x[k])}</td>`).join('')}<td class="n">${nf(f.a,0)}</td><td class="n ${f.prem>0?'down':''}">${sgn(f.prem*100,0)}</td><td><span class="tag ${passes(x)?'ok':'ko'}">${passes(x)?'Retenu':'Écarté'}</span></td></tr>`;}).join('')}
+      <div class="tw"><table class="tbl"><thead><tr><th>Entreprise</th><th>Secteur</th>${['Liq.','Cat.','Conc.','Taille'].map((l,i)=>`<th class="n" title="${FQ[i][0]}">${l}</th>`).join('')}<th>Date</th><th class="n">Attract.</th><th class="n">Surcote</th><th>Tamis</th></tr></thead><tbody>
+      ${rows.map(x=>{const f=coFlags(x);return`<tr class="click${x.id===ui.sel?' hl':''}" data-act="pick" data-id="${esc(x.id)}"><td><b>${esc(x.n)}</b>${f.gem?' <span class="tag ok">Pépite</span>':f.end?' <span class="tag ko">Fin de course</span>':''}</td><td>${esc((SECT[x.sec]||{}).l||x.sec)}</td>${FKEYS.map(k=>`<td class="n ${x[k]<min?'down':''}">${auto(x[k])}</td>`).join('')}<td>${fdate(x.dt)}</td><td class="n">${nf(f.a,0)}</td><td class="n ${f.prem>0?'down':''}">${sgn(f.prem*100,0)}</td><td><span class="tag ${passes(x)?'ok':'ko'}">${passes(x)?'Retenu':'Écarté'}</span></td></tr>`;}).join('')}
       </tbody></table></div>
       ${E?'<div class="row" style="margin-top:8px"><button class="btn sm" data-act="addco">Ajouter un dossier</button></div>':''}</div>
     <div class="card s4"><h2>Paramètres</h2>

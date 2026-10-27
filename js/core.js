@@ -4,11 +4,18 @@ const clone=o=>JSON.parse(JSON.stringify(o));
 let S=clone(DEF);
 let ui={ty:1,tab:'bp',edit:false,tk:'MC',sel:'helio',secTarget:'energy',geo:'W',cmA:'brent',cmT:'t',cmAll:false,plan:'pack',qmsg:'',pfSel:0};
 const pending=new Set();
+const LIVE={};
 const STORE='override-desk-v9';
 try{const raw=localStorage.getItem(STORE);if(raw){const d=JSON.parse(raw);if(d.S&&d.S.bp&&d.S.an&&d.S.sc&&d.S.pf)S=d.S;if(d.ui)ui=Object.assign(ui,d.ui,{edit:false});}}catch(e){}
 Object.keys(DEF).forEach(k=>{if(!S[k])S[k]=clone(DEF[k]);});
 Object.keys(DEF).forEach(m=>{Object.keys(DEF[m]).forEach(k=>{if(S[m][k]===undefined)S[m][k]=clone(DEF[m][k]);});});
-if(!['bp','an','sc','pf','cm','ab'].includes(ui.tab))ui.tab='bp';
+if(!['bp','an','sc','pf','cm','pc','jr','ab'].includes(ui.tab))ui.tab='bp';
+/* Migrations v4 */
+if(!S.bp.mkt.base)S.bp.mkt.base='K:France';if(!S.bp.mkt.cities)S.bp.mkt.cities=[];if(!S.bp.scope)S.bp.scope='K:France';
+if(!S.bp.fiche)S.bp.fiche=clone(DEF.bp.fiche);
+Object.keys(DEF.bp.fiche).forEach(k=>{if(S.bp.fiche[k]===undefined)S.bp.fiche[k]=DEF.bp.fiche[k];});
+S.sc.list.forEach(c=>{if(c.dt===undefined){const d=DEF.sc.list.find(x=>x.id===c.id);c.dt=d?d.dt:'';}});
+['plan','mc'].forEach(k=>{if(!S.pc[k])S.pc[k]=clone(DEF.pc[k]);});
 if(!ui.geo)ui.geo='W';
 function save(){try{localStorage.setItem(STORE,JSON.stringify({S,ui}))}catch(e){}}
 
@@ -40,6 +47,13 @@ function fld(p,t='n',o={}){
   if(t==='a')return `<textarea class="f${ov}" data-k="${p}" data-t="a" rows="${o.rows||3}" aria-label="${esc(o.al||p)}">${esc(v)}</textarea>`;
   return `<input class="f${isN?' num':''}${ov}" data-k="${p}" data-t="${t}" type="${isN?'number':'text'}" ${isN?'step="any" inputmode="decimal"':''} value="${esc(v??'')}" ${o.ph?`placeholder="${esc(o.ph)}"`:''} aria-label="${esc(o.al||p)}">`;
 }
+/* Champ toujours éditable (formulaires opérationnels : fiche, calculateur, journal) */
+function lin(p,t='n',o={}){const v=getP(S,p);
+  if(t==='s')return`<select class="f lf" data-lk="${p}" data-lt="s" aria-label="${esc(o.al||p)}"${o.style?` style="${o.style}"`:''}>${Object.entries(o.opts).map(([k,l])=>`<option value="${esc(k)}"${String(k)===String(v)?' selected':''}>${esc(l)}</option>`).join('')}</select>`;
+  if(t==='a')return`<textarea class="f lf" data-lk="${p}" data-lt="a" rows="${o.rows||3}" aria-label="${esc(o.al||p)}" placeholder="${esc(o.ph||'')}">${esc(v)}</textarea>`;
+  const isN=t==='n'||t==='nn';
+  return`<input class="f lf${isN?' num':''}${o.req&&(v===''||v===null||v===undefined)?' miss':''}" data-lk="${p}" data-lt="${t}" ${isN?'inputmode="decimal"':''} type="${t==='d'?'date':t==='m'?'month':'text'}" value="${esc(v===null||v===undefined?'':v)}" aria-label="${esc(o.al||p)}" placeholder="${esc(o.ph||'')}"${o.style?` style="${o.style}"`:''}${o.live?' data-live="1"':''}>`;}
+const LF=(label,p,t='n',o={})=>`<label class="fld"><span class="lb">${label}${o.req?' <b class="req">*</b>':''}</span><span class="fv">${lin(p,t,Object.assign({al:label},o))}${o.u?`<em class="u">${o.u}</em>`:''}</span></label>`;
 const F=(label,p,t='n',o={})=>`<label class="fld"><span class="lb">${label}</span><span class="fv">${fld(p,t,Object.assign({al:label},o))}${o.u?`<em class="u">${o.u}</em>`:''}</span></label>`;
 const srcTag=(v,lab)=>(v||'').trim()?`<span class="tag ok">Sourcé</span>`:`<span class="tag am">${lab||'À sourcer'}</span>`;
 
@@ -139,7 +153,11 @@ const ICON={
   lock:'<rect x="5" y="11" width="14" height="9" rx="1.5"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/>',
   calc:'<path d="M20 11a8 8 0 1 0-2.3 5.7"/><path d="M20 4v7h-7"/>',
   dl:'<path d="M12 4v11M7 10l5 5 5-5M5 20h14"/>',
-  search:'<circle cx="11" cy="11" r="6"/><path d="M20 20l-4.5-4.5"/>'
+  search:'<circle cx="11" cy="11" r="6"/><path d="M20 20l-4.5-4.5"/>',
+  pc:'<rect x="5" y="3" width="14" height="18" rx="1.5"/><path d="M8 7h8v3H8z"/><path d="M8.5 14h.01M12 14h.01M15.5 14h.01M8.5 17.5h.01M12 17.5h.01M15.5 17.5h.01"/>',
+  jr:'<path d="M5 4h11a3 3 0 0 1 3 3v13H8a3 3 0 0 1-3-3z"/><path d="M5 17a3 3 0 0 1 3-3h11"/><path d="M9 8h6"/>',
+  fold:'<path d="M3 6h6l2 2h10v11H3z"/>',
+  link:'<path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1"/><path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/>'
 };
 const ic=(k,c='')=>`<svg class="i ${c}" viewBox="0 0 24 24" aria-hidden="true">${ICON[k]}</svg>`;
 const TVC={up:'#10B981',down:'#DC2626',accent:'#E4E4E7',amber:'#D97706',text:'#D4D4D8',mute:'#71717A',grid:'rgba(39,39,42,.7)',line:'#27272A',bar:'#52525B'};

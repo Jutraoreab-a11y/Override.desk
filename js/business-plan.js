@@ -1,8 +1,21 @@
 /* ---- Étude de marché ---- */
 function seasW(){const m=S.bp.mkt,raw=(m.seas||[]).map(v=>Math.max(0,+v||0)),t=sum(raw);return raw.length===12&&t>0?raw.map(v=>v/t):Array(12).fill(1/12);}
 function tamScore(tam){return clamp((Math.log10(Math.max(tam,1)/1e9)+0.7)*3.5,0,10);}
+function bpScope(){const G=geoAgg(S.bp.scope||'K:France'),B=geoAgg(S.bp.mkt.base||'K:France');return{G,B,fac:G.gdp/B.gdp,same:G.key===B.key};}
+function bpZone(){const G=geoAgg(S.bp.scope||'K:France');return{l:G.lab,s:G.share,src:"FMI, World Economic Outlook, PIB "+(G.yr||2026)+" en dollars courants (part du PIB mondial)"};}
+function geoSel(path,o={}){const v=getP(S,path)||'W',op=(k,l)=>`<option value="${esc(k)}"${k===v?' selected':''}>${esc(l)}</option>`;
+  let h=`<select class="f lf" data-lk="${path}" data-lt="s" aria-label="${esc(o.al||'Périmètre géographique')}" style="${o.style||''}">${op('W','Monde')}<optgroup label="Continents et régions">${Object.entries(GEO_CONT).map(([k,l])=>op('C:'+k,l)).join('')}${op('EU27','Union européenne (27)')}</optgroup>`;
+  Object.entries(GEO_CONT).forEach(([k,l])=>{h+=`<optgroup label="${esc(l)}">${GEO.filter(c=>c[1]===k).map(c=>c[0]).sort((a,b)=>a.localeCompare(b,'fr')).map(n=>op('K:'+n,n)).join('')}</optgroup>`;});
+  return h+'</select>';}
+const FICHE=[['Nom du projet','bp.name'],['Porteur principal','bp.fiche.porteur'],['Stade','bp.fiche.stade'],['Secteur','bp.sector'],['Périmètre de l\'étude de marché','bp.scope'],['Type d\'activité','bp.fiche.bmType'],['Mode de rémunération','bp.fiche.revType'],['Ce que l\'on vend','bp.whatSell',30],['À qui on le vend','bp.fiche.forWho',30],['Avantage injuste (edge)','bp.edge',30],['Objet du business plan','bp.fiche.besoin',15],['Prix moyen mensuel par client','bp.arpu'],['Clients en année 1','bp.clients1'],['Année de démarrage','bp.startY']];
+function ficheMiss(){const b=S.bp,m=FICHE.filter(([l,p,n])=>{const v=getP(S,p);return v===null||v===undefined||String(v).trim()===''||(n&&String(v).trim().length<n)||(typeof v==='number'&&!(v>0));}).map(x=>x[0]);
+  if(!b.team.length||!b.team.some(x=>String(x.p||'').trim().length>=40))m.push('Parcours des fondateurs (section 2)');
+  if(String(b.teamTxt||'').trim().length<40)m.push('Complémentarité et résilience de l\'équipe');return m;}
+function bmLine(){const b=S.bp,f=b.fiche,lc1=s=>String(s||'').replace(/^./,c=>c.toLowerCase()),bt=BM_TYPES[f.bmType]||'à préciser',who=String(f.forWho||'à préciser').replace(/\.$/,'').split(' : ')[0];
+  const aWho=/^Les\s/.test(who)?'aux '+who.slice(4):/^Le\s/.test(who)?'au '+who.slice(3):/^(La|L')\s?/.test(who)?'à '+lc1(who):'à '+who;
+  return`${esc(b.name||'Le projet')} : ${esc(lc1(bt))}. L'entreprise vend ${esc(lc1(String(b.whatSell||'à préciser').replace(/\.$/,'')))} ${esc(aWho)}, et se rémunère par ${esc(lc1(REV_TYPES[f.revType]||'à préciser'))}, pour un prix moyen de ${big(+b.arpu)} par client et par mois.`;}
 function mkCalc(r){
-  const b=S.bp,m=b.mkt,h=[...m.hist].map(x=>({y:+x.y,v:+x.v,q:+x.q})).filter(x=>isFinite(x.y)).sort((a,c)=>a.y-c.y),n=h.length,last=h[n-1]||{y:NaN,v:NaN,q:NaN},first=h[0]||last;
+  const b=S.bp,m=b.mkt,sc=bpScope(),h=[...m.hist].map(x=>({y:+x.y,v:+x.v*sc.fac,q:+x.q*sc.fac})).filter(x=>isFinite(x.y)).sort((a,c)=>a.y-c.y),n=h.length,last=h[n-1]||{y:NaN,v:NaN,q:NaN},first=h[0]||last;
   const yoyV=h.map((x,i)=>i?(x.v/h[i-1].v-1)*100:NaN),yoyQ=h.map((x,i)=>i?(x.q/h[i-1].q-1)*100:NaN);
   const cagrV=n>1?((last.v/first.v)**(1/(n-1))-1)*100:NaN,cagrQ=n>1?((last.q/first.q)**(1/(n-1))-1)*100:NaN;
   const unitP=last.v*1e6/last.q,W=seasW();
@@ -12,7 +25,7 @@ function mkCalc(r){
   const vw=b.vw,opt=Math.sqrt((+vw.ch)*(+vw.ex));
   const T=b.tamis,sizeS=Math.round((tamScore(r.tam)+clamp(r.cagr/2,0,10))/2*10)/10;
   const filt=[['Liquidité',+T.liq,T.liqTxt],['Catalyseur',+T.cat,T.catTxt],['Concurrence',+T.conc,T.concTxt],['Taille de marché',sizeS,`TAM ${big(r.tam)}, CAGR ${pct(r.cagr)} (calcul automatique).`]];
-  return{h,n,last,yoyV,yoyQ,cagrV,cagrQ,unitP,W,proj,svT,sqT,leader,top,regT,opt,filt,sizeS,passN:filt.filter(f=>f[1]>=S.sc.min).length};
+  return{sc,h,n,last,yoyV,yoyQ,cagrV,cagrQ,unitP,W,proj,svT,sqT,leader,top,regT,opt,filt,sizeS,passN:filt.filter(f=>f[1]>=S.sc.min).length};
 }
 function vwChart(vw,marks){
   const W=640,H=180,L=14,R=14,mx=(+vw.te)*1.25,X=v=>L+clamp(v/mx,0,1)*(W-L-R),y0=86,h=24,tx=x=>clamp(x,L+40,W-R-40);
@@ -39,7 +52,7 @@ function bpToSelector(){
 
 const FQ=[['Liquidité',"Le marché est-il liquide ? Peut-on entrer et sortir du capital, ou revendre l'actif, sans décote massive ?"],['Catalyseur',"Le marché est-il porté par un catalyseur externe fort : réglementation, subvention, transition, rupture technologique, inflation sectorielle ?"],['Concurrence',"Qui est le leader, quelles sont ses forces, et surtout quelle faille exploitable laisse-t-il ?"],['Taille de marché',"Le marché total adressable est-il assez vaste, et quelle est sa dynamique de croissance historique et projetée ?"]];
 /* ============ Volet 1 : Business plan ============ */
-const ROWTPL={'bp.team':{n:'Nouveau membre',r:'',p:''},'bp.personas':{n:'Nouveau persona',who:'',spend:'',when:'',why:'',fears:'',where:''},'bp.offers':{n:'Nouvelle offre',p:0,seg:'',d:''},'bp.channels':{n:'Nouveau canal',sh:0,cac:0},'bp.comp':{n:'Nouveau concurrent',x:50,y:50,sv:0,sq:0,f:'',k:'',z:'',a:''},'bp.mkt.regions':{n:'Nouvelle région',sh:0},'bp.mkt.intl':{n:'Nouveau pays',v:0,ph:'',note:''},'bp.ptypes':{n:'Nouveau type d\'offre',sv:0,sq:0},'pf.positions':{tk:'AAPL',q:0,pru:0,d:'',qd:'',qeps:null,qepsP:null,qrev:null,qrevP:null}};
+const ROWTPL={'bp.mkt.cities':{n:'Nouvelle ville',reg:'',c:0},'bp.team':{n:'Nouveau membre',r:'',p:''},'bp.personas':{n:'Nouveau persona',who:'',spend:'',when:'',why:'',fears:'',where:''},'bp.offers':{n:'Nouvelle offre',p:0,seg:'',d:''},'bp.channels':{n:'Nouveau canal',sh:0,cac:0},'bp.comp':{n:'Nouveau concurrent',x:50,y:50,sv:0,sq:0,f:'',k:'',z:'',a:''},'bp.mkt.regions':{n:'Nouvelle région',sh:0},'bp.mkt.intl':{n:'Nouveau pays',v:0,ph:'',note:''},'bp.ptypes':{n:'Nouveau type d\'offre',sv:0,sq:0},'pf.positions':{tk:'AAPL',q:0,pru:0,d:'',qd:'',qeps:null,qepsP:null,qrev:null,qrevP:null}};
 const kk=v=>isFinite(v)?nf(Math.round(v/1000),0):'—';
 const isOv=ps=>ps.some(p=>JSON.stringify(getP(S,p))!==JSON.stringify(getP(DEF,p)));
 function bpCalc(){
@@ -93,6 +106,7 @@ function bpCalc(){
 function bpAlerts(r){
   const b=S.bp,A=[],add=(l,t)=>A.push({l,t}),Hy=r.Y[r.H-1];
   const mlab=x=>`mois ${x.k} de l'année ${x.t}`;
+  const fm=ficheMiss();if(fm.length)add('ko',`Fiche de renseignements incomplète (${fm.length} élément${fm.length>1?'s':''} : ${fm.slice(0,4).join(', ')}${fm.length>4?'…':''}) : le business plan n'est pas qualifié tant qu'elle n'est pas remplie.`);
   if(r.ltv<r.cac)add('ko',`Modèle non viable en l'état : LTV de ${big(r.ltv)} inférieure au CAC de ${big(r.cac)}.`);
   else if(r.ratio<3)add('am',`LTV/CAC de ${nf(r.ratio,1)}× sous le seuil institutionnel de 3×.`);
   if(r.min.cash<0)add('ko',`⚠️ Risque de rupture de trésorerie : solde de ${big(r.min.cash)} au ${mlab(r.min)}. Financement manquant : ${big(-r.min.cash)}.`);
@@ -183,11 +197,30 @@ function renderBP(){
   const k=r.mk,m=b.mkt;
   const SF=DAMO[b.sector]||DAMO.saas,PO=b.porter.length?sum(b.porter.map(f=>+f.s||0))/b.porter.length:NaN,FR=y=>(y.bal.capital+y.bal.grant+y.bal.retained+y.bal.debt-y.bal.fixed)/y.rev*365;
   $('#p-bp').innerHTML=`
-  <div class="ph"><div><h1>${esc(b.name)||'Projet sans nom'}</h1><p>Business plan ${esc(r.s.l)}, ${esc(r.z.l)}, horizon ${H} ans.</p></div></div>
+  <div class="ph"><div><h1>${esc(b.name)||'Projet sans nom'}</h1><p>Business plan ${esc(r.s.l)}, étude de marché ${esc(bpScope().G.lab)}, TAM ${esc(r.z.l)}, horizon ${H} ans.</p></div></div>
+  <div class="grid">${prjBar('bp')}</div>
+  ${(()=>{const fm=ficheMiss(),tot=FICHE.length+2,ok=tot-fm.length,f='bp.fiche';return`<section class="bps" id="bp-s0"><div class="bph"><span class="bpn">00</span><h2>Fiche de renseignements</h2><span class="tag ${fm.length?'ko':'ok'}" style="margin-left:auto">${fm.length?`${fm.length} élément${fm.length>1?'s':''} manquant${fm.length>1?'s':''}`:'Complète'}</span></div><div class="grid">
+    <div class="card s12"><div class="meter${fm.length?' lo':''}" style="margin-bottom:8px"><b style="width:${ok/tot*100}%"></b></div><p class="note" style="margin:0">${fm.length?`Obligatoire avant toute diffusion : ${fm.map(esc).join(', ')}. Les champs ci-dessous restent modifiables en permanence et alimentent directement le business plan.`:'Toutes les informations indispensables sont renseignées : le business plan est qualifié.'}</p></div>
+    <div class="card s4"><h2>Identité du projet</h2><div class="fields one">${LF('Nom du projet','bp.name','t',{req:1})}${LF('Porteur principal','bp.fiche.porteur','t',{req:1})}${LF('Forme juridique','bp.fiche.forme','t',{ph:'SAS, SARL…'})}${LF('Ville du siège','bp.fiche.ville','t')}${LF('Création prévue','bp.fiche.created','m')}${LF('Stade du projet','bp.fiche.stade','s',{opts:STAGES,req:1})}</div></div>
+    <div class="card s4"><h2>Marché et modèle</h2><div class="fields one">${LF('Secteur','bp.sector','s',{opts:sectOpts,req:1})}<label class="fld"><span class="lb">Périmètre de l'étude de marché <b class="req">*</b></span><span class="fv">${geoSel('bp.scope')}</span></label>${LF('Type d\'activité','bp.fiche.bmType','s',{opts:BM_TYPES,req:1})}${LF('Mode de rémunération','bp.fiche.revType','s',{opts:REV_TYPES,req:1})}${LF('Prix moyen mensuel par client','bp.arpu','n',{u:'€',req:1})}${LF('Clients en année 1','bp.clients1','n',{req:1})}${LF('Année de démarrage','bp.startY','n',{req:1})}</div></div>
+    <div class="card s4"><h2>Objet et financement</h2><div class="fields one">${LF('Objet du business plan','bp.fiche.besoin','a',{rows:3,req:1})}${LF('Montant de la levée','bp.raise','n',{u:'€'})}${LF('Apports des fondateurs','bp.equity','n',{u:'€'})}${LF('Horizon du prévisionnel','bp.h','s',{opts:{'3':'3 ans','4':'4 ans','5':'5 ans'}})}</div></div>
+    <div class="card s4"><h2>Que vend-on ? <b class="req">*</b></h2>${lin('bp.whatSell','a',{rows:4,al:"Ce que l'on vend",ph:"Le produit ou service exact, sans jargon"})}</div>
+    <div class="card s4"><h2>À qui le vend-on ? <b class="req">*</b></h2>${lin(f+'.forWho','a',{rows:4,al:'À qui',ph:'Type de client, taille, acheteur et décideur'})}</div>
+    <div class="card s4"><h2>Avantage injuste (edge) <b class="req">*</b></h2>${lin('bp.edge','a',{rows:4,al:'Avantage injuste',ph:'Ce que les concurrents ne peuvent pas copier rapidement'})}</div>
+  </div></section>`;})()}
   ${sec(1,'Executive summary et nature de l\'offre',`
     <div class="card s12">${verdict}</div>
+    <div class="card s12 bmc"><h2>Le business model en clair</h2>
+      <p class="lead" style="margin-top:0">${bmLine()}</p>
+      <div class="bmq">
+        <div><span class="lb">Que vend-on ?</span><p>${esc(b.whatSell)||'<span class="meta">à renseigner dans la fiche</span>'}</p></div>
+        <div><span class="lb">À qui ?</span><p>${esc(b.fiche.forWho)||'<span class="meta">à renseigner dans la fiche</span>'}</p></div>
+        <div><span class="lb">Business model exact</span><p><b>${esc(BM_TYPES[b.fiche.bmType]||'à préciser')}</b> · ${esc(REV_TYPES[b.fiche.revType]||'à préciser')}<br>Prix moyen ${big(+b.arpu)} par client et par mois ; grille : ${b.offers.map(o=>`${esc(o.n)} ${big(+o.p)}`).join(', ')}.<br>Marge brute ${pct(+b.gm,0)}, churn ${pct(+b.churn,1)} par mois.</p></div>
+        <div><span class="lb">Avantage injuste (edge)</span><p>${esc(b.edge)||'<span class="meta">à renseigner</span>'}</p></div>
+        <div><span class="lb">Stade et objet</span><p>${esc(STAGES[b.fiche.stade]||'')}. ${esc(b.fiche.besoin)}</p></div>
+      </div></div>
     <div class="card s12"><h2>Nature de l'offre : ce que l'on vend</h2>${fld('bp.whatSell','a',{rows:3,al:"Ce que l'on vend"})}</div>
-    <div class="card s4"><h2>Projet</h2><div class="fields one">${F('Nom du projet','bp.name','t')}${F('Secteur','bp.sector','s',{opts:sectOpts})}${F('Zone géographique','bp.zone','s',{opts:zoneOpts})}${F('Horizon du prévisionnel','bp.h','s',{opts:{'3':'3 ans','4':'4 ans','5':'5 ans'}})}</div></div>
+    <div class="card s4"><h2>Projet</h2><div class="fields one">${F('Nom du projet','bp.name','t')}${F('Secteur','bp.sector','s',{opts:sectOpts})}${F('Zone du TAM','bp.zone','s',{opts:zoneOpts})}<label class="fld"><span class="lb">Périmètre de l'étude de marché</span><span class="fv">${geoSel('bp.scope')}</span></label>${F('Horizon du prévisionnel','bp.h','s',{opts:{'3':'3 ans','4':'4 ans','5':'5 ans'}})}</div></div>
     <div class="card s8"><div class="stats">
       <div class="stat"><div class="k">CA année ${H}</div><div class="x">${big(Hy.rev)}</div><div class="d">${pct(r.somShare,1)} du SOM</div></div>
       <div class="stat"><div class="k">EBITDA année ${H}</div><div class="x ${cls(Hy.ebitda)}">${big(Hy.ebitda)}</div><div class="d">Marge ${pct(Hy.em,0)}</div></div>
@@ -203,7 +236,9 @@ function renderBP(){
     <div class="card s8"><h2>Équipe fondatrice et clés</h2>${etable('bp.team',[['n','Nom','t','width:140px'],['r','Rôle','t','width:150px'],['p','Parcours et track-record','a']])}</div>
     <div class="card s4"><h2>Complémentarité et résilience</h2>${fld('bp.teamTxt','a',{rows:6})}<p class="note">Effectif prévu : ${Yr.map(y=>`A${y.t} ${y.hc} ETP`).join(', ')}.</p></div>`)}
   ${sec(3,'Étude de marché et analyse granulaire',`
-    <div class="card s12"><h2><span>Historique du marché sur 5 ans <span class="meta">${esc(m.label)}</span></span>${srcTag(m.src)}</h2>
+    <div class="card s12 noprint"><div class="row" style="gap:12px;flex-wrap:wrap;align-items:center"><span class="lb" style="margin:0">Périmètre de l'étude</span>${geoSel('bp.scope',{style:'width:auto;max-width:260px'})}<span class="lb" style="margin:0">Données saisies pour</span>${geoSel('bp.mkt.base',{style:'width:auto;max-width:200px'})}
+      <span class="meta">${k.sc.same?`Valeurs de marché telles que saisies pour ${esc(k.sc.G.lab)}.`:`Valeurs ramenées à ${esc(k.sc.G.lab)} : marché saisi pour ${esc(k.sc.B.lab)} × ${nf(k.sc.fac,2)} (rapport des PIB, FMI WEO). Estimation à remplacer par une étude du périmètre dès que possible.`}</span>${k.sc.same?'':'<span class="tag am">Estimation</span>'}</div></div>
+    <div class="card s12"><h2><span>Historique du marché sur 5 ans <span class="meta">${esc(m.label)}${k.sc.same?'':', ramené à '+esc(k.sc.G.lab)+' (estimation)'}</span></span>${srcTag(m.src)}</h2>
       <div class="stats">
         <div class="stat"><div class="k">Valeur du marché ${k.last.y}</div><div class="x">${nf(k.last.v,0)} M€</div><div class="d ${cls(k.yoyV[k.n-1])}">${sgn(k.yoyV[k.n-1])} sur un an</div></div>
         <div class="stat"><div class="k">Volume ${k.last.y}</div><div class="x">${nf(k.last.q,0)}</div><div class="d">${esc(m.unitQ)}, ${sgn(k.yoyQ[k.n-1])}</div></div>
@@ -213,9 +248,9 @@ function renderBP(){
       </div>
       <div class="grid" style="margin-top:4px">
         <div class="s6" style="min-width:0"><div class="tw"><table class="tbl"><thead><tr><th></th>${k.h.map((x,i)=>`<th class="n">${E?fld(`bp.mkt.hist.${i}.y`,'n',{al:'Année'}):x.y}</th>`).join('')}</tr></thead><tbody>
-          <tr><td>Valeur (M€)</td>${m.hist.map((x,i)=>`<td class="n">${fld(`bp.mkt.hist.${i}.v`,'n',{al:'Valeur '+x.y})}</td>`).join('')}</tr>
+          <tr><td>Valeur (M€)</td>${m.hist.map((x,i)=>`<td class="n">${k.sc.same||E?fld(`bp.mkt.hist.${i}.v`,'n',{al:'Valeur '+x.y}):nf(+x.v*k.sc.fac,0)}</td>`).join('')}</tr>
           <tr><td>Croissance valeur</td>${k.yoyV.map(v=>`<td class="n ${isFinite(v)?cls(v):''}">${isFinite(v)?sgn(v):'—'}</td>`).join('')}</tr>
-          <tr><td>Volume (${esc(m.unitQ)})</td>${m.hist.map((x,i)=>`<td class="n">${fld(`bp.mkt.hist.${i}.q`,'n',{al:'Volume '+x.y})}</td>`).join('')}</tr>
+          <tr><td>Volume (${esc(m.unitQ)})</td>${m.hist.map((x,i)=>`<td class="n">${k.sc.same||E?fld(`bp.mkt.hist.${i}.q`,'n',{al:'Volume '+x.y}):nf(+x.q*k.sc.fac,0)}</td>`).join('')}</tr>
           <tr><td>Croissance volume</td>${k.yoyQ.map(v=>`<td class="n ${isFinite(v)?cls(v):''}">${isFinite(v)?sgn(v):'—'}</td>`).join('')}</tr>
           <tr><td>Prix moyen par unité</td>${k.h.map(x=>`<td class="n">${big(x.v*1e6/x.q)}</td>`).join('')}</tr>
         </tbody></table></div>
@@ -235,9 +270,12 @@ function renderBP(){
     <div class="card s5"><h2><span>Concentration géographique</span>${srcTag(m.srcGeo)}</h2>
       ${E?etable('bp.mkt.regions',[['n','Région','t'],['sh','Part du marché (%)','n','width:120px']]):hbars([...m.regions].sort((a,c)=>c.sh-a.sh).map((x,i)=>({l:x.n,v:x.sh,hl:i<3})),{fmt:v=>pct(v,0)})}
       <p class="note">Les ${m.regions.length} premières régions concentrent ${pct(k.regT,0)} du marché national ; les trois premières ${pct(sum([...m.regions].sort((a,c)=>c.sh-a.sh).slice(0,3).map(x=>x.sh)),0)}.</p>
-      <div class="fields" style="margin-top:8px">${F('Nombre de clients cibles (pays)','bp.mkt.targets','nn',{empty:'à renseigner',al:'Nombre de clients cibles'})}</div>
+      <div class="fields" style="margin-top:8px">${F('Nombre de clients cibles ('+esc(k.sc.B.lab)+')','bp.mkt.targets','nn',{empty:'à renseigner',al:'Nombre de clients cibles'})}${!k.sc.same&&isFinite(+m.targets)&&m.targets?`<p class="note">Sur le périmètre ${esc(k.sc.G.lab)} : environ ${nf(m.targets*k.sc.fac,0)} clients cibles (estimation par rapport des PIB).</p>`:''}</div>
       ${isFinite(+m.targets)&&m.targets?`<div class="tw"><table class="tbl"><thead><tr><th>Région</th><th class="n">Part</th><th class="n">Clients cibles</th></tr></thead><tbody>${[...m.regions].sort((a,c)=>c.sh-a.sh).map(x=>`<tr><td>${esc(x.n)}</td><td class="n">${pct(+x.sh,0)}</td><td class="n">${nf(m.targets*x.sh/100,0)}</td></tr>`).join('')}<tr class="tot"><td>Autres régions</td><td class="n">${pct(100-k.regT,0)}</td><td class="n">${nf(m.targets*(100-k.regT)/100,0)}</td></tr></tbody></table></div>`:'<p class="note">Renseignez le nombre de clients cibles (avec sa source) pour obtenir leur répartition par région.</p>'}
 
+      <h2 style="margin-top:12px"><span>Villes clés</span><span class="meta">clients cibles par ville</span></h2>
+      ${E?etable('bp.mkt.cities',[['n','Ville','t'],['reg','Région ou pays','t'],['c','Clients cibles','n','width:100px']]):!(m.cities||[]).length?'<p class="note">Aucune ville saisie : passez en Override pour lister les villes clés et leur nombre de clients cibles, avec la source.</p>':''}
+      ${(m.cities||[]).length&&!E?`<div class="tw"><table class="tbl"><thead><tr><th>Ville</th><th>Région ou pays</th><th class="n">Clients cibles</th></tr></thead><tbody>${m.cities.map(x=>`<tr><td>${esc(x.n)}</td><td>${esc(x.reg)}</td><td class="n">${nf(+x.c,0)}</td></tr>`).join('')}</tbody></table></div>`:''}
       <h2>Extension Europe et international</h2>
       ${etable('bp.mkt.intl',[['n','Pays','t'],['v','Marché (M€)','n','width:90px'],['ph','Phase','t','width:110px'],['note','Commentaire','t']])}
       <div class="fields" style="margin-top:10px">${F('Source géographique','bp.mkt.srcGeo','t',{ph:'Source'})}</div></div>
