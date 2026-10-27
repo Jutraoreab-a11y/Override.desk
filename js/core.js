@@ -2,12 +2,14 @@
 /* ============ État ============ */
 const clone=o=>JSON.parse(JSON.stringify(o));
 let S=clone(DEF);
-let ui={ty:1,tab:'bp',edit:false,tk:'MC',sel:'helio',secTarget:'energy',plan:'pack',qmsg:'',pfSel:0};
+let ui={ty:1,tab:'bp',edit:false,tk:'MC',sel:'helio',secTarget:'energy',geo:'W',cmA:'brent',cmT:'t',cmAll:false,plan:'pack',qmsg:'',pfSel:0};
 const pending=new Set();
 const STORE='override-desk-v9';
 try{const raw=localStorage.getItem(STORE);if(raw){const d=JSON.parse(raw);if(d.S&&d.S.bp&&d.S.an&&d.S.sc&&d.S.pf)S=d.S;if(d.ui)ui=Object.assign(ui,d.ui,{edit:false});}}catch(e){}
 Object.keys(DEF).forEach(k=>{if(!S[k])S[k]=clone(DEF[k]);});
-if(!['bp','an','sc','pf','ab'].includes(ui.tab))ui.tab='bp';
+Object.keys(DEF).forEach(m=>{Object.keys(DEF[m]).forEach(k=>{if(S[m][k]===undefined)S[m][k]=clone(DEF[m][k]);});});
+if(!['bp','an','sc','pf','cm','ab'].includes(ui.tab))ui.tab='bp';
+if(!ui.geo)ui.geo='W';
 function save(){try{localStorage.setItem(STORE,JSON.stringify({S,ui}))}catch(e){}}
 
 /* ============ Utilitaires ============ */
@@ -132,6 +134,7 @@ const ICON={
   sc:'<path d="M4 4v16h16"/><circle cx="9" cy="14.5" r="1.7"/><circle cx="14" cy="9" r="2.6"/><circle cx="18.5" cy="13.5" r="1.3"/>',
   pf:'<path d="M3 7h18v12H3z"/><path d="M8 7V5h8v2"/><path d="M3 12h18"/><path d="M11 12v2h2v-2"/>',
   ab:'<rect x="3" y="6" width="18" height="13" rx="1.5"/><path d="M3 10h18M7 15h4"/>',
+  cm:'<path d="M3 19h18"/><path d="M5 19l1.6-5h5.8l1.6 5"/><path d="M10.6 19l1.6-5h5.8L19.6 19"/><path d="M8 14l1.6-5h5.8L17 14"/>',
   pen:'<path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M13.5 6.5l4 4"/>',
   lock:'<rect x="5" y="11" width="14" height="9" rx="1.5"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/>',
   calc:'<path d="M20 11a8 8 0 1 0-2.3 5.7"/><path d="M20 4v7h-7"/>',

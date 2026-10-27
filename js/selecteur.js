@@ -2,7 +2,22 @@
 function attr(c){const w=S.sc.w,sw=w.cat+w.conc+w.tam+w.team+w.bm||1;return(c.cat*w.cat+c.conc*w.conc+c.tam*w.tam+c.team*w.team+c.bm*w.bm)/sw*10;}
 const FKEYS=['liq','cat','conc','tam'];
 const passes=c=>FKEYS.every(k=>c[k]>=S.sc.min);
-function secAttr(k){const s=SECT[k],p=S.sc.sectors[k]||{cat:5};return 10*(0.4*clamp(s.cagr/2,0,10)+0.35*(+p.cat)+0.25*clamp((Math.log10(s.tam/1e9)-1.5)*7,0,10));}
+/* Zone géographique du mapping 1 : monde, continent, UE ou pays */
+function geoMembers(key){if(key==='EU27')return GEO.filter(c=>c[6]);if(key.startsWith('C:'))return GEO.filter(c=>c[1]===key.slice(2));if(key.startsWith('K:'))return GEO.filter(c=>c[0]===key.slice(2));return GEO;}
+function geoAgg(key){key=key||'W';const M=geoMembers(key),gdp=key==='W'?GEO_WORLD.gdp:sum(M.map(c=>c[2]));
+  const gw=M.filter(c=>c[4]!==null),g=key==='W'?GEO_WORLD.g:sum(gw.map(c=>c[2]*c[4]))/sum(gw.map(c=>c[2])),depth=sum(M.map(c=>c[2]*GEO_DEPTH[c[5]]))/sum(M.map(c=>c[2]));
+  const lab=key==='W'?'Monde':key==='EU27'?'Union européenne (27)':key.startsWith('C:')?GEO_CONT[key.slice(2)]:key.slice(2);
+  return{key,lab,n:M.length,gdp,share:gdp/GEO_WORLD.gdp,g,depth,cls:M.length===1?M[0][5]:null,yr:M.length===1?M[0][3]:null};}
+let GEO_W=null;
+function secInGeo(k,G){const s=SECT[k],p=S.sc.sectors[k]||{cat:5,liq:5};GEO_W=GEO_W||geoAgg('W');
+  const tam=s.tam*G.share,cagr=Math.max(-5,s.cagr+(G.g-GEO_WORLD.g)),liq=clamp((+p.liq)*G.depth/GEO_W.depth,0,10);
+  const tamS=clamp((Math.log10(Math.max(tam,1)/1e6)-2)*2.2,0,10);
+  return{tam,cagr,liq,cat:+p.cat,attr:10*(0.4*clamp(cagr/2,0,10)+0.35*(+p.cat)+0.25*tamS)};}
+function secAttr(k){return secInGeo(k,geoAgg(ui.geo)).attr;}
+function geoSelect(){const v=ui.geo||'W',o=(k,l)=>`<option value="${esc(k)}"${k===v?' selected':''}>${esc(l)}</option>`;
+  let h=`<select class="f noprint" style="width:auto;max-width:230px;height:28px" data-ui="geo" aria-label="Zone géographique du mapping">${o('W','Monde')}<optgroup label="Continents et régions">${Object.entries(GEO_CONT).map(([k,l])=>o('C:'+k,l)).join('')}${o('EU27','Union européenne (27)')}</optgroup>`;
+  Object.entries(GEO_CONT).forEach(([k,l])=>{h+=`<optgroup label="${esc(l)}">${GEO.filter(c=>c[1]===k).map(c=>c[0]).sort((a,b)=>a.localeCompare(b,'fr')).map(n=>o('K:'+n,n)).join('')}</optgroup>`;});
+  return h+'</select>';}
 function coFlags(c){const prem=c.pre/(c.arr*c.mult)-1,a=attr(c);
   return{prem,a,gem:!c.lead&&a>=65&&prem<=0,end:!c.lead&&(a<55||(prem>0.3&&c.gr<40))};}
 function renderSC(){
@@ -13,7 +28,8 @@ function renderSC(){
   /* Tamis : passage successif des filtres */
   let cur=D;const steps=[['Dossiers',D.length,'']];
   FKEYS.forEach((k,i)=>{cur=cur.filter(c=>c[k]>=min);steps.push([FQ[i][0],cur.length,FQ[i][1]]);});
-  const m1=secKeys.map(k=>{const p=S.sc.sectors[k]||{liq:5};return{x:+p.liq*10,y:secAttr(k),label:SECT[k].l,id:k,act:'pickSec',r:4+clamp((Math.log10(SECT[k].tam/1e9)-2)*8,0,7),cls:(secAttr(k)>=50&&p.liq>=5?'ok':'ko')+(k===ui.secTarget?' sel':'')};});
+  const G=geoAgg(ui.geo),SG=Object.fromEntries(secKeys.map(k=>[k,secInGeo(k,G)]));
+  const m1=secKeys.map(k=>{const q=SG[k];return{x:q.liq*10,y:q.attr,label:SECT[k].l,id:k,act:'pickSec',r:3+clamp((Math.log10(q.tam/1e6)-2)*1.6,0,8),cls:(q.attr>=50&&q.liq>=5?'ok':'ko')+(k===ui.secTarget?' sel':'')};});
   const inSec=L.filter(c=>c.sec===ui.secTarget);
   const m2=inSec.map(c=>{const f=coFlags(c);return{x:c.liq*10,y:f.a,label:c.n+(c.lead?'':f.gem?' (pépite)':f.end?' (fin de course)':''),id:c.id,r:3+clamp(Math.log10((+c.arr||0)+1)*2.2,0,7),sq:!!c.lead,cls:(c.lead?'lead':f.gem?'gem':f.end?'end':passes(c)?'ok':'ko')+(c.id===ui.sel?' sel':'')};});
   const q2=['Pari illiquide','Cibles prioritaires','À écarter','Liquide, peu attractif'];
@@ -47,9 +63,16 @@ function renderSC(){
   <div class="grid">
     <div class="card s12"><h2><span>I. Tamis d'entrée <span class="meta">chaque dossier doit franchir les 4 filtres, note minimale ${fld('sc.min')}/10</span></span><span class="meta">${steps[4][1]} retenu${steps[4][1]>1?'s':''} sur ${D.length}</span></h2>
       <div class="funnel5">${steps.map((s,i)=>`<div class="fs"><div class="fs-n">${s[1]}</div><div class="fs-b"><b style="width:${D.length?s[1]/D.length*100:0}%"></b></div><div class="fs-l">${i?`Filtre ${i} : ${s[0]}`:'Dossiers étudiés'}</div>${i?`<p class="tm-q">${s[2]}</p>`:''}</div>`).join('')}</div></div>
-    <div class="card s6"><h2><span>II. Mapping 1 : marché global <span class="meta">secteurs uniquement</span></span><span class="meta">cliquer un secteur</span></h2>
-      ${scatter(m1,{title:'Mapping des secteurs',xl:'Liquidité du secteur',yl:'Attractivité macro (CAGR, catalyseur, taille)',q:['Pari illiquide','Secteurs prioritaires','À écarter','Liquide, peu attractif']})}
-      <div class="legend"><span>Taille du point : TAM mondial</span><span><i style="background:none;border:2px solid var(--hi)"></i>Secteur cible</span></div></div>
+    <div class="card s6"><h2><span>II. Mapping 1 : marché global <span class="meta">secteurs, ${esc(G.lab)}</span></span>${geoSelect()}</h2>
+      ${scatter(m1,{title:'Mapping des secteurs : '+G.lab,xl:'Liquidité du secteur dans la zone',yl:'Attractivité macro (CAGR, catalyseur, taille)',q:['Pari illiquide','Secteurs prioritaires','À écarter','Liquide, peu attractif']})}
+      <div class="legend"><span>Taille du point : TAM dans la zone</span><span><i style="background:none;border:2px solid var(--hi)"></i>Secteur cible (cliquer un point)</span></div>
+      <div class="geo">
+        <div><span>PIB ${G.yr?G.yr:'2026'}</span><b>${nf(G.gdp/1e3,G.gdp>=1e5?0:1)} Md$</b></div>
+        <div><span>Part du PIB mondial</span><b>${pct(G.share*100,G.share<.01?2:1)}</b></div>
+        <div><span>Croissance 2026</span><b class="${G.g<0?'down':''}">${pct(G.g,1)}</b><small>monde ${pct(GEO_WORLD.g,1)}</small></div>
+        <div><span>Profondeur de marché</span><b>${G.cls?GEO_DLAB[G.cls]:nf(G.depth*100,0)+' / 100'}</b><small>${G.n>1?G.n+' pays':''}</small></div>
+      </div>
+      <p class="note">Dans la zone : TAM = TAM mondial × part du PIB ; CAGR = CAGR sectoriel + écart de croissance de la zone avec le monde ; liquidité ajustée selon la profondeur du marché financier. Sources : ${GEO_SRC.map(x=>x[1]).join(' ; ')}.</p></div>
     <div class="card s6"><h2><span>Mapping 2 : secteur cible <span class="meta">entreprises du secteur</span></span>
       <select class="f noprint" style="width:auto;max-width:200px;height:28px" data-ui="secTarget" aria-label="Secteur cible">${secKeys.map(k=>`<option value="${k}"${k===ui.secTarget?' selected':''}>${esc(SECT[k].l)}</option>`).join('')}</select></h2>
       ${inSec.length?scatter(m2,{title:'Mapping du secteur cible',xl:'Liquidité',yl:'Attractivité',q:q2}):`<p class="note">Aucun dossier dans ce secteur. Ajoutez-en un ou envoyez votre business plan depuis le volet 1.</p>`}
@@ -64,11 +87,12 @@ function renderSC(){
       <p class="sub">Secteur cible : ${esc(SECT[ui.secTarget].l)}</p>
       <div class="fields">${F('Liquidité du secteur',`sc.sectors.${ui.secTarget}.liq`,'n',{u:'/10'})}${F('Catalyseur du secteur',`sc.sectors.${ui.secTarget}.cat`,'n',{u:'/10'})}</div>
       <div class="kv" style="padding:8px 0"><span>TAM mondial / CAGR</span><b>${big(SECT[ui.secTarget].tam)} / ${pct(SECT[ui.secTarget].cagr)}</b></div>
-      <div class="kv" style="padding:8px 0"><span>Attractivité du secteur</span><b>${nf(secAttr(ui.secTarget),0)}/100</b></div>
+      <div class="kv" style="padding:8px 0"><span>TAM / CAGR, ${esc(G.lab)}</span><b>${big(SG[ui.secTarget].tam)} / ${pct(SG[ui.secTarget].cagr)}</b></div>
+      <div class="kv" style="padding:8px 0"><span>Attractivité du secteur, ${esc(G.lab)}</span><b>${nf(SG[ui.secTarget].attr,0)}/100</b></div>
       ${fld(`sc.sectors.${ui.secTarget}.note`,'a',{rows:2,al:'Note sectorielle'})}
       <p class="sub" style="margin:14px 0 6px">Pondération de l'attractivité des entreprises</p>
       <div class="fields">${F('Catalyseur','sc.w.cat','n',{u:'%'})}${F('Concurrence','sc.w.conc','n',{u:'%'})}${F('Taille de marché','sc.w.tam','n',{u:'%'})}${F('Équipe','sc.w.team','n',{u:'%'})}${F('Business model','sc.w.bm','n',{u:'%'})}</div>
-      <p class="note">Attractivité sectorielle : 40 % CAGR, 35 % catalyseur, 25 % taille du TAM, d'après les mêmes références que le business plan. Liquidité et catalyseur sectoriels : appréciation de l'analyste.</p></div>
+      <p class="note">Attractivité sectorielle : 40 % CAGR, 35 % catalyseur, 25 % taille du TAM dans la zone choisie, d'après les mêmes références que le business plan. Liquidité et catalyseur sectoriels : appréciation de l'analyste.</p></div>
     ${detail}
   </div>`;
 }
