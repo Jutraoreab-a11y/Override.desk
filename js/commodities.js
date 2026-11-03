@@ -82,6 +82,7 @@ function cmImport(txt,inst){
 }
 function renderCM(){
   if(!CM_ASSETS[ui.cmA])ui.cmA='brent';
+  const X=mktX(),MA=mktAll(),MX=MA[X.main]||MA.brent,noMain=!mktPts(X.main).length;
   const C=cmCalc(),{s,R,N}=C,a=ui.cmA,oil=a==='brent',tab=ui.cmT||'t',last=R[N-1],E=ui.edit,P=cmP();
   const li=(()=>{for(let i=N-1;i>=0;i--)if(s[a][i]!==null)return i;return N-1;})(),r=R[li];
   const px=s[a][li],pv=s[a+'V'][li],lastD=s.d[N-1],age=Math.round((new Date()-new Date(lastD+'T00:00:00'))/864e5);
@@ -140,15 +141,15 @@ function renderCM(){
     </div></div>
     <div class="card s12"><div class="stats">${kpis}</div></div>
     ${cmHeat(C)}
-    <div class="card s12"><h2><span>Graphique principal <span class="meta">${oil?'Brent (blanc) et WTI (bleu)':CM_ASSETS[a]+' (blanc)'} · cliquer une puce pour superposer un indicateur</span></span>
+    <div class="card s12"><h2><span>Graphique principal <span class="meta">${esc(MX.l)} (blanc)${MX.k==='brent'&&!X.b100&&!X.cmp.includes('wti')?' et WTI (bleu)':''} · menu pour permuter ou superposer un actif, puces pour les indicateurs</span></span>
       <span class="row noprint"><button class="chip" data-act="cmsplit" aria-pressed="${!!ui.cmSplit}">Écran partagé</button></span></h2>
-      <div class="chips noprint" role="group" aria-label="Indicateurs superposés">${CM_OV.map(o=>{const on=!!cmOv()[o.k];return`<button class="chip ovc" data-act="cmov" data-id="${o.k}" aria-pressed="${on}" style="--c:${o.c}"><i></i>${o.l(a)}</button>`;}).join('')}</div>
+      ${mktBar()}<div class="chips noprint" role="group" aria-label="Indicateurs superposés">${CM_OV.map(o=>{const on=!!cmOv()[o.k];return`<button class="chip ovc" data-act="cmov" data-id="${o.k}" aria-pressed="${on}" style="--c:${o.c}"><i></i>${o.l(a)}</button>`;}).join('')}</div>
       <div class="thw noprint"><span class="lb">Seuils sur la vue</span>
         <span>Z-score alerte ±${fld('cm.p.zAlert','n',{al:'Z-score alerte'})}</span><span>critique ±${fld('cm.p.zCrit','n',{al:'Z-score critique'})}</span>
         ${a==='gold'?`<span>Basis or : tension ≤ ${fld('cm.p.th.bG.2','n',{al:'Seuil tension or'})}</span>`:a==='silver'?`<span>Basis argent : tension ≤ ${fld('cm.p.th.bS.2','n',{al:'Seuil tension argent'})}</span>`:`<span>Backwardation forte &gt; ${fld('cm.p.th.bB.2','n',{al:'Seuil backwardation forte'})}</span><span>Spread critique &gt; ${fld('cm.p.th.sp.3','n',{al:'Seuil spread critique'})}</span>`}</div>
-      <div class="lwc${ui.cmSplit?' sm':''}" id="cm-ch"></div>${ui.cmSplit?'<div class="lwc sm" id="cm-ch2" style="margin-top:6px"></div>':''}
-      <div class="legend">${(oil?[['#E4E4E7','Brent'],['#6B8AB8','WTI']]:[['#E4E4E7',CM_ASSETS[a]]]).concat(CM_OV.filter(o=>cmOv()[o.k]).map(o=>[o.c,o.l(a)])).map(([c,l])=>`<span><i style="background:${c}"></i>${esc(l)}</span>`).join('')}${ui.cmSplit?'<span>Haut : cours · bas : indicateurs</span>':'<span>Indicateurs dans la bande basse, chacun sur sa propre échelle</span>'}</div></div>
-    <div class="card s12"><h2><span>${tab==='t'?'Tableau chronologique':'Tableau de confirmation'} <span class="meta">${nRows} séances sur ${N}</span></span><span class="row noprint"><button class="btn sm" data-act="cmall">${ui.cmAll?'60 dernières séances':'Toutes les séances'}</button><button class="btn sm" data-act="cmimp">Importer un export (CSV)</button>${ui.cmImp?`<select class="f" style="width:auto" data-ui="cmInst" aria-label="Instrument à mettre à jour">${Object.entries(CM_INST).map(([k,l])=>`<option value="${k}"${k===(ui.cmInst||'brent')?' selected':''}>${l}</option>`).join('')}</select><button class="btn pri sm" data-act="cmfile">Choisir le fichier</button>`:''}</span></h2><div class="tw" style="max-height:620px;overflow:auto">${table}</div></div>
+      ${noMain?mktEmpty(X.main):`<div class="lwc${ui.cmSplit?' sm':''}" id="cm-ch"></div>${ui.cmSplit?'<div class="lwc sm" id="cm-ch2" style="margin-top:6px"></div>':''}`}${X.cmp.filter(k=>!mktPts(k).length).map(k=>mktEmpty(k)).join('')}
+      <div class="legend">${[['#E4E4E7',MX.l+(X.b100?' (base 100)':'')]].concat(MX.k==='brent'&&!X.b100&&!X.cmp.includes('wti')?[['#6B8AB8','WTI']]:[],X.cmp.filter(k=>mktPts(k).length).map(k=>[MKT_COLORS[X.cmp.indexOf(k)%MKT_COLORS.length],(MA[k]||{l:k}).l+(X.b100?' (base 100)':X.cmp.indexOf(k)===0?' (échelle gauche)':'')])).concat(CM_OV.filter(o=>cmOv()[o.k]).map(o=>[o.c,o.l(a)])).map(([c,l])=>`<span><i style="background:${c}"></i>${esc(l)}</span>`).join('')}${ui.cmSplit?'<span>Haut : cours · bas : indicateurs</span>':'<span>Indicateurs dans la bande basse, chacun sur sa propre échelle</span>'}</div></div>
+    <div class="card s12"><h2><span>${tab==='t'?'Tableau chronologique':'Tableau de confirmation'} <span class="meta">${nRows} séances sur ${N}</span></span><span class="row noprint"><button class="btn sm" data-act="cmall">${ui.cmAll?'60 dernières séances':'Toutes les séances'}</button><button class="btn sm" data-act="cmimp">Importer un export (CSV)</button>${ui.cmImp?`<select class="f" style="width:auto" data-ui="cmInst" aria-label="Instrument à mettre à jour"><optgroup label="Analyse commodities">${Object.entries(CM_INST).map(([k,l])=>`<option value="${k}"${k===(ui.cmInst||'brent')?' selected':''}>${l}</option>`).join('')}</optgroup>${[...MKT_GROUPS.map(g=>g[0]),'Actions'].map(g=>`<optgroup label="${g}">${Object.values(MA).filter(x=>x.g===g&&!x.loc).map(x=>`<option value="${x.k}"${x.k===ui.cmInst?' selected':''}>${esc(x.l)}</option>`).join('')}</optgroup>`).join('')}</select><button class="btn pri sm" data-act="cmfile">Choisir le fichier</button>`:''}</span></h2><div class="tw" style="max-height:620px;overflow:auto">${table}</div></div>
     <div class="card s8"><h2>Paramètres des signaux <span class="meta">repris du classeur</span></h2>
       <div class="fields">${F('Fenêtre Z-score','cm.p.zWin','n',{u:'j'})}${F('Fenêtre percentile','cm.p.pctWin','n',{u:'j'})}${F('Corrélation court terme','cm.p.cS','n',{u:'j'})}${F('Corrélation moyen terme','cm.p.cM','n',{u:'j'})}${F('Corrélation forte au-delà de','cm.p.cStrong')}${F('Corrélation modérée au-delà de','cm.p.cMod')}${F('Z-score alerte','cm.p.zAlert')}${F('Z-score critique','cm.p.zCrit')}${F('Ratio Or/Argent refuge','cm.p.gsRef')}${F('Ratio Or/Brent déséquilibre','cm.p.gbDis')}</div></div>
     <div class="card s12"><h2><span>Seuils de mise en conditionnelle <span class="meta">états du marché : backwardation, contango, basis</span></span><span class="meta">valeurs du classeur par défaut, crayon pour modifier</span></h2>
@@ -163,11 +164,11 @@ function renderCM(){
       <tr><td>Cours quotidiens (spot, futurs M1, USD/CNH, S&P 500)</td><td>Exports Investing.com consolidés dans votre classeur TRADING_Dashboard, du ${fd(s.d[0])} au ${fd(lastD)}</td></tr>
       <tr><td>Règles d'état et de signal</td><td>Formules des onglets Tendance, Confirmation Brent et Confirmation Or-Argent du même classeur</td></tr>
       <tr><td>DXY</td><td>Non fourni dans le classeur : colonne à alimenter</td></tr>
-      ${Object.keys(S.cm.add||{}).filter(k=>Object.keys(S.cm.add[k]).length).map(k=>`<tr><td>${CM_INST[k]}</td><td>${Object.keys(S.cm.add[k]).length} séances importées par CSV</td></tr>`).join('')}
+      ${Object.keys(S.cm.add||{}).filter(k=>Object.keys(S.cm.add[k]).length).map(k=>{const mk=Object.keys(MA).find(x=>MA[x].k===k||MA[x].loc===k),m=(S.mktMeta||{})[mk];return`<tr><td>${esc(CM_INST[k]||(MA[k]||{l:k}).l)}</td><td>${Object.keys(S.cm.add[k]).length} séances ajoutées${m?' · '+esc(m.src)+', '+fdate(m.at.slice(0,10)):' (import CSV ou flux live)'}</td></tr>`;}).join('')}
     </tbody></table></div></div>
   </div>`;
-  queueChart('cm-ch',el=>cmMain(el,C,a,oil,!!ui.cmSplit),()=>'<p class="note">Graphique indisponible hors connexion.</p>');
-  if(ui.cmSplit)queueChart('cm-ch2',el=>cmLower(el,C,a),()=>'');
+  if(!noMain)queueChart('cm-ch',el=>cmMain(el,C,a,oil,!!ui.cmSplit),()=>'<p class="note">Graphique indisponible hors connexion.</p>');
+  if(ui.cmSplit&&!noMain)queueChart('cm-ch2',el=>cmLower(el,C,a),()=>'');
   mountCharts();
   if(ui.cmSplit&&CH['cm-ch']&&CH['cm-ch2']){const A1=CH['cm-ch'].timeScale(),A2=CH['cm-ch2'].timeScale();let lock=false;
     A1.subscribeVisibleLogicalRangeChange(r=>{if(lock||!r)return;lock=true;A2.setVisibleLogicalRange(r);lock=false;});A2.subscribeVisibleLogicalRangeChange(r=>{if(lock||!r)return;lock=true;A1.setVisibleLogicalRange(r);lock=false;});}
@@ -185,10 +186,11 @@ function cmAddOv(ch,C,a,band){const{R}=C,P=cmP();CM_OV.filter(o=>cmOv()[o.k]).fo
   ch.priceScale(id).applyOptions({scaleMargins:band?{top:.68,bottom:.02}:{top:.08,bottom:.08},visible:false});
   sr.setData(R.map(x=>{const v=o.v(x,a);return nn(v)?{time:x.d,value:+(+v).toFixed(4)}:null;}).filter(Boolean));
   if(o.z)[[+P.zCrit,TVC.down],[+P.zAlert,TVC.amber],[-P.zAlert,TVC.amber],[-P.zCrit,TVC.down]].forEach(([v,c])=>sr.createPriceLine({price:v,color:c,lineWidth:1,lineStyle:2,axisLabelVisible:false,title:''}));});}
-function cmMain(el,C,a,oil,split){const{s}=C,ch=lwBase(el,p=>nf(p,2)),pts=k=>s.d.map((d,i)=>s[k][i]!==null?{time:d,value:s[k][i]}:null).filter(Boolean);
-  ch.addLineSeries({color:'#E4E4E7',lineWidth:2,priceLineVisible:false,title:oil?'Brent':CM_ASSETS[a]}).setData(pts(a));
-  if(oil)ch.addLineSeries({color:'#6B8AB8',lineWidth:1,priceLineVisible:false,title:'WTI'}).setData(pts('wti'));
+function cmMain(el,C,a,oil,split){const X=mktX(),A=mktAll(),ch=lwBase(el,p=>nf(p,2)),tf=mktDraw(ch,X);
+  ch.addLineSeries({color:'#E4E4E7',lineWidth:2,priceLineVisible:false,title:(A[X.main]||{l:X.main}).l}).setData(tf(X.main));
+  if(X.main==='brent'&&!X.b100&&!X.cmp.includes('wti'))ch.addLineSeries({color:'#6B8AB8',lineWidth:1,priceLineVisible:false,title:'WTI'}).setData(mktPts('wti'));
   const any=CM_OV.some(o=>cmOv()[o.k]);ch.priceScale('right').applyOptions({scaleMargins:{top:.06,bottom:!split&&any?.36:.06}});
+  if(X.cmp.length&&!X.b100)ch.priceScale('left').applyOptions({scaleMargins:{top:.06,bottom:!split&&any?.36:.06}});
   if(!split)cmAddOv(ch,C,a,true);ch.timeScale().fitContent();return ch;}
 function cmLower(el,C,a){const ch=lwBase(el,p=>nf(p,2));if(!CM_OV.some(o=>cmOv()[o.k])){el.innerHTML='<p class="note" style="padding:10px">Activez au moins une puce pour afficher un indicateur ici.</p>';return ch;}cmAddOv(ch,C,a,false);ch.timeScale().fitContent();return ch;}
 function cmCell(st){const c=cmCls(st);return c==='ok'?['ok','Sain']:c==='ko'?['ko','Critique']:c==='am'?['am','Tendu']:['','—'];}

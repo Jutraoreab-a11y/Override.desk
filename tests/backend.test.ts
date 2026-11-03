@@ -85,3 +85,11 @@ test('risque : RR consolidé et lignes sans stop', () => {
   const r = summarize([{ risk_eur: 100, reward_eur: 250, stop_loss: 1 } as any, { risk_eur: null, reward_eur: 50, stop_loss: null } as any]);
   assert.equal(r.rr, 3); assert.equal(r.unprotected, 1);
 });
+
+test('BCE : paires du sélecteur universel déduites des taux de référence', async () => {
+  const { ecbCrosses } = await import('../lib/macro.ts');
+  const out = ecbCrosses([{ currency: 'USD', rate_date: '2026-10-30', rate: 1.16 }, { currency: 'GBP', rate_date: '2026-10-30', rate: 0.87 }, { currency: 'JPY', rate_date: '2026-10-30', rate: 174 }]);
+  const v = (i: string) => out.find(p => p.instrument === i)?.close;
+  assert.equal(v('EURUSD'), 1.16); assert.equal(v('GBPUSD'), +(1.16 / 0.87).toFixed(6)); assert.equal(v('USDJPY'), +(174 / 1.16).toFixed(6));
+  assert.equal(v('AUDUSD'), undefined);
+});

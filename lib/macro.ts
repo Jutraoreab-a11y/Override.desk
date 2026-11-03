@@ -29,3 +29,18 @@ export async function fetchEcb(f: typeof fetch = fetch): Promise<Array<{ currenc
   if (!date) throw new Error('BCE : date introuvable');
   return [...x.matchAll(/currency=['"]([A-Z]{3})['"]\s+rate=['"]([\d.]+)['"]/g)].map(m => ({ currency: m[1], rate_date: date, rate: parseFloat(m[2]) }));
 }
+/** Paires du sélecteur universel déduites des taux de référence BCE (1 EUR = x devise) :
+ *  EUR/USD = USD ; GBP/USD = USD / GBP ; USD/JPY = JPY / USD ; AUD/USD = USD / AUD ; USD/CAD = CAD / USD.
+ *  USD/CNH n'est pas publié par la BCE (elle publie le CNY onshore) : il reste alimenté par une autre source. */
+export function ecbCrosses(fx: Array<{ currency: string; rate_date: string; rate: number }>): PricePoint[] {
+  const by = new Map<string, Map<string, number>>();
+  fx.forEach(r => { if (!by.has(r.rate_date)) by.set(r.rate_date, new Map()); by.get(r.rate_date)!.set(r.currency, r.rate); });
+  const out: PricePoint[] = [], src = { source_name: 'BCE, taux de change de référence', source_url: 'https://www.ecb.europa.eu/stats/policy_and_exchange_rates/euro_reference_exchange_rates/html/index.en.html' };
+  by.forEach((m, d) => {
+    const usd = m.get('USD'); if (!usd) return;
+    const put = (instrument: PricePoint['instrument'], v: number | undefined) => { if (v && Number.isFinite(v)) out.push({ instrument, contract: 'SPOT', price_date: d, close: +v.toFixed(6), ...src }); };
+    put('EURUSD', usd); put('GBPUSD', m.has('GBP') ? usd / m.get('GBP')! : undefined); put('USDJPY', m.has('JPY') ? m.get('JPY')! / usd : undefined);
+    put('AUDUSD', m.has('AUD') ? usd / m.get('AUD')! : undefined); put('USDCAD', m.has('CAD') ? m.get('CAD')! / usd : undefined);
+  });
+  return out;
+}

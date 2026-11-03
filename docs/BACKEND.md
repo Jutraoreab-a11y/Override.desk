@@ -6,7 +6,7 @@ Architecture : fonctions serveur Vercel (Node 20, TypeScript) dans `api/v1/`, ba
 
 ## 1. Mise en service
 
-1. **Supabase** : créer un projet, puis exécuter `supabase/migrations/20261103000000_override_desk.sql` (éditeur SQL ou `supabase db push`). Le script est rejouable.
+1. **Supabase** : créer un projet, puis exécuter dans l'ordre les scripts de `supabase/migrations/` (éditeur SQL ou `supabase db push`) : `20261103000000_override_desk.sql`, puis `20261103180000_instruments_universe.sql` (instruments du sélecteur universel). Les scripts sont rejouables.
 2. **Auth** : Supabase > Authentication > Providers > Email activé (connexion par lien magique). Ajouter l'URL du site dans *Redirect URLs*.
 3. **Vercel** : importer le dépôt GitHub, framework « Other », aucune commande de build. Renseigner les variables d'environnement ci-dessous, puis déployer.
 4. **Front** : ouvrir le site déployé, cliquer sur le badge en haut à droite, saisir son e-mail, suivre le lien reçu. Si le front est hébergé ailleurs que le backend, renseigner « Adresse du backend » dans ce même panneau et définir `ALLOWED_ORIGIN` côté Vercel.
@@ -42,10 +42,10 @@ Authentification : jeton Supabase de l'utilisateur (`Authorization: Bearer <acce
 | `GET/POST/DELETE /api/v1/integrations/brokers` | Liste des connexions (jamais les identifiants), enregistrement chiffré + synchronisation (`action: save` ou `sync`), suppression |
 | `GET /api/v1/portfolio/pnl?start_date=AAAA-MM-JJ&end_date=AAAA-MM-JJ` | PnL latent et réalisé en EUR par portefeuille et par classe, risque (SL, TP, RR) |
 | `GET /api/v1/macro/commodities?from=…&to=…&series=…` | Séries alignées : prix, spread Brent-WTI, base, Z-score 60 j, corrélation CNH-Brent 20 j, ratio or/argent |
-| `POST /api/v1/macro/commodities` | Ajout manuel de cotations (or, argent, CNH… non couverts par l'EIA) |
+| `POST /api/v1/macro/commodities` | Ajout de cotations pour tout instrument du sélecteur universel : `BRENT`, `WTI`, `GOLD`, `SILVER`, `COPPER`, `NATGAS`, `EURUSD`, `GBPUSD`, `USDJPY`, `USDCNH`, `AUDUSD`, `USDCAD`, `SPX`, `NDX`, `DJI`, `DAX`, `CAC`, `NKX`, et les actions sous la forme `STK:<ticker>` (ex. `STK:AAPL`). Elles remontent automatiquement dans le graphique du volet 5 |
 | `POST /api/v1/ai/market-parser` | Lecture d'une page par l'IA. Chaque valeur est stockée dans `ai_sources` avec `source_url`, `source_name`, `timestamp_retrieved`, `confidence_score` |
 
-Tâches planifiées (`vercel.json`, en-tête `Authorization: Bearer $CRON_SECRET`) : ingestion macro du lundi au vendredi à 21 h 30 UTC, resynchronisation de tous les courtiers chaque jour à 6 h UTC.
+Tâches planifiées (`vercel.json`, en-tête `Authorization: Bearer $CRON_SECRET`) : ingestion macro du lundi au vendredi à 21 h 30 UTC (EIA, plus EUR/USD, GBP/USD, USD/JPY, AUD/USD et USD/CAD déduits des taux de référence BCE), resynchronisation de tous les courtiers chaque jour à 6 h UTC.
 
 ## 4. MetaTrader 4 et 5
 
@@ -85,7 +85,7 @@ Le crayon ✏️ force une valeur partout dans l'interface. Quand le flux live r
 
 ## 7. Tests
 
-- `npm test` : 13 tests unitaires (chiffrement, signatures Binance et Kraken comparées aux exemples officiels de leur documentation, signatures OKX et Coinbase, adaptateurs Binance, Kraken et IBKR, séries macro, validation du webhook MetaTrader, correspondance SocialTraderTools, score de confiance IA, risque RR).
+- `npm test` : 14 tests unitaires (chiffrement, signatures Binance et Kraken comparées aux exemples officiels de leur documentation, signatures OKX et Coinbase, adaptateurs Binance, Kraken et IBKR, séries macro, validation du webhook MetaTrader, correspondance SocialTraderTools, score de confiance IA, risque RR, paires de devises déduites de la BCE).
 - Test d'intégration effectué contre Postgres 16 et PostgREST 12 : isolation RLS entre utilisateurs, identifiants non lisibles, clé d'EA invalide refusée (403), conversions EUR, plage de dates invalide refusée (400), appels sans session refusés (401).
 
 Non testé en conditions réelles : compilation des EA dans MetaTrader, API SocialTraderTools, comptes Saxo, IBKR, Coinbase et OKX réels.

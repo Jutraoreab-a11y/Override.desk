@@ -71,7 +71,10 @@ export interface PositionRisk {
 export interface RiskSummary { risk_eur: number; reward_eur: number; rr: number | null; unprotected: number; }
 
 /* ---------- Macro ---------- */
-export type Instrument = 'BRENT' | 'WTI' | 'GOLD' | 'SILVER' | 'USDCNH' | 'SPX';
+export type Instrument = 'BRENT' | 'WTI' | 'GOLD' | 'SILVER' | 'COPPER' | 'NATGAS'
+  | 'EURUSD' | 'GBPUSD' | 'USDJPY' | 'USDCNH' | 'AUDUSD' | 'USDCAD'
+  | 'SPX' | 'NDX' | 'DJI' | 'DAX' | 'CAC' | 'NKX'
+  | `STK:${string}`;   // actions : STK:<ticker>, ex. STK:AAPL
 export type Contract = 'SPOT' | 'M1' | 'M2' | 'M3';
 export interface PricePoint { instrument: Instrument; contract: Contract; price_date: string; open?: number | null; close: number; source_name: string; source_url?: string; }
 export type SeriesName = 'SPREAD_BRENT_WTI' | 'BASIS_BRENT' | 'BASIS_GOLD' | 'BASIS_SILVER' | 'ZSCORE_SPREAD_60' | 'CORR_CNH_BRENT_20' | 'RATIO_GOLD_SILVER';

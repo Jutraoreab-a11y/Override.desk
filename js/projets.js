@@ -22,8 +22,8 @@ function nextLabel(p,mod){if(mod==='an')return'Analyse '+(S.an.assets[ui.tk].t||
 function verSummary(mod,v){
   const keep=mod==='bp'?S.bp:{a:S.an.assets[v.data.tk],c:S.an.crit};
   try{
-    if(mod==='bp'){S.bp=v.data;const r=bpCalc(),AL=bpAlerts(r),ko=AL.filter(a=>a.l==='ko').length,Hy=r.Y[r.H-1];
-      return{rows:[['CA année 1',big(r.Y[0].rev)],['CA année '+r.H,big(Hy.rev)],['EBITDA année '+r.H,big(Hy.ebitda)],['Marge EBITDA A'+r.H,pct(Hy.em,0)],['Point mort EBITDA',r.be?'Année '+r.be.t:'Non atteint'],['Point bas de trésorerie',big(r.min.cash)],['Financements mobilisés',big(r.funding)],['LTV / CAC',nf(r.ratio,1)+'×'],['Prix moyen mensuel',nf(+v.data.arpu,0)+' €'],['Clients année 1',nf(+v.data.clients1,0)],['Statut',ko?'Non viable en l\'état':AL.length?'Cohérent sous réserves':'Cohérent']]};}
+    if(mod==='bp'){S.bp=v.data;const r=bpCalc(),AL=bpAlerts(r),ko=AL.filter(a=>a.l==='ko').length,Hy=r.Y[r.H-1],GO=bpGo(r,AL,DAMO[S.bp.sector]||DAMO.saas);
+      return{rows:[['Zone',esc(r.z.l)],['TAM de la zone',big(r.tam)],['Verdict',GO.verdict[1]+' ('+GO.score+'/100)'],['CA année 1',big(r.Y[0].rev)],['CA année '+r.H,big(Hy.rev)],['EBITDA année '+r.H,big(Hy.ebitda)],['Marge EBITDA A'+r.H,pct(Hy.em,0)],['Point mort EBITDA',r.be?'Année '+r.be.t:'Non atteint'],['Point bas de trésorerie',big(r.min.cash)],['Financements mobilisés',big(r.funding)],['LTV / CAC',nf(r.ratio,1)+'×'],['Prix moyen mensuel',nf(+v.data.arpu,0)+' €'],['Clients année 1',nf(+v.data.clients1,0)],['Statut',ko?'Non viable en l\'état':AL.length?'Cohérent sous réserves':'Cohérent']]};}
     S.an.assets[v.data.tk]=v.data.asset;S.an.crit=v.data.crit;const r=anCalc(v.data.tk),a=v.data.asset;
     return{rows:[['Titre',esc(a.t)+' · '+esc(a.n)],['Cours retenu',nf(+a.price,2)+' '+esc(a.cur)],['Date du cours',esc(a.pxDate||'—')],['Valeur de référence',nf(r.ref,2)],['Potentiel',isFinite(r.up)?sgn(r.up*100,0):'—'],['Prix d\'achat cible',nf(r.buy,2)],['Stop-loss',nf(r.sl,2)],['Take-profit',nf(r.tp,2)],['Décision',r.positive?'POSITIVE':'NÉGATIVE']]};
   }catch(e){return{rows:[['Calcul',"impossible sur cette version"]]};}

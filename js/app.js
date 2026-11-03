@@ -17,8 +17,8 @@ function renderAB(){
 /* ============ Rendu global ============ */
 const MODS=[['bp','Business plan','bp'],['an','Analyse financière','an'],['sc','Sélecteur & mapping','sc'],['lbo','Dossier LBO','lbo'],['pf','Suivi & placements','pf'],['cm','Commodities & flows','cm'],['pc','Calculateur de position','pc'],['jr','Journal de trading','jr']];
 const PANELS=['bp','an','sc','lbo','pf','cm','pc','jr','ab'];
-const RAILG=[["Finance<br>d'entreprise",5],['Finance<br>de marché',3]];
-const BPSEC=['Fiche de renseignements','Executive summary et offre','Étude de marché : secteur','La demande','L\'offre et la concurrence','Marketing, offre et prix','Stratégie et lancement','Porteur et structure','Paramètres et marché adressable','Prévisionnel financier','Annexes'];
+const RAILG=[["Finance <br>d'entreprise",5],['Finance <br>de marché',3]];
+const BPSEC=['Fiche de renseignements','Executive summary et offre','Étude de marché : secteur','La demande','L\'offre et la concurrence','Marketing, offre et prix','Stratégie et lancement','Porteur et structure','Paramètres et marché adressable','Prévisionnel financier','Diagnostic et verdict Go / No-Go','Annexes'];
 let lastCalc=new Date();
 function bpState(){const r=bpCalc(),AL=bpAlerts(r),ko=AL.filter(a=>a.l==='ko').length;return{r,AL,ko,res:AL.length-ko,st:ko?['ko',"Modèle non viable en l'état"]:AL.length?['am','Cohérent sous réserves']:['ok','Modèle cohérent']};}
 function ctxHTML(){
@@ -37,7 +37,7 @@ function sideHTML(){
   if(ui.tab==='bp'){const{r,ko,res,st}=bpState(),Hy=r.Y[r.H-1],k=r.mk;
     return`<div class="sideh">Synthèse du modèle</div>
     <div class="vbox ${st[0]}"><b><span class="dot ${st[0]}"></span>${st[1]}</b><span>${ko} point${ko>1?'s':''} bloquant${ko>1?'s':''}, ${res} réserve${res>1?'s':''}</span></div>
-    ${kv('CA année '+r.H,big(Hy.rev))}${kv('EBITDA année '+r.H,big(Hy.ebitda),Hy.ebitda<0)}${kv('Point mort EBITDA',r.be?'Année '+r.be.t:'Non atteint',!r.be)}${kv('Point bas de trésorerie',big(r.min.cash),r.min.cash<0)}${kv('LTV / CAC',nf(r.ratio,1)+'×',r.ratio<3)}${kv('Part de marché A'+r.H,pct(k.proj[k.proj.length-1].sv,2))}${kv('Tamis OVERRIDE',k.passN+'/4',k.passN<4)}
+    ${kv('CA année '+r.H,big(Hy.rev))}${kv('EBITDA année '+r.H,big(Hy.ebitda),Hy.ebitda<0)}${kv('Point mort EBITDA',r.be?'Année '+r.be.t:'Non atteint',!r.be)}${kv('Point bas de trésorerie',big(r.min.cash),r.min.cash<0)}${kv('LTV / CAC',nf(r.ratio,1)+'×',r.ratio<3)}${kv('Part de marché A'+r.H,pct(k.proj[k.proj.length-1].sv,2))}${kv('Tamis OVERRIDE',k.passN+'/4',k.passN<4)}${(()=>{const G=bpGo(r,bpAlerts(r),DAMO[S.bp.sector]||DAMO.saas);return kv('Verdict ('+G.score+'/100)',G.verdict[1],G.verdict[0]!=='ok');})()}
     <div class="sideh" style="margin-top:8px">Sections</div>
     <div class="secl">${BPSEC.map((t,i)=>`<button data-act="goto" data-id="bp-s${i}"><span>${String(i).padStart(2,'0')}</span>${t}</button>`).join('')}</div>`;}
   if(ui.tab==='an'){const A=S.an.assets,R=Object.keys(A).map(k=>[k,anCalc(k)]),np=R.filter(x=>x[1].positive).length;
@@ -82,7 +82,7 @@ function statusHTML(){
 }
 function renderAll(){
   document.body.classList.toggle('editing',ui.edit);
-  $('#rail').innerHTML=(()=>{let o=0;return RAILG.map(([g,n])=>{const it=MODS.slice(o,o+n);o+=n;return`<div class="rg" role="group" aria-label="${g.replace('<br>',' ')}"><span class="rg-l">${g}</span>${it.map(([k,l,i])=>`<button class="rb" data-act="tab" data-id="${k}" title="${l}"${ui.tab===k?' aria-current="page"':''}>${ic(i)}<span>${l}</span></button>`).join('')}</div>`;}).join('');})()+`<span class="rail-sp"></span><button class="rb" data-act="tab" data-id="ab" title="Abonnement"${ui.tab==='ab'?' aria-current="page"':''}>${ic('ab')}<span>Offre</span></button>`;
+  $('#rail').innerHTML=(()=>{let o=0;return RAILG.map(([g,n])=>{const it=MODS.slice(o,o+n);o+=n;return`<div class="rg" role="group" aria-label="${g.replace(' <br>',' ')}"><span class="rg-l">${g}</span>${it.map(([k,l,i])=>`<button class="rb" data-act="tab" data-id="${k}" title="${l}"${ui.tab===k?' aria-current="page"':''}>${ic(i)}<span>${l}</span></button>`).join('')}</div>`;}).join('');})()+`<span class="rail-sp"></span><button class="rb" data-act="tab" data-id="ab" title="Abonnement"${ui.tab==='ab'?' aria-current="page"':''}>${ic('ab')}<span>Offre</span></button>`;
   $('#ctx').innerHTML=ctxHTML();
   PANELS.forEach(k=>$('#p-'+k).classList.toggle('on',ui.tab===k));
   renderBP();renderAN();renderSC();renderLBO();renderPF();renderCM();renderPC();renderJR();renderAB();
@@ -173,7 +173,7 @@ document.addEventListener('click',e=>{
     case 'delrow':{const l=b.dataset.list;getP(S,l).splice(+b.dataset.i,1);pending.add(l);renderAll();break;}
     case 'addco':{const nid='c'+Date.now();S.sc.list.push(co(nid,'Nouveau dossier',ui.secTarget,5,5,5,5,5,5,0,0,1,10,8,{ebm:0,fund:'Capital-risque',serial:0,tier:'',tgt:0},['','','','','','','','','','']));ui.sel=nid;pending.add('co');renderAll();break;}
     case 'bp2sc':bpToSelector();ui.tab='sc';renderAll();save();$('#main').scrollTop=0;toast('Projet envoyé au Sélecteur et positionné sur le mapping de son secteur');break;
-    case 'cma':ui.cmA=id;renderAll();save();break;
+    case 'cma':ui.cmA=id;if(typeof mktX==='function'){const X=mktX();X.main=id;X.cmp=X.cmp.filter(k=>k!==id);}renderAll();save();break;
     case 'cmt':ui.cmT=id;renderAll();save();break;
     case 'cmall':ui.cmAll=!ui.cmAll;renderAll();save();break;
     case 'cmimp':ui.cmImp=!ui.cmImp;if(!ui.cmInst)ui.cmInst='brent';renderAll();break;
@@ -195,6 +195,10 @@ document.addEventListener('click',e=>{
     case 'cmfile':$('#cmFile').click();break;
     case 'fluxopen':ui.fluxOpen=!ui.fluxOpen;renderFlux();break;
     case 'fluxclose':ui.fluxOpen=false;renderFlux();break;
+    case 'tamlv':ui.tamLv=+id;renderAll();break;
+    case 'zonedup':ui.zoneDup=!ui.zoneDup;renderAll();break;
+    case 'zonedupgo':{const el=document.querySelector('[data-zonedup]');if(!el)break;if(el.value===(S.bp.scope||'K:France')){toast('Choisissez une zone différente de la zone actuelle');break;}bpZoneDup(el.value);break;}
+    case 'mktbase':S.bp.mkt.base=S.bp.scope||'K:France';recalc('Données de marché rattachées à la zone du business plan');break;
     case 'liverefresh':liveRefresh(false);break;
     case 'liveinit':save();liveInit().then(()=>toast(FLUX.status&&FLUX.status.backend?'Backend joignable':'Backend injoignable : mode simulation conservé'));break;
     case 'login':{const em=(($('#liveEmail')||{}).value||'').trim();if(!FLUX.sb||!em){toast('Saisissez votre e-mail');break;}FLUX.sb.auth.signInWithOtp({email:em,options:{emailRedirectTo:location.href.split('#')[0]}}).then(r=>toast(r.error?'Envoi impossible : '+r.error.message:'Lien de connexion envoyé à '+em));break;}
@@ -231,8 +235,8 @@ document.addEventListener('click',e=>{
     case 'buy':toast('Paiement à brancher au déploiement : Stripe Checkout et droits Supabase');break;
   }
 });
-$('#cmFile').addEventListener('change',e=>{const f=e.target.files[0];if(!f)return;const rd=new FileReader();rd.onload=()=>{const n=cmImport(String(rd.result),ui.cmInst||'brent');e.target.value='';save();renderAll();toast(n?`${n} séances importées pour ${CM_INST[ui.cmInst||'brent']}`:'Fichier non reconnu : colonnes Date et Dernier attendues');};rd.readAsText(f);});
-renderAll();
+$('#cmFile').addEventListener('change',e=>{const f=e.target.files[0];if(!f)return;const rd=new FileReader();rd.onload=()=>{const n=cmImport(String(rd.result),ui.cmInst||'brent');e.target.value='';save();renderAll();toast(n?`${n} séances importées pour ${(CM_INST[ui.cmInst||'brent']||(mktAll()[ui.cmInst]||{}).l)}`:'Fichier non reconnu : colonnes Date et Dernier attendues');};rd.readAsText(f);});
+layoutInit();renderAll();
 
 $('#mt5File').addEventListener('change',e=>{const f=e.target.files[0];if(!f)return;readReport(f,txt=>{const r=mt5Ingest(txt,f.name);e.target.value='';save();renderAll();
   toast(r.tot?`${r.tot} position${r.tot>1?'s':''} lue${r.tot>1?'s':''} dans le rapport, ${r.n} nouvelle${r.n>1?'s':''} ajoutée${r.n>1?'s':''} au journal`:r.info.balance!=null?'Rapport lu : solde et fonds propres mis à jour':'Rapport non reconnu : exportez l\'historique MT5 au format HTML');});});

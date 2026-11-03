@@ -7,7 +7,7 @@ function geoSel(path,o={}){const v=getP(S,path)||'W',op=(k,l)=>`<option value="$
   let h=`<select class="f lf" data-lk="${path}" data-lt="s" aria-label="${esc(o.al||'Périmètre géographique')}" style="${o.style||''}">${op('W','Monde')}<optgroup label="Continents et régions">${Object.entries(GEO_CONT).map(([k,l])=>op('C:'+k,l)).join('')}${op('EU27','Union européenne (27)')}</optgroup>`;
   Object.entries(GEO_CONT).forEach(([k,l])=>{h+=`<optgroup label="${esc(l)}">${GEO.filter(c=>c[1]===k).map(c=>c[0]).sort((a,b)=>a.localeCompare(b,'fr')).map(n=>op('K:'+n,n)).join('')}</optgroup>`;});
   return h+'</select>';}
-const FICHE=[['Nom du projet','bp.name'],['Porteur principal','bp.fiche.porteur'],['Stade','bp.fiche.stade'],['Secteur','bp.sector'],['Périmètre de l\'étude de marché','bp.scope'],['Type d\'activité','bp.fiche.bmType'],['Mode de rémunération','bp.fiche.revType'],['Ce que l\'on vend','bp.whatSell',30],['À qui on le vend','bp.fiche.forWho',30],['Avantage injuste (edge)','bp.edge',30],['Objet du business plan','bp.fiche.besoin',15],['Prix moyen mensuel par client','bp.arpu'],['Clients en année 1','bp.clients1'],['Année de démarrage','bp.startY']];
+const FICHE=[['Nom du projet','bp.name'],['Porteur principal','bp.fiche.porteur'],['Stade','bp.fiche.stade'],['Secteur','bp.sector'],['Zone géographique','bp.scope'],['Type d\'activité','bp.fiche.bmType'],['Mode de rémunération','bp.fiche.revType'],['Ce que l\'on vend','bp.whatSell',30],['À qui on le vend','bp.fiche.forWho',30],['Avantage injuste (edge)','bp.edge',30],['Objet du business plan','bp.fiche.besoin',15],['Prix moyen mensuel par client','bp.arpu'],['Clients en année 1','bp.clients1'],['Année de démarrage','bp.startY']];
 function ficheMiss(){const b=S.bp,m=FICHE.filter(([l,p,n])=>{const v=getP(S,p);return v===null||v===undefined||String(v).trim()===''||(n&&String(v).trim().length<n)||(typeof v==='number'&&!(v>0));}).map(x=>x[0]);
   if(!b.team.length||!b.team.some(x=>String(x.p||'').trim().length>=40))m.push('Parcours des fondateurs (section 2)');
   if(String(b.teamTxt||'').trim().length<40)m.push('Complémentarité et résilience de l\'équipe');return m;}
@@ -56,8 +56,11 @@ const ROWTPL={'bp.capTable':{n:'Nouvel associé',r:'',ap:0,pct:0},'bp.milestones
 const kk=v=>isFinite(v)?nf(Math.round(v/1000),0):'—';
 const isOv=ps=>ps.some(p=>JSON.stringify(getP(S,p))!==JSON.stringify(getP(DEF,p)));
 function bpCalc(){
-  const b=S.bp,s=SECT[b.sector]||SECT.saas,z=ZONE[b.zone]||ZONE.eu,H=Math.max(3,Math.min(5,+b.h||5));
-  const tamAuto=s.tam*z.s,tam=b.tamOv>0?b.tamOv*1e6:tamAuto,cagr=b.cagrOv>0?b.cagrOv:s.cagr;
+  const b=S.bp,s=SECT[b.sector]||SECT.saas,H=Math.max(3,Math.min(5,+b.h||5));
+  /* v7 : une seule zone (fiche). TAM = TAM mondial du secteur × poids de la zone dans le PIB mondial (FMI), CAGR ajusté de la croissance de la zone. */
+  const zG=geoAgg(b.scope||'K:France'),zi=secInGeo(SECT[b.sector]?b.sector:'saas',zG),z={l:zG.lab,s:zG.share,src:bpZone().src};
+  bpGeoMigrate(b);if(b===S.bp)bpV7Init();
+  const tamAuto=zi.tam,tam=b.tamOv>0?b.tamOv*1e6:tamAuto,cagr=b.cagrOv>0?b.cagrOv:+zi.cagr.toFixed(2);
   const sam=tam*b.samPct/100,som=sam*b.somPct/100;
   const chS=b.channels.reduce((a,c)=>a+(+c.sh||0),0),cac=chS?b.channels.reduce((a,c)=>a+(+c.sh||0)*(+c.cac||0),0)/chS:0;
   const gm=b.gm/100,churn=b.churn/100,amortM=Math.max(1,b.amortY*12),princ=b.loanY>0?b.loan/(b.loanY*12):0;
@@ -154,7 +157,7 @@ const REG=[
 ];
 function etable(list,cols){
   const arr=getP(S,list)||[],E=ui.edit;
-  return `<div class="tw"><table class="tbl"><thead><tr>${cols.map(c=>`<th class="${c[2]==='n'?'n':''}">${c[1]}</th>`).join('')}${E?'<th></th>':''}</tr></thead><tbody>${arr.map((_,i)=>`<tr>${cols.map(c=>`<td class="${c[2]==='n'?'n':''}"${c[3]?` style="${c[3]}"`:''}>${fld(`${list}.${i}.${c[0]}`,c[2]||'t',{rows:2,al:c[1]})}</td>`).join('')}${E?`<td><button class="btn sm ghost" data-act="delrow" data-list="${list}" data-i="${i}" aria-label="Supprimer la ligne">✕</button></td>`:''}</tr>`).join('')}</tbody></table></div>${E?`<button class="btn sm" data-act="addrow" data-list="${list}" style="margin-top:8px">Ajouter une ligne</button>`:''}`;
+  return `<div class="tw"><table class="tbl"><thead><tr>${cols.map(c=>`<th class="${c[2]==='n'?'n':''}">${c[1]}</th>`).join('')}${E?'<th></th>':''}</tr></thead><tbody>${arr.map((_,i)=>`<tr>${cols.map(c=>`<td class="${c[2]==='n'?'n':''}"${c[3]?` style="${c[3]}"`:''}>${fld(`${list}.${i}.${c[0]}`,c[2]||'t',Object.assign({rows:2,al:c[1]},c[4]?{opts:c[4]}:{}))}</td>`).join('')}${E?`<td><button class="btn sm ghost" data-act="delrow" data-list="${list}" data-i="${i}" aria-label="Supprimer la ligne">✕</button></td>`:''}</tr>`).join('')}</tbody></table></div>${E?`<button class="btn sm" data-act="addrow" data-list="${list}" style="margin-top:8px">Ajouter une ligne</button>`:''}`;
 }
 function ftable(head,rows){
   return `<div class="tw"><table class="tbl fin"><thead><tr><th>k€</th>${head.map(h=>`<th class="n">${h}</th>`).join('')}</tr></thead><tbody>${rows.map(r=>r[0]==='§'?`<tr class="sec"><td colspan="${head.length+1}">${r[1]}</td></tr>`:`<tr class="${r[2]||''}"><td>${r[0]}</td>${r[1].map(v=>`<td class="n${r[3]&&v<-0.5?' down':''}">${typeof v==='string'?v:kk(v)}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`;
@@ -199,12 +202,12 @@ function renderBP(){
   const k=r.mk,m=b.mkt;
   const SF=DAMO[b.sector]||DAMO.saas,PO=b.porter.length?sum(b.porter.map(f=>+f.s||0))/b.porter.length:NaN,FR=y=>(y.bal.capital+y.bal.grant+y.bal.retained+y.bal.debt-y.bal.fixed)/y.rev*365;
   let __h=`
-  <div class="ph"><div><h1>${esc(b.name)||'Projet sans nom'}</h1><p>Business plan ${esc(r.s.l)}, étude de marché ${esc(bpScope().G.lab)}, TAM ${esc(r.z.l)}, horizon ${H} ans.</p></div></div>
+  <div class="ph"><div><h1>${esc(b.name)||'Projet sans nom'}</h1><p>Business plan ${esc(r.s.l)}, zone ${esc(r.z.l)}, horizon ${H} ans.</p></div></div>
   <div class="grid">${prjBar('bp')}</div>
   ${(()=>{const fm=ficheMiss(),tot=FICHE.length+2,ok=tot-fm.length,f='bp.fiche';return`<section class="bps" id="bp-s0"><div class="bph"><span class="bpn">00</span><h2>Fiche de renseignements</h2><span class="tag ${fm.length?'ko':'ok'}" style="margin-left:auto">${fm.length?`${fm.length} élément${fm.length>1?'s':''} manquant${fm.length>1?'s':''}`:'Complète'}</span></div><div class="grid">
     <div class="card s12"><div class="meter${fm.length?' lo':''}" style="margin-bottom:8px"><b style="width:${ok/tot*100}%"></b></div><p class="note" style="margin:0">${fm.length?`Obligatoire avant toute diffusion : ${fm.map(esc).join(', ')}. Les champs ci-dessous restent modifiables en permanence et alimentent directement le business plan.`:'Toutes les informations indispensables sont renseignées : le business plan est qualifié.'}</p></div>
     <div class="card s4"><h2>Identité du projet</h2><div class="fields one">${LF('Nom du projet','bp.name','t',{req:1})}${LF('Porteur principal','bp.fiche.porteur','t',{req:1})}${LF('Forme juridique','bp.fiche.forme','t',{ph:'SAS, SARL…'})}${LF('Ville du siège','bp.fiche.ville','t')}${LF('Création prévue','bp.fiche.created','m')}${LF('Stade du projet','bp.fiche.stade','s',{opts:STAGES,req:1})}</div></div>
-    <div class="card s4"><h2>Marché et modèle</h2><div class="fields one">${LF('Secteur','bp.sector','s',{opts:sectOpts,req:1})}<label class="fld"><span class="lb">Périmètre de l'étude de marché <b class="req">*</b></span><span class="fv">${geoSel('bp.scope')}</span></label>${LF('Type d\'activité','bp.fiche.bmType','s',{opts:BM_TYPES,req:1})}${LF('Mode de rémunération','bp.fiche.revType','s',{opts:REV_TYPES,req:1})}${LF('Prix moyen mensuel par client','bp.arpu','n',{u:'€',req:1})}${LF('Clients en année 1','bp.clients1','n',{req:1})}${LF('Année de démarrage','bp.startY','n',{req:1})}</div></div>
+    <div class="card s4"><h2>Marché et modèle</h2><div class="fields one">${LF('Secteur','bp.sector','s',{opts:sectOpts,req:1})}<label class="fld"><span class="lb">Zone géographique (pays d'exercice ou zone) <b class="req">*</b></span><span class="fv">${geoSel('bp.scope',{al:'Zone géographique du business plan'})}</span></label>${LF('Type d\'activité','bp.fiche.bmType','s',{opts:BM_TYPES,req:1})}${LF('Mode de rémunération','bp.fiche.revType','s',{opts:REV_TYPES,req:1})}${LF('Prix moyen mensuel par client','bp.arpu','n',{u:'€',req:1})}${LF('Clients en année 1','bp.clients1','n',{req:1})}${LF('Année de démarrage','bp.startY','n',{req:1})}</div></div>
     <div class="card s4"><h2>Objet et financement</h2><div class="fields one">${LF('Objet du business plan','bp.fiche.besoin','a',{rows:3,req:1})}${LF('Montant de la levée','bp.raise','n',{u:'€'})}${LF('Apports des fondateurs','bp.equity','n',{u:'€'})}${LF('Horizon du prévisionnel','bp.h','s',{opts:{'3':'3 ans','4':'4 ans','5':'5 ans'}})}</div></div>
     <div class="card s4"><h2>Que vend-on ? <b class="req">*</b></h2>${lin('bp.whatSell','a',{rows:4,al:"Ce que l'on vend",ph:"Le produit ou service exact, sans jargon"})}</div>
     <div class="card s4"><h2>À qui le vend-on ? <b class="req">*</b></h2>${lin(f+'.forWho','a',{rows:4,al:'À qui',ph:'Type de client, taille, acheteur et décideur'})}</div>
@@ -222,7 +225,7 @@ function renderBP(){
         <div><span class="lb">Stade et objet</span><p>${esc(STAGES[b.fiche.stade]||'')}. ${esc(b.fiche.besoin)}</p></div>
       </div></div>
     <div class="card s12"><h2>Nature de l'offre : ce que l'on vend</h2>${fld('bp.whatSell','a',{rows:3,al:"Ce que l'on vend"})}</div>
-    <div class="card s4"><h2>Projet</h2><div class="fields one">${F('Nom du projet','bp.name','t')}${F('Secteur','bp.sector','s',{opts:sectOpts})}${F('Zone du TAM','bp.zone','s',{opts:zoneOpts})}<label class="fld"><span class="lb">Périmètre de l'étude de marché</span><span class="fv">${geoSel('bp.scope')}</span></label>${F('Horizon du prévisionnel','bp.h','s',{opts:{'3':'3 ans','4':'4 ans','5':'5 ans'}})}</div></div>
+    <div class="card s4"><h2>Projet</h2><div class="fields one">${F('Nom du projet','bp.name','t')}${F('Secteur','bp.sector','s',{opts:sectOpts})}<div class="fld"><span class="lb">Zone géographique</span><span class="v">${esc(r.z.l)} <span class="meta">(sélecteur unique : fiche de renseignements)</span></span></div>${F('Horizon du prévisionnel','bp.h','s',{opts:{'3':'3 ans','4':'4 ans','5':'5 ans'}})}</div></div>
     <div class="card s8"><div class="stats">
       <div class="stat"><div class="k">CA année ${H}</div><div class="x">${big(Hy.rev)}</div><div class="d">${pct(r.somShare,1)} du SOM</div></div>
       <div class="stat"><div class="k">EBITDA année ${H}</div><div class="x ${cls(Hy.ebitda)}">${big(Hy.ebitda)}</div><div class="d">Marge ${pct(Hy.em,0)}</div></div>
@@ -244,8 +247,10 @@ function renderBP(){
       <p class="note">Total des apports ${big(ap)} pour ${pct(pc,0)} du capital${Math.abs(pc-100)>0.5?' <span class="down">(la répartition doit totaliser 100 %)</span>':''}${Math.abs(ap-(+b.equity))>1?` ; <span class="down">écart avec les apports du modèle financier (${big(+b.equity)})</span>`:' ; cohérent avec les apports du modèle financier'}. La levée de ${big(+b.raise)} au mois ${b.raiseM} diluera ces pourcentages.</p></div>
     <div class="card s5"><h2>Gouvernance et pacte d'associés</h2>${fld('bp.gouv','a',{rows:6})}</div>`;})()}`)}
   ${sec(3,'Étude de marché et analyse granulaire',`
-    <div class="card s12 noprint"><div class="row" style="gap:12px;flex-wrap:wrap;align-items:center"><span class="lb" style="margin:0">Périmètre de l'étude</span>${geoSel('bp.scope',{style:'width:auto;max-width:260px'})}<span class="lb" style="margin:0">Données saisies pour</span>${geoSel('bp.mkt.base',{style:'width:auto;max-width:200px'})}
-      <span class="meta">${k.sc.same?`Valeurs de marché telles que saisies pour ${esc(k.sc.G.lab)}.`:`Valeurs ramenées à ${esc(k.sc.G.lab)} : marché saisi pour ${esc(k.sc.B.lab)} × ${nf(k.sc.fac,2)} (rapport des PIB, FMI WEO). Estimation à remplacer par une étude du périmètre dès que possible.`}</span>${k.sc.same?'':'<span class="tag am">Estimation</span>'}</div></div>
+    <div class="card s12 zonebar"><div class="row" style="gap:10px;flex-wrap:wrap;align-items:center">
+      <span class="lb" style="margin:0">Zone du business plan</span><b>${esc(k.sc.G.lab)}</b><span class="meta">sélecteur unique dans la fiche de renseignements</span>
+      <span class="noprint" style="margin-left:auto;display:flex;gap:6px;flex-wrap:wrap;align-items:center">${ui.zoneDup?`${geoSel('ui.zoneDupK',{al:'Nouvelle zone',style:'width:auto;max-width:240px'}).replace('data-lk="ui.zoneDupK"','data-zonedup="1"')}<button class="btn pri sm" data-act="zonedupgo">Créer la version</button><button class="btn sm" data-act="zonedup">Annuler</button>`:`<button class="btn sm" data-act="zonedup">Dupliquer le BP sur une autre zone</button>`}</span></div>
+      <p class="note" style="margin:6px 0 0">${k.sc.same?`Données de marché saisies pour ${esc(k.sc.G.lab)}. Le BP peut combiner des données nationales (historique, régions, villes), régionales et mondiales (extension internationale, TAM continent et monde) : chaque tableau indique sa propre échelle.`:`Les données de marché ont été saisies pour <b>${esc(k.sc.B.lab)}</b> : elles sont ramenées à ${esc(k.sc.G.lab)} par le rapport des PIB (× ${nf(k.sc.fac,2)}, FMI WEO). <span class="tag am">Estimation</span> <button class="btn sm noprint" data-act="mktbase">Ces données concernent ${esc(k.sc.G.lab)}</button>`}</p></div>
     <div class="card s12"><h2><span>Historique du marché sur 5 ans <span class="meta">${esc(m.label)}${k.sc.same?'':', ramené à '+esc(k.sc.G.lab)+' (estimation)'}</span></span>${srcTag(m.src)}</h2>
       <div class="stats">
         <div class="stat"><div class="k">Valeur du marché ${k.last.y}</div><div class="x">${nf(k.last.v,0)} M€</div><div class="d ${cls(k.yoyV[k.n-1])}">${sgn(k.yoyV[k.n-1])} sur un an</div></div>
@@ -287,23 +292,12 @@ function renderBP(){
       <h2>Extension Europe et international</h2>
       ${etable('bp.mkt.intl',[['n','Pays','t'],['v','Marché (M€)','n','width:90px'],['ph','Phase','t','width:110px'],['note','Commentaire','t']])}
       <div class="fields" style="margin-top:10px">${F('Source géographique','bp.mkt.srcGeo','t',{ph:'Source'})}</div></div>
-    <div class="card s12"><h2><span>Repères financiers du secteur <span class="meta">${esc(SF.ind)}, ${SF.firms} sociétés cotées</span></span><span class="tag ok">Sourcé</span></h2>
-      <div class="tw"><table class="tbl"><thead><tr><th>Indicateur</th><th class="n">Moyenne du secteur</th><th class="n">Projet A1</th><th class="n">Projet A${H}</th><th>Lecture</th></tr></thead><tbody>
-        <tr><td>BFR moyen</td><td class="n">${pct(SF.wc,1)} du CA (${nf(SF.wc/100*365,0)} j)</td><td class="n">${nf(Yr[0].bal.bfr/Yr[0].rev*365,0)} j</td><td class="n">${nf(Hy.bal.bfr/Hy.rev*365,0)} j</td><td class="meta">${Hy.bal.bfr/Hy.rev*365>SF.wc/100*365*1.5?'BFR plus lourd que le secteur':'cohérent avec le secteur'}</td></tr>
-        <tr><td>FRNG moyen</td><td class="n">${fld('bp.frng','nn',{empty:'non publié',al:'FRNG moyen du secteur (jours de CA)'})}${b.frng!==null&&b.frng!==''&&b.frng!==undefined?' j':''}</td><td class="n">${nf(FR(Yr[0]),0)} j</td><td class="n">${nf(FR(Hy),0)} j</td><td class="meta">FRNG du projet : capitaux permanents moins immobilisations</td></tr>
-        <tr><td>Taux d'EBITDA moyen</td><td class="n">${pct(SF.ebm,1)}</td><td class="n">${pct(Yr[0].em,1)}</td><td class="n">${pct(Hy.em,1)}</td><td class="meta">${Hy.em>SF.ebm+20?'au-dessus de la moyenne : à justifier':'dans la norme ou en deçà'}</td></tr>
-        <tr><td>Marge opérationnelle</td><td class="n">${pct(SF.opm,1)}</td><td class="n">${pct(Yr[0].ebit/Yr[0].rev*100,1)}</td><td class="n">${pct(Hy.ebit/Hy.rev*100,1)}</td><td></td></tr>
-        <tr><td>Marge nette moyenne</td><td class="n">${pct(SF.nm,1)}</td><td class="n">${pct(Yr[0].net/Yr[0].rev*100,1)}</td><td class="n">${pct(Hy.net/Hy.rev*100,1)}</td><td></td></tr>
-        <tr><td>PER (sociétés bénéficiaires)</td><td class="n">${nf(SF.pe,1)}×</td><td class="n" colspan="2">PER prévisionnel du secteur : ${nf(SF.fpe,1)}×</td><td></td></tr>
-        <tr><td>VE / CA</td><td class="n">${nf(SF.evs,2)}×</td><td class="n" colspan="2">valeur implicite sur l'ARR fin A1 : ${big(SF.evs*b.clients1*b.arpu*12)}</td><td class="meta">pre-money visé : ${big(+b.preMoney)}${+b.preMoney>2*SF.evs*b.clients1*b.arpu*12?', plus de 2 fois la valeur implicite':''}</td></tr>
-        <tr><td>VE / EBITDA</td><td class="n">${nf(SF.eve,1)}×</td><td class="n" colspan="2">sociétés à EBITDA positif : ${nf(SF.eveP,1)}×</td><td></td></tr>
-      </tbody></table></div>
-      <p class="note">Source : Aswath Damodaran (NYU Stern), données de janvier 2026 sur les sociétés cotées américaines (marges, PER, multiples de valeur, BFR). Taux d'EBITDA dérivé : VE/CA divisé par VE/EBITDA. Le FRNG moyen n'est pas publié par cette source. ${SF.note||''}</p></div>
+    ${bpSectorCard(r,SF)}
     <div class="card s12"><h2>Segmentation et demande</h2><div class="grid"><div class="s6">${fld('bp.segments','a',{rows:4})}</div><div class="s6">${fld('bp.demand','a',{rows:4})}</div></div></div>
     <div class="card s12"><h2><span>Le secteur et sa réglementation</span><span class="meta">premier pilier de l'étude : l'environnement</span></h2><div class="qgrid">
       <div><h3>Réglementation applicable</h3>${fld('bp.sectorQ.regl','a',{rows:4,al:'Réglementation'})}</div>
       <div><h3>Dispositions fiscales spécifiques</h3>${fld('bp.sectorQ.fisc','a',{rows:4,al:'Fiscalité'})}</div>
-      <div><h3>Santé du marché et perspectives</h3>${fld('bp.sectorQ.sante','a',{rows:4,al:'Perspectives'})}<p class="note">Mesuré : CAGR valeur ${pct(k.cagrV)}, dernière année ${sgn(k.yoyV[k.n-1])} ; marge EBITDA moyenne du secteur coté ${pct(SF.ebm,1)} (Damodaran).</p></div>
+      <div><h3>Santé du marché et perspectives</h3>${fld('bp.sectorQ.sante','a',{rows:4,al:'Perspectives'})}<p class="note">Mesuré : CAGR valeur ${pct(k.cagrV)}, dernière année ${sgn(k.yoyV[k.n-1])}. Rentabilité et multiples du secteur : bloc « Repères financiers du secteur ».</p></div>
       <div><h3>Dernières innovations</h3>${fld('bp.sectorQ.innov','a',{rows:4,al:'Innovations'})}</div>
       <div><h3>Régularité ou saisonnalité</h3>${fld('bp.sectorQ.seasTxt','a',{rows:4,al:'Saisonnalité'})}<p class="note">Mesuré : pic en ${MONTHS[k.W.indexOf(Math.max(...k.W))].toLowerCase()}, creux en ${MONTHS[k.W.indexOf(Math.min(...k.W))].toLowerCase()} ; écart pic / creux ${nf(Math.max(...k.W)/Math.min(...k.W),1)}×.</p></div>
     </div></div>
@@ -348,6 +342,7 @@ function renderBP(){
       <div><h3>Perception de l'offre concurrente</h3>${fld('bp.dem.percep','a',{rows:3,al:'Perception'})}</div>
       <div><h3>Ce qui pourrait être amélioré</h3>${fld('bp.dem.amelio','a',{rows:3,al:'Améliorations'})}</div>
     </div></div>
+    ${bpTargetCard(r)}
     <div class="card s12"><h2>Psychologie client et personas <span class="meta">qui, où, quand, pourquoi, freins, contact</span></h2>
       <div class="personas">${b.personas.map((p,i)=>`<div class="persona"><h3><span>${fld(`bp.personas.${i}.n`,'t',{al:'Persona'})}</span>${E?`<button class="btn sm ghost" data-act="delrow" data-list="bp.personas" data-i="${i}" aria-label="Supprimer le persona">✕</button>`:''}</h3>${[['who','Qui sont-ils'],['spend','Où allait leur budget jusqu\'ici'],['when','Quand achètent-ils'],['why','Pourquoi ils achètent'],['fears','Freins et objections'],['where','Où les trouver, comment les contacter']].map(([f,l])=>`<div class="pq"><span class="lb">${l}</span>${fld(`bp.personas.${i}.${f}`,'a',{rows:2,al:l})}</div>`).join('')}</div>`).join('')}</div>
       ${E?`<button class="btn sm" data-act="addrow" data-list="bp.personas" style="margin-top:8px">Ajouter un persona</button>`:''}</div>
@@ -398,13 +393,13 @@ function renderBP(){
       <div class="card s6"><h2>Conclusion de l'étude de marché <span class="tag ${v[0]}" style="margin-left:auto">${v[1]}</span></h2>
         <div class="tw"><table class="tbl"><tbody>
           <tr><td>Secteur</td><td>${k.cagrV>3?'en croissance':k.cagrV>0?'en croissance faible':'en déclin'} (${pct(k.cagrV)} par an)</td></tr>
-          <tr><td>Rentabilité du secteur</td><td>marge EBITDA moyenne ${pct(SF.ebm,1)} (Damodaran)</td></tr>
+          <tr><td>Rentabilité du secteur</td><td>${SF.ebm>10?'secteur rentable':SF.ebm>0?'rentabilité faible':'secteur déficitaire'} (détail : Repères financiers du secteur)</td></tr>
           <tr><td>Concentration</td><td>leader ${esc((lead||{}).n||'—')} à ${pct(+(lead||{}).sv||0,0)} du marché : ${(+(lead||{}).sv||0)<40?'marché ouvert':'marché dominé par un acteur'}</td></tr>
           <tr><td>Demande</td><td>${tr[0][1]?'identifiée et validée':'insuffisamment analysée'}</td></tr>
         </tbody></table></div>
         <div class="lb" style="margin-top:8px">Conclusion de l'entrepreneur</div>${fld('bp.etude.concl','a',{rows:3})}</div>`;})()}`)}
   ${sec(7,'Stratégie commerciale et plan de lancement',`
-    <div class="card s7"><h2>Canaux d'acquisition</h2>${etable('bp.channels',[['n','Canal','t'],['sh','Part des acquisitions (%)','n','width:150px'],['cac','CAC du canal (€)','n','width:130px']])}
+    <div class="card s7"><h2>Canaux d'acquisition</h2>${(bpV7Init(),etable('bp.channels',[['n','Canal','t'],['fam','Famille','s','width:120px',CHAN_FAM],['zone','Bassins ciblés','t','width:160px'],['sh','Part des acquisitions (%)','n','width:130px'],['cac','CAC du canal (€)','n','width:120px']]))}
       ${Math.abs(b.channels.reduce((a,c)=>a+(+c.sh||0),0)-100)>0.5?'<p class="note down">La somme des parts doit faire 100 % : le CAC est pondéré sur le total saisi.</p>':''}</div>
     <div class="card s5"><div class="stats" style="grid-template-columns:1fr 1fr">
       <div class="stat"><div class="k">CAC pondéré</div><div class="x">${big(r.cac)}</div><div class="d">utilisé par le modèle</div></div>
@@ -412,6 +407,7 @@ function renderBP(){
       <div class="stat"><div class="k">Budget d'acquisition A1</div><div class="x">${big(Yr[0].mkt)}</div><div class="d">${pct(Yr[0].mkt/Yr[0].rev*100,0)} du CA</div></div>
       <div class="stat"><div class="k">Budget d'acquisition A${H}</div><div class="x">${big(Hy.mkt)}</div><div class="d">${pct(Hy.mkt/Hy.rev*100,0)} du CA</div></div></div>
       <h2 style="margin-top:14px">Stratégie de pénétration</h2>${fld('bp.penetration','a',{rows:4})}</div>
+    ${bpAcqCard(r)}
     <div class="card s12"><h2>Mise en œuvre : stratégie, approvisionnements, moyens et production</h2><div class="qgrid">
       <div><h3>Stratégie commerciale</h3>${fld('bp.strat.com','a',{rows:4,al:'Stratégie commerciale'})}</div>
       <div><h3>Sources d'approvisionnement</h3>${fld('bp.strat.appro','a',{rows:4,al:'Approvisionnements'})}</div>
@@ -430,16 +426,8 @@ function renderBP(){
       <div><h3>Calendrier et fiscalité</h3><div class="fields">${F('Année de démarrage','bp.startY','n',{raw:1})}${F('Impôt sur les sociétés','bp.tax','n',{u:'%'})}</div><p class="note">Déficits reportables imputés sur les bénéfices futurs ; impôt décaissé en fin d'exercice.</p></div>
       <div><h3>Financement</h3><div class="fields">${F('Apport des fondateurs','bp.equity','n',{u:'€'})}${F('Subventions et aides','bp.grant','n',{u:'€'})}${F('Levée de fonds','bp.raise','n',{u:'€'})}${F('Valorisation pre-money','bp.preMoney','n',{u:'€'})}${F('Mois d\'encaissement','bp.raiseM','n',{u:'mois'})}${F('Emprunt bancaire','bp.loan','n',{u:'€'})}${F('Taux','bp.rate','n',{u:'%'})}${F('Durée','bp.loanY','n',{u:'ans'})}${F('Différé','bp.defer','n',{u:'mois'})}</div><p class="note">Dilution de la levée : ${pct(+b.raise/((+b.preMoney)+(+b.raise))*100,1)} (post-money ${big((+b.preMoney)+(+b.raise))}).</p></div>
     </div></div>
-    <div class="card s8"><h2>Marché adressable <span class="meta">${b.tamOv>0||b.cagrOv>0?'valeurs forcées':'calcul automatique'}</span></h2>
-      <div class="stats">
-        <div class="stat"><div class="k">TAM</div><div class="x">${big(r.tam)}</div><div class="d">${b.tamOv>0?'forcé':'secteur × part de zone'}</div></div>
-        <div class="stat"><div class="k">SAM</div><div class="x">${big(r.sam)}</div><div class="d">${pct(+b.samPct,1)} du TAM</div></div>
-        <div class="stat"><div class="k">SOM</div><div class="x amb">${big(r.som)}</div><div class="d">${pct(+b.somPct,1)} du SAM</div></div>
-        <div class="stat"><div class="k">CAGR</div><div class="x">${pct(r.cagr)}</div><div class="d">TAM à ${H} ans : ${big(r.tam*(1+r.cagr/100)**H)}</div></div></div>
-      <div class="funnel">${[['TAM',r.tam],['SAM',r.sam],['SOM',r.som]].map((x,i)=>`<div class="fr"><span>${x[0]}</span><div class="track"><div class="fill" style="width:${funnelW[i]}%"></div></div><span class="num">${big(x[1])}</span></div>`).join('')}</div>
-      <p class="note">CA de l'année ${H} : <b class="num">${pct(r.somShare,1)}</b> du SOM.</p>
-      ${true?`<div class="fields" style="margin-top:10px">${F('TAM forcé (0 = auto)','bp.tamOv','n',{u:'M€'})}${F('CAGR forcé (0 = auto)','bp.cagrOv','n',{u:'%'})}${F('SAM','bp.samPct','n',{u:'% TAM'})}${F('SOM','bp.somPct','n',{u:'% SAM'})}</div>`:''}</div>
-    <div class="card s4"><h2>Modèle de revenus</h2>${fld('bp.revModel','a',{rows:5})}</div>
+    ${bpTamCard(r)}
+    <div class="card s12"><h2>Modèle de revenus</h2>${fld('bp.revModel','a',{rows:5})}</div>
     <div class="card s12"><h2>Sources macroéconomiques <span class="meta">consultation : ${esc(b.srcDate)}</span></h2>
       <div class="tw"><table class="tbl"><thead><tr><th>Donnée</th><th class="n">Valeur</th><th>Source de référence</th><th>Statut</th></tr></thead><tbody>
         <tr><td>Marché sectoriel mondial</td><td class="n">${big(r.s.tam)}</td><td>${esc(r.s.src)}</td><td><span class="tag am">Ordre de grandeur à confirmer</span></td></tr>
@@ -493,6 +481,8 @@ function renderBP(){
       <tr class="tot"><td>LTV</td><td class="n">${big(r.ltv)}</td></tr><tr><td>LTV / CAC</td><td class="n ${r.ratio>=3?'up':'down'}">${nf(r.ratio,1)}×</td></tr><tr><td>Remboursement du CAC</td><td class="n ${r.payback<=18?'up':'down'}">${nf(r.payback,1)} mois</td></tr></table></div></div>
     <div class="card s4"><h2>Besoin en fonds de roulement</h2>${ftable(head,[['Créances clients',Yr.map(y=>y.bal.rec)],['Dettes fournisseurs',Yr.map(y=>-y.bal.pay)],['BFR',Yr.map(y=>y.bal.bfr),'tot'],['Variation du BFR',Yr.map((y,i)=>y.bal.bfr-(i?Yr[i-1].bal.bfr:0))],['BFR en jours de CA',Yr.map(y=>nf(y.bal.bfr/y.rev*365,0)+' j')]])}${cmt('bfr',`BFR = créances clients (${b.dso} jours) − dettes fournisseurs (${b.dpo} jours) ; il atteint ${big(Hy.bal.bfr)} en A${H}, soit ${nf(Hy.bal.bfr/Hy.rev*365,0)} jours de CA à financer.`)}</div>
     <div class="card s4"><h2>Tableau de cohérence</h2>${ftable(head,[['CA par ETP',Yr.map(y=>y.hc?y.rev/y.hc:NaN)],['Personnel / CA',Yr.map(y=>pct(y.pers/y.rev*100,0))],['Acquisition / CA',Yr.map(y=>pct(y.mkt/y.rev*100,0))],['Croissance du CA',Yr.map((y,i)=>i?pct((y.rev/Yr[i-1].rev-1)*100,0):'—')],['Dette fin. / fonds propres',Yr.map(y=>{const e=y.bal.capital+y.bal.grant+y.bal.retained;return e>0?nf(y.bal.debt/e,2)+'×':'n.s.';})]])}</div>`)}
+  ${sec(11,'Diagnostic financier et verdict d\'arbitrage (Go / No-Go)',`
+    ${bpGoCard(r,AL,SF)}`)}
   ${sec(10,'Annexes et conseils d\'exécution',`
     <div class="card s7"><h2>Lignes directrices issues du modèle</h2><ol class="adv">${advice.map(a=>`<li>${a}</li>`).join('')}</ol></div>
     <div class="card s5"><h2>Conseils de l'analyste</h2>${fld('bp.advice','a',{rows:6})}
@@ -500,7 +490,7 @@ function renderBP(){
   {const part=(n,t,goal)=>`<div class="bpart"><span>Partie ${n}</span><h2>${t}</h2><p>${goal}</p></div>`;let n=0;const S_=k=>{n++;return secH(n,k,SEC[k].t,SEC[k].body);};
    const ord=part(1,'Le projet, le marché et la stratégie',"Ce que vous proposez, le marché que vous attaquez et la manière dont vous allez lancer le projet.")+S_(1)+S_(3)+S_(5)+S_(6)+S_(4)+S_(7)
      +part(2,'Le porteur de projet et la structure',"Votre capacité à gérer le projet, vos motivations, l'équipe et le cadre juridique.")+S_(2)
-     +part(3,'Le prévisionnel',"Rentabilité, solidité et cohérence financière du projet, tableaux commentés.")+S_(8)+S_(9)+S_(10);
+     +part(3,'Le prévisionnel',"Rentabilité, solidité et cohérence financière du projet, tableaux commentés.")+S_(8)+S_(9)+S_(11)+S_(10);
    __h=__h.replace(/@@S1@@[\s\S]*@@S10@@/,ord);}
   $('#p-bp').innerHTML=__h;
 

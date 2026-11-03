@@ -22,8 +22,8 @@ svg.i{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.6;stro
 ::-webkit-scrollbar-track{background:transparent}
 
 /* ===== Shell ===== */
-.app{display:grid;height:100vh;height:100dvh;grid-template:"top top top" 46px "rail main side" minmax(0,1fr) "status status status" 26px / 56px minmax(0,1fr) 304px}
-.app.noside{grid-template-columns:56px minmax(0,1fr) 0}
+.app{--rw:56px;--sw:304px;position:relative;display:grid;height:100vh;height:100dvh;grid-template:"top top top" 46px "rail main side" minmax(0,1fr) "status status status" 26px / var(--rw) minmax(0,1fr) var(--sw)}
+.app.noside{grid-template-columns:var(--rw) minmax(0,1fr) 0}
 .app.noside .side{display:none}
 .top{grid-area:top;display:flex;align-items:center;gap:6px;padding:0 8px 0 12px;background:var(--pane);border-bottom:1px solid var(--line);min-width:0}
 .brand{display:flex;align-items:center;gap:9px;padding-right:12px;margin-right:4px;border-right:1px solid var(--line);height:28px;white-space:nowrap}
@@ -478,3 +478,73 @@ details.dd2[open]>summary::before{transform:rotate(90deg)}
 details.dd2>summary b{color:var(--hi)}
 details.brd{border-top:1px solid var(--line);padding:6px 0}
 details.brd>summary .num{margin-left:auto;color:var(--text)}
+
+/* ===== v7 : panneaux redimensionnables ===== */
+.splitter{position:absolute;top:46px;bottom:26px;width:9px;z-index:15;cursor:col-resize;touch-action:none;outline:0}
+.splitter::after{content:"";position:absolute;left:4px;top:0;bottom:0;width:1px;background:transparent;transition:background .12s}
+.splitter:hover::after,.splitter:focus-visible::after,.app.resizing .splitter::after{background:var(--hi);width:2px;left:3.5px}
+#spL{left:calc(var(--rw) - 5px)}
+#spR{right:calc(var(--sw) - 4px)}
+.app.noside #spR{display:none}
+.app.resizing{cursor:col-resize;user-select:none}
+.app.resizing iframe,.app.resizing .lwc{pointer-events:none}
+.app.wide-rail .rail{align-items:stretch;padding:8px 6px}
+.app.wide-rail .rg{align-items:stretch}
+.app.wide-rail .rg-l{text-align:left;max-width:none;padding:0 8px 6px;font-size:9px}
+.app.wide-rail .rb{flex-direction:row;width:auto;gap:10px;padding:8px 10px;font-size:12.5px;text-align:left;justify-content:flex-start}
+.app.wide-rail .rb svg.i{width:18px;height:18px;flex:none}
+.app.wide-rail .rb br,.app.wide-rail .rg-l br{display:none}
+.app.wide-rail .rb[aria-current="page"]::before{left:-6px}
+@media (max-width:1100px){.splitter{display:none}}
+@media print{.splitter{display:none}}
+/* Valeurs à crayon dans les tableaux : coupure aux mots, jamais lettre par lettre */
+.tbl .v,.tbl td{overflow-wrap:break-word;word-break:normal;hyphens:manual}
+.tbl td:first-child{min-width:7ch}
+/* ===== v7 : sélecteur universel d'actifs (Commodities) ===== */
+.mkt-bar{display:flex;flex-wrap:wrap;align-items:flex-end;gap:10px 14px;padding:2px 0 10px;border-bottom:1px solid var(--line);margin-bottom:10px}
+.mkt-f{display:flex;flex-direction:column;gap:4px;font-size:11px;color:var(--mute)}
+.mkt-f select.f{min-width:190px;width:auto}
+.mkt-tk input.f{width:110px}
+.mkt-c{gap:6px;border-color:var(--c);color:var(--hi);padding-right:4px}
+.mkt-c i{width:10px;height:3px;border-radius:2px;background:var(--c)}
+.mkt-c .x{border:0;background:none;color:var(--mute);font-size:14px;line-height:1;padding:0 4px;cursor:pointer}
+.mkt-c .x:hover{color:var(--hi)}
+.mkt-empty{border:1px dashed var(--line2);border-radius:4px;padding:16px;margin:4px 0 8px;background:var(--pane)}
+.mkt-empty b{color:var(--hi);font-size:13px}
+/* ===== v7 : business plan (jauges, barres comparées, verdict) ===== */
+.gauges{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:4px}
+.gauge{margin:0;padding:10px 10px 12px;background:var(--pane);border:1px solid var(--line);border-radius:4px;display:flex;flex-direction:column;align-items:center;text-align:center}
+.gauge svg{width:100%;max-width:150px;height:auto;display:block}
+.gauge .gv{font:600 17px/1.1 var(--mono,var(--sans));font-variant-numeric:tabular-nums;margin-top:-14px}
+.gauge figcaption{display:flex;flex-direction:column;gap:2px;margin-top:6px;font-size:11.5px;color:var(--mute)}
+.gauge figcaption b{color:var(--text);font-weight:500;font-size:12px}
+.cmpb{display:flex;flex-direction:column;gap:10px;margin:6px 0}
+.cmpb-r{display:grid;grid-template-columns:minmax(0,140px) 1fr;gap:10px;align-items:center;font-size:12px}
+.cmpb-l{color:var(--text)}
+.cmpb-v{display:flex;flex-direction:column;gap:3px;min-width:0}
+.cmpb-b{display:grid;grid-template-columns:1fr 70px;gap:8px;align-items:center}
+.cmpb-b i{display:block;height:8px;border-radius:2px;min-width:1px}
+.cmpb-b .num{font-size:11.5px;color:var(--text);text-align:right}
+.cmpb i.c0,.legend i.c0{background:#71717A}
+.cmpb i.c1,.legend i.c1{background:#A1A1AA}
+.cmpb i.c2,.legend i.c2{background:#E4E4E7}
+.tbl tr.hl td{background:var(--hover)}
+.zonebar b{color:var(--hi);font-size:13px}
+.gocard{border-left:3px solid var(--mute)}
+.gocard.ok{border-left-color:var(--up)}.gocard.am{border-left-color:var(--amber)}.gocard.ko{border-left-color:var(--down)}
+.go-h{display:grid;grid-template-columns:minmax(200px,1.2fr) minmax(170px,.8fr) minmax(240px,1.4fr);gap:12px;align-items:center}
+@container (max-width:760px){.go-h{grid-template-columns:1fr}}
+.go-v{display:flex;flex-direction:column;gap:4px}
+.go-v b{font:700 30px/1.05 var(--sans);letter-spacing:.01em;color:var(--hi)}
+.gocard.ok .go-v b{color:var(--up)}.gocard.am .go-v b{color:var(--amber)}.gocard.ko .go-v b{color:var(--down)}
+.go-v span:last-child{color:var(--mute);font-size:12.5px}
+.go-h .gauge{background:none;border:0;padding:0}
+.go-k{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:4px}
+.go-k>div{display:flex;flex-direction:column;gap:3px;padding:8px 10px;background:var(--pane);border:1px solid var(--line);border-radius:4px}
+.go-k span{font-size:11px;color:var(--mute)}.go-k b{font:600 17px/1.1 var(--sans);color:var(--hi);font-variant-numeric:tabular-nums}.go-k em{font-style:normal;font-size:10.5px;color:var(--mute2,var(--mute))}
+.gol{margin:6px 0 0;padding-left:18px;display:flex;flex-direction:column;gap:6px;font-size:12.5px;line-height:1.45}
+.gol b{color:var(--hi);font-weight:500}
+.h3.up{color:var(--up)}.h3.down{color:var(--down)}
+.cmpb-b i.cut{position:relative;border-top-right-radius:0;border-bottom-right-radius:0}
+.cmpb-b i.cut::after{content:"";position:absolute;right:-6px;top:-1px;border-left:6px solid currentColor;border-top:5px solid transparent;border-bottom:5px solid transparent;color:inherit}
+.cmpb-b i.cut[style*="--down"]::after{color:var(--down)}

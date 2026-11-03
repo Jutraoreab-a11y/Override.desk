@@ -51,7 +51,7 @@ function liveMerge(tr,br,cm){let ovr=0;pfInit();
   fresh.forEach(f=>{const o=old.find(x=>key(x)===key(f));if(o&&['qty','pru','px','sl','tp'].some(k=>o.ov&&o.ov[k]))ovr++;});
   S.hold=S.hold.filter(h=>h.src!=='live').concat(fresh);
   if(cm&&Array.isArray(cm.prices)){const MAP={'BRENT:SPOT':'brent','BRENT:M1':'brentF','WTI:SPOT':'wti','GOLD:SPOT':'gold','GOLD:M1':'goldF','SILVER:SPOT':'silver','SILVER:M1':'silverF','USDCNH:SPOT':'cnh','SPX:SPOT':'spx'};
-    S.cm.add=S.cm.add||{};cm.prices.forEach(p=>{const k=MAP[p.instrument+':'+p.contract];if(!k)return;(S.cm.add[k]=S.cm.add[k]||{})[p.price_date]=[+p.close,p.open!=null?+p.open:null,null];});}
+    S.cm.add=S.cm.add||{};cm.prices.forEach(p=>{const k=MAP[p.instrument+':'+p.contract]||(p.contract==='SPOT'?(/^STK:/.test(p.instrument)?'stk_'+p.instrument.slice(4):String(p.instrument).toLowerCase()):null);if(!k)return;if(/^stk_/.test(k)&&typeof mktStocks==='function'&&!mktStocks().includes(k.slice(4)))mktStocks().push(k.slice(4));(S.cm.add[k]=S.cm.add[k]||{})[p.price_date]=[+p.close,p.open!=null?+p.open:null,null];});}
   return{ovr};
 }
 /* Marquer une valeur forcée au crayon sur une ligne live, pour pouvoir signaler son remplacement */

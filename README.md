@@ -4,6 +4,11 @@ Station d'analyse institutionnelle en 8 volets, en une seule page HTML autonome 
 
 Depuis la v7, un backend optionnel (Vercel + Supabase) branche les flux live : comptes MetaTrader 4 et 5 par EA, SocialTraderTools, courtiers par API chiffrée, PnL consolidé, séries macro EIA et BCE, parseur IA sourcé. Sans backend, la page fonctionne en mode simulation. Mise en service et liste des points d'accès : [docs/BACKEND.md](docs/BACKEND.md).
 
+Nouveautés de l'interface v7.0 :
+- **Panneaux redimensionnables** : poignées entre la barre de navigation, la zone de travail et la colonne de synthèse (glisser, double-clic pour réinitialiser, flèches du clavier). Au-delà de 128 px, la barre affiche les libellés en ligne. Les largeurs sont mémorisées.
+- **Commodities, sélecteur universel** : permuter ou superposer sur le graphique principal Brent, WTI, Or, Argent, Cuivre, Gaz naturel, EUR/USD, GBP/USD, USD/JPY, USD/CNH, AUD/USD, USD/CAD, S&P 500, Nasdaq 100, Dow Jones, DAX 40, CAC 40, Nikkei 225 et toute action par ticker, avec option base 100. Les séries absentes du classeur se chargent par import CSV, par le navigateur de l'application Claude (page d'historique lue puis vérifiée) ou par le flux live.
+- **Business plan** : zone géographique unique (fiche de renseignements) et duplication du BP sur une autre zone en nouvelle version ; TAM, SAM, SOM par pays d'exercice, continent et monde, projetés de A1 à A5 ; repères sectoriels en jauges et barres comparées (EBITDA, marges, BFR, FRNG / FRNC, PER, BPA, valorisation) ; fiche d'identité du client cible ; bassins de clients × familles de canaux (Inbound, Outbound, Salons, Digital) ; diagnostic financier et verdict d'arbitrage Go / No-Go sur 11 critères pondérés.
+
 Le menu sépare deux familles :
 - **Finance d'entreprise** : Business plan, Analyse financière, Sélecteur & mapping, Dossier LBO, Suivi & placements ;
 - **Finance de marché** : Commodities & flows, Calculateur de position, Journal de trading.
