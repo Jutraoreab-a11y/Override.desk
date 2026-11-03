@@ -38,15 +38,24 @@ const sum=a=>a.reduce((x,y)=>x+(+y||0),0);
 function fld(p,t='n',o={}){
   const v=getP(S,p),d=getP(DEF,p),ov=JSON.stringify(v)!==JSON.stringify(d)?' ovr':'';
   const isN=t==='n'||t==='nn';
-  if(!ui.edit){
-    if(t==='a')return `<p class="v txt${ov}">${esc(v)||'—'}</p>`;
+  const pen=ui.penK===p,pb=o.nopen?'':`<button class="pen noprint" data-act="pen" data-k="${esc(p)}" title="Modifier cette valeur" aria-label="Modifier ${esc(o.al||'la valeur')}">${ic('pen')}</button>`;
+  if(!ui.edit&&!pen){
+    if(t==='a')return `<div class="pv pv-a"><p class="v txt${ov}">${esc(v)||'—'}</p>${pb}</div>`;
     const txt=isN?((v===null||v===''||v===undefined)?(o.empty||'—'):o.raw?String(v):o.d!==undefined?nf(+v,o.d):auto(Number(v))):t==='s'?(o.opts[v]??v):v;
-    return `<span class="v${isN?' num':''}${ov}">${esc(txt)||'—'}</span>`;
+    return `<span class="pv"><span class="v${isN?' num':''}${ov}">${esc(txt)||'—'}</span>${pb}</span>`;
   }
-  if(t==='s')return `<select class="f${ov}" data-k="${p}" data-t="s" aria-label="${esc(o.al||p)}">${Object.entries(o.opts).map(([k,l])=>`<option value="${esc(k)}"${String(k)===String(v)?' selected':''}>${esc(l)}</option>`).join('')}</select>`;
-  if(t==='a')return `<textarea class="f${ov}" data-k="${p}" data-t="a" rows="${o.rows||3}" aria-label="${esc(o.al||p)}">${esc(v)}</textarea>`;
-  return `<input class="f${isN?' num':''}${ov}" data-k="${p}" data-t="${t}" type="${isN?'number':'text'}" ${isN?'step="any" inputmode="decimal"':''} value="${esc(v??'')}" ${o.ph?`placeholder="${esc(o.ph)}"`:''} aria-label="${esc(o.al||p)}">`;
+  const pa=pen?' data-pen="1" autofocus':'',pr=pen&&d!==undefined&&ov?`<button class="pen noprint" data-act="penreset" data-k="${esc(p)}" title="Revenir à la valeur de référence">↺</button>`:'';
+  if(pen){const inner=fldEdit(p,t,o,v,ov,pa);return`<span class="pv pv-on">${inner}<button class="pen noprint" data-act="penok" title="Valider">✓</button>${pr}</span>`;}
+  return fldEdit(p,t,o,v,ov,'');
 }
+function fldEdit(p,t,o,v,ov,pa){const isN=t==='n'||t==='nn';
+  if(t==='s')return `<select class="f${ov}" data-k="${p}" data-t="s"${pa} aria-label="${esc(o.al||p)}">${Object.entries(o.opts).map(([k,l])=>`<option value="${esc(k)}"${String(k)===String(v)?' selected':''}>${esc(l)}</option>`).join('')}</select>`;
+  if(t==='a')return `<textarea class="f${ov}" data-k="${p}" data-t="a"${pa} rows="${o.rows||3}" aria-label="${esc(o.al||p)}">${esc(v)}</textarea>`;
+  return `<input class="f${isN?' num':''}${ov}" data-k="${p}" data-t="${t}"${pa} type="${isN?'number':'text'}" ${isN?'step="any" inputmode="decimal"':''} value="${esc(v??'')}" ${o.ph?`placeholder="${esc(o.ph)}"`:''} aria-label="${esc(o.al||p)}">`;
+}
+/* Valeur affichée dans son format, avec le petit crayon qui ouvre l'édition du champ source */
+function penV(p,html,o={}){if(ui.edit||ui.penK===p)return fld(p,o.t||'n',o);const ov=JSON.stringify(getP(S,p))!==JSON.stringify(getP(DEF,p))?' ovr':'';
+  return`<span class="pv"><span class="v num${ov}">${html}</span><button class="pen noprint" data-act="pen" data-k="${esc(p)}" title="Modifier cette valeur" aria-label="Modifier ${esc(o.al||'la valeur')}">${ic('pen')}</button></span>`;}
 /* Champ toujours éditable (formulaires opérationnels : fiche, calculateur, journal) */
 function lin(p,t='n',o={}){const v=getP(S,p);
   if(t==='s')return`<select class="f lf" data-lk="${p}" data-lt="s" aria-label="${esc(o.al||p)}"${o.style?` style="${o.style}"`:''}>${Object.entries(o.opts).map(([k,l])=>`<option value="${esc(k)}"${String(k)===String(v)?' selected':''}>${esc(l)}</option>`).join('')}</select>`;
@@ -157,6 +166,7 @@ const ICON={
   pc:'<rect x="5" y="3" width="14" height="18" rx="1.5"/><path d="M8 7h8v3H8z"/><path d="M8.5 14h.01M12 14h.01M15.5 14h.01M8.5 17.5h.01M12 17.5h.01M15.5 17.5h.01"/>',
   jr:'<path d="M5 4h11a3 3 0 0 1 3 3v13H8a3 3 0 0 1-3-3z"/><path d="M5 17a3 3 0 0 1 3-3h11"/><path d="M9 8h6"/>',
   lbo:'<path d="M4 20h16"/><path d="M6 20V10l6-5 6 5v10"/><path d="M10 20v-5h4v5"/><path d="M9.5 11h5"/>',
+  ai:'<path d="M12 3v3M12 18v3M3 12h3M18 12h3"/><circle cx="12" cy="12" r="5"/><path d="M10 12h4M12 10v4"/>',
   fold:'<path d="M3 6h6l2 2h10v11H3z"/>',
   link:'<path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1"/><path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/>'
 };

@@ -256,13 +256,13 @@ function renderBP(){
       </div>
       <div class="grid" style="margin-top:4px">
         <div class="s6" style="min-width:0"><div class="tw"><table class="tbl"><thead><tr><th></th>${k.h.map((x,i)=>`<th class="n">${E?fld(`bp.mkt.hist.${i}.y`,'n',{al:'Année'}):x.y}</th>`).join('')}</tr></thead><tbody>
-          <tr><td>Valeur (M€)</td>${m.hist.map((x,i)=>`<td class="n">${k.sc.same||E?fld(`bp.mkt.hist.${i}.v`,'n',{al:'Valeur '+x.y}):nf(+x.v*k.sc.fac,0)}</td>`).join('')}</tr>
+          <tr><td>Valeur (M€)</td>${m.hist.map((x,i)=>`<td class="n">${k.sc.same||E?fld(`bp.mkt.hist.${i}.v`,'n',{al:'Valeur '+x.y}):penV(`bp.mkt.hist.${i}.v`,nf(+x.v*k.sc.fac,0),{al:'Valeur '+x.y})}</td>`).join('')}</tr>
           <tr><td>Croissance valeur</td>${k.yoyV.map(v=>`<td class="n ${isFinite(v)?cls(v):''}">${isFinite(v)?sgn(v):'—'}</td>`).join('')}</tr>
-          <tr><td>Volume (${esc(m.unitQ)})</td>${m.hist.map((x,i)=>`<td class="n">${k.sc.same||E?fld(`bp.mkt.hist.${i}.q`,'n',{al:'Volume '+x.y}):nf(+x.q*k.sc.fac,0)}</td>`).join('')}</tr>
+          <tr><td>Volume (${esc(m.unitQ)})</td>${m.hist.map((x,i)=>`<td class="n">${k.sc.same||E?fld(`bp.mkt.hist.${i}.q`,'n',{al:'Volume '+x.y}):penV(`bp.mkt.hist.${i}.q`,nf(+x.q*k.sc.fac,0),{al:'Volume '+x.y})}</td>`).join('')}</tr>
           <tr><td>Croissance volume</td>${k.yoyQ.map(v=>`<td class="n ${isFinite(v)?cls(v):''}">${isFinite(v)?sgn(v):'—'}</td>`).join('')}</tr>
           <tr><td>Prix moyen par unité</td>${k.h.map(x=>`<td class="n">${big(x.v*1e6/x.q)}</td>`).join('')}</tr>
         </tbody></table></div>
-        <div class="fields" style="margin-top:12px">${E?F('Libellé du marché','bp.mkt.label','t')+F('Unité de volume','bp.mkt.unitQ','t'):''}${F('Source de l\'historique','bp.mkt.src','t',{ph:'Étude, base de données, date de consultation'})}</div></div>
+        <div class="fields" style="margin-top:12px">${F('Libellé du marché','bp.mkt.label','t')+F('Unité de volume','bp.mkt.unitQ','t')}${F('Source de l\'historique','bp.mkt.src','t',{ph:'Étude, base de données, date de consultation'})}</div></div>
         <div class="s6" style="min-width:0">${colChart(k.h.map(x=>String(x.y)),k.h.map(x=>x.v),{h:200,fmt:v=>nf(v,0),title:'Valeur et volume du marché',vlab:v=>nf(v,0),line:{vals:k.h.map(x=>x.q),fmt:v=>nf(v,0)}})}
           <div class="legend"><span><i style="background:var(--c-bar)"></i>Valeur (M€)</span><span><i style="background:var(--hi)"></i>Volume (${esc(m.unitQ)})</span></div></div>
       </div></div>
@@ -332,7 +332,7 @@ function renderBP(){
         <div class="stat"><div class="k">Prix recommandé</div><div class="x">${fld('bp.priceRec')}</div><div class="d">par mois et par site</div></div>
         <div class="stat"><div class="k">ARPU du modèle</div><div class="x ${+b.arpu<+b.vw.ch||+b.arpu>+b.vw.ex?'down':''}">${big(+b.arpu)}</div><div class="d">${+b.arpu<+b.vw.ch||+b.arpu>+b.vw.ex?'hors zone acceptable':'dans la zone acceptable'}</div></div>
       </div>
-      ${E?`<div class="fields" style="margin-top:10px">${F('Trop bon marché','bp.vw.tc','n',{u:'€'})}${F('Bon marché','bp.vw.ch','n',{u:'€'})}${F('Cher','bp.vw.ex','n',{u:'€'})}${F('Trop cher','bp.vw.te','n',{u:'€'})}${F('Source de l\'enquête','bp.srcVw','t')}</div>`:''}
+      ${true?`<div class="fields" style="margin-top:10px">${F('Trop bon marché','bp.vw.tc','n',{u:'€'})}${F('Bon marché','bp.vw.ch','n',{u:'€'})}${F('Cher','bp.vw.ex','n',{u:'€'})}${F('Trop cher','bp.vw.te','n',{u:'€'})}${F('Source de l\'enquête','bp.srcVw','t')}</div>`:''}
       <p class="note">Seuils issus de l'enquête de prix (médiane des réponses). En dessous de ${nf(+b.vw.tc,0)} €, l'offre est jugée de qualité insuffisante ; au-dessus de ${nf(+b.vw.te,0)} €, elle est rejetée pour son prix.</p></div>
     <div class="card s12"><h2>Grille tarifaire par segment</h2>
       ${E?etable('bp.offers',[['n','Offre','t','width:130px'],['seg','Segment visé','t'],['p','Prix mensuel (€)','n','width:120px'],['d','Contenu','t']]):`<div class="tw"><table class="tbl"><thead><tr><th>Offre</th><th>Segment visé</th><th class="n">Prix mensuel</th><th>Position psychologique</th><th>Contenu</th></tr></thead><tbody>${b.offers.map(o=>{const p=+o.p,z=p<+b.vw.tc?['ko','Qualité douteuse']:p<+b.vw.ch?['am','Bonne affaire']:p<=+b.vw.ex?['ok','Acceptable']:p<=+b.vw.te?['am','Cher, envisageable']:['ko','Trop cher'];return`<tr><td><b>${esc(o.n)}</b></td><td>${esc(o.seg)}</td><td class="n">${nf(p,0)} €</td><td><span class="tag ${z[0]}">${z[1]}</span></td><td>${esc(o.d)}</td></tr>`;}).join('')}</tbody></table></div>`}</div>`)}
@@ -438,7 +438,7 @@ function renderBP(){
         <div class="stat"><div class="k">CAGR</div><div class="x">${pct(r.cagr)}</div><div class="d">TAM à ${H} ans : ${big(r.tam*(1+r.cagr/100)**H)}</div></div></div>
       <div class="funnel">${[['TAM',r.tam],['SAM',r.sam],['SOM',r.som]].map((x,i)=>`<div class="fr"><span>${x[0]}</span><div class="track"><div class="fill" style="width:${funnelW[i]}%"></div></div><span class="num">${big(x[1])}</span></div>`).join('')}</div>
       <p class="note">CA de l'année ${H} : <b class="num">${pct(r.somShare,1)}</b> du SOM.</p>
-      ${E?`<div class="fields" style="margin-top:10px">${F('TAM forcé (0 = auto)','bp.tamOv','n',{u:'M€'})}${F('CAGR forcé (0 = auto)','bp.cagrOv','n',{u:'%'})}${F('SAM','bp.samPct','n',{u:'% TAM'})}${F('SOM','bp.somPct','n',{u:'% SAM'})}</div>`:''}</div>
+      ${true?`<div class="fields" style="margin-top:10px">${F('TAM forcé (0 = auto)','bp.tamOv','n',{u:'M€'})}${F('CAGR forcé (0 = auto)','bp.cagrOv','n',{u:'%'})}${F('SAM','bp.samPct','n',{u:'% TAM'})}${F('SOM','bp.somPct','n',{u:'% SAM'})}</div>`:''}</div>
     <div class="card s4"><h2>Modèle de revenus</h2>${fld('bp.revModel','a',{rows:5})}</div>
     <div class="card s12"><h2>Sources macroéconomiques <span class="meta">consultation : ${esc(b.srcDate)}</span></h2>
       <div class="tw"><table class="tbl"><thead><tr><th>Donnée</th><th class="n">Valeur</th><th>Source de référence</th><th>Statut</th></tr></thead><tbody>
@@ -448,7 +448,7 @@ function renderBP(){
         <tr><td>TAM retenu</td><td class="n">${big(r.tam)}</td><td>${b.tamOv>0?'Saisie analyste':'Marché sectoriel × part de zone'}</td><td><span class="tag ${b.tamOv>0?'am':'ok'}">${b.tamOv>0?'Forcé':'Calculé'}</span></td></tr>
         <tr><td>CAGR sectoriel</td><td class="n">${pct(r.cagr)}</td><td>${b.cagrOv>0?'Saisie analyste':esc(r.s.src)}</td><td><span class="tag ${b.cagrOv>0?'am':'ok'}">${b.cagrOv>0?'Forcé':'Calculé'}</span></td></tr>
       </tbody></table></div>
-      ${E?`<div class="fields" style="margin-top:10px;max-width:320px">${F('Date de consultation','bp.srcDate','t')}</div>`:''}
+      ${true?`<div class="fields" style="margin-top:10px;max-width:320px">${F('Date de consultation','bp.srcDate','t')}</div>`:''}
       <p class="note">Les références sectorielles intégrées sont des ordres de grandeur. Avant diffusion, remplacez-les par les chiffres exacts de l'étude citée via Override.</p></div>`)}
   ${sec(9,'Prévisionnel financier : états et tableaux commentés',`
     <div class="card s12">${verdict}</div>

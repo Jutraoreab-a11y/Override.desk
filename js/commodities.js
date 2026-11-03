@@ -2,6 +2,9 @@
 const CM_ASSETS={brent:'Brent / WTI',gold:'Or',silver:'Argent'};
 const CM_INST={brent:'Brent spot',wti:'WTI spot',brentF:'Brent futur M1',gold:'Or spot',goldF:'Or futur',silver:'Argent spot',silverF:'Argent contrat',cnh:'USD/CNH',spx:'S&P 500'};
 function cmP(){return S.cm.p;}
+/* Seuils de mise en conditionnelle (repris du classeur, modifiables) */
+const CM_TH={sp:[0,3,6,10,15],bB:[0,1,3,6],bBr:[1.5,3.5,6],bS:[-0.15,0,0.08],bG:[-8,0,4]};
+function cmTh(){const P=S.cm.p;if(!P.th)P.th=clone(CM_TH);Object.keys(CM_TH).forEach(k=>{if(!P.th[k])P.th[k]=clone(CM_TH[k]);});return Object.fromEntries(Object.entries(P.th).map(([k,a])=>[k,a.map(Number)]));}
 const cmStrip=t=>String(t||'').replace(/^[^\p{L}\p{N}]+/u,'').replace(/\s+/g,' ').trim();
 function cmCls(t){const u=String(t||'').toUpperCase();
   if(!t||/NO DATA|MANQUE/.test(u))return'';
@@ -26,7 +29,7 @@ function zAt(a,i,n){if(a[i]===null)return NaN;const w=win(a,i,n);return(a[i]-mea
 function pctRank(a,i,n){if(a[i]===null)return NaN;const w=win(a,i,n);if(w.length<2)return NaN;return w.filter(v=>v<a[i]).length/(w.length-1);}
 const nn=v=>v!==null&&isFinite(v);
 function cmCalc(){
-  const s=cmSeries(),P=cmP(),N=s.d.length,R=[];
+  const s=cmSeries(),P=cmP(),N=s.d.length,R=[],th=cmTh(),tSp=th.sp,tBb=th.bB,tBr=th.bBr,tS=th.bS,tG=th.bG;
   const spread=s.d.map((_,i)=>nn(s.brent[i])&&nn(s.wti[i])?s.brent[i]-s.wti[i]:null);
   const bB=s.d.map((_,i)=>nn(s.brent[i])&&nn(s.brentF[i])?s.brent[i]-s.brentF[i]:null);
   const bS=s.d.map((_,i)=>nn(s.silver[i])&&nn(s.silverF[i])?s.silver[i]-s.silverF[i]:null);
@@ -35,17 +38,17 @@ function cmCalc(){
   for(let i=0;i<N;i++){const p=i-1,r={i,d:s.d[i]};
     r.spread=spread[i];r.bB=bB[i];r.bS=bS[i];r.bG=bG[i];
     const x=r.spread;
-    r.spSt=!nn(x)?'NO DATA':x>=-10&&x<=0?'Risque logistique US':x>0&&x<=3?'Moyen':x>3&&x<=6?'Bon':x>6&&x<=10?'Attention':x>10&&x<=15?'Situation critique':'Panique';
-    r.spRk=!nn(x)?'':x>=-10&&x<=0?"BLOCAGE LOGISTIQUE US : le brut américain reste coincé localement. L'approvisionnement mondial dépend entièrement du Brent.":x>0&&x<=3?"FLUX TENDUS US : l'offre américaine est insuffisante pour soulager le marché mondial. Le Brent compense.":x>3&&x<=6?"APPROVISIONNEMENT SAIN : arbitrage fluide. Le marché mondial s'approvisionne correctement.":x>6&&x<=10?"PRESSION SUR L'OFFRE : l'approvisionnement global se tend. Le Brent surperforme le WTI (risque géopolitique majeur).":x>10&&x<=15?"SURCHARGE D'ARBITRAGE : le Brent est devenu trop cher par rapport au WTI. Risque de blocage de la demande mondiale.":"RUPTURE DE FLUX : panique sur les approvisionnements. Le marché physique mondial est déconnecté.";
+    r.spSt=!nn(x)?'NO DATA':x>=-10&&x<=tSp[0]?'Risque logistique US':x>tSp[0]&&x<=tSp[1]?'Moyen':x>tSp[1]&&x<=tSp[2]?'Bon':x>tSp[2]&&x<=tSp[3]?'Attention':x>tSp[3]&&x<=tSp[4]?'Situation critique':'Panique';
+    r.spRk=!nn(x)?'':x>=-10&&x<=tSp[0]?"BLOCAGE LOGISTIQUE US : le brut américain reste coincé localement. L'approvisionnement mondial dépend entièrement du Brent.":x>tSp[0]&&x<=tSp[1]?"FLUX TENDUS US : l'offre américaine est insuffisante pour soulager le marché mondial. Le Brent compense.":x>tSp[1]&&x<=tSp[2]?"APPROVISIONNEMENT SAIN : arbitrage fluide. Le marché mondial s'approvisionne correctement.":x>tSp[2]&&x<=tSp[3]?"PRESSION SUR L'OFFRE : l'approvisionnement global se tend. Le Brent surperforme le WTI (risque géopolitique majeur).":x>tSp[3]&&x<=tSp[4]?"SURCHARGE D'ARBITRAGE : le Brent est devenu trop cher par rapport au WTI. Risque de blocage de la demande mondiale.":"RUPTURE DE FLUX : panique sur les approvisionnements. Le marché physique mondial est déconnecté.";
     const e=r.bB,ep=p>=0?bB[p]:null;
-    r.bBSt=!nn(e)?'NO DATA':e>=-30&&e<=0?'Contango':e>0&&e<=1?'Flat / légère backwardation':e>1&&e<=3?'Backwardation modérée':e>3&&e<=6?'Forte backwardation':e>6?'Backwardation de crise':'';
-    r.bBRk=!nn(e)?'':e<0?"CONTANGO : surplus de pétrole, le stockage coûte cher. Si le Yuan est faible, signal de vente puissant.":e<=1.5?(nn(ep)&&e<ep?"CONTANGO SERRÉ : le spread se resserre vers l'équilibre. Base saine, hausse très probable.":"BACKWARDATION SAINE : équilibre dynamique. La demande est présente sans être paniquée."):e<=3.5?"BACKWARDATION FORTE : demande physique dominante. Le marché a besoin de barils maintenant. Signal baissier.":e<=6?"SURCHAUFFE PHYSIQUE : tension extrême sur les livraisons. Prix fragile, trop cher pour les raffineurs. Signal baissier si Yuan fort.":"RUPTURE / PANIQUE : pénurie réelle ou peur irrationnelle. Risque de retournement baissier violent par destruction de la demande.";
+    r.bBSt=!nn(e)?'NO DATA':e>=-30&&e<=tBb[0]?'Contango':e>tBb[0]&&e<=tBb[1]?'Flat / légère backwardation':e>tBb[1]&&e<=tBb[2]?'Backwardation modérée':e>tBb[2]&&e<=tBb[3]?'Forte backwardation':e>tBb[3]?'Backwardation de crise':'';
+    r.bBRk=!nn(e)?'':e<tBb[0]?"CONTANGO : surplus de pétrole, le stockage coûte cher. Si le Yuan est faible, signal de vente puissant.":e<=tBr[0]?(nn(ep)&&e<ep?"CONTANGO SERRÉ : le spread se resserre vers l'équilibre. Base saine, hausse très probable.":"BACKWARDATION SAINE : équilibre dynamique. La demande est présente sans être paniquée."):e<=tBr[1]?"BACKWARDATION FORTE : demande physique dominante. Le marché a besoin de barils maintenant. Signal baissier.":e<=tBr[2]?"SURCHAUFFE PHYSIQUE : tension extrême sur les livraisons. Prix fragile, trop cher pour les raffineurs. Signal baissier si Yuan fort.":"RUPTURE / PANIQUE : pénurie réelle ou peur irrationnelle. Risque de retournement baissier violent par destruction de la demande.";
     const h=r.bS;
-    r.bSSt=!nn(h)?'NO DATA':h<-.15?'Contango extrême':h<0?'Contango standard':h===0?'Parité sans arbitrage':h<=.08?'Tension':'Panique : backwardation critique';
-    r.bSRk=!nn(h)?'':h<-.15?"Stockage saturé (opportunité d'arbitrage cash & carry)":h<0?'Structure saine (marché normalement approvisionné)':h===0?'Convergence parfaite spot / futur':h<=.08?'Backwardation initiale (demande physique en hausse à court terme)':'Backwardation critique (pénurie de métal physique, crise de liquidité)';
+    r.bSSt=!nn(h)?'NO DATA':h<tS[0]?'Contango extrême':h<tS[1]?'Contango standard':h===tS[1]?'Parité sans arbitrage':h<=tS[2]?'Tension':'Panique : backwardation critique';
+    r.bSRk=!nn(h)?'':h<tS[0]?"Stockage saturé (opportunité d'arbitrage cash & carry)":h<tS[1]?'Structure saine (marché normalement approvisionné)':h===tS[1]?'Convergence parfaite spot / futur':h<=tS[2]?'Backwardation initiale (demande physique en hausse à court terme)':'Backwardation critique (pénurie de métal physique, crise de liquidité)';
     const k=r.bG;
-    r.bGSt=!nn(k)?'NO DATA':k<-8?'Contango extrême':k<0?'Contango standard':k===0?'Parité sans arbitrage':k<=4?'Tension':'Panique macro';
-    r.bGRk=!nn(k)?'':k<-8?"Surcharge de portage (opportunité d'arbitrage cash & carry)":k<0?'Structure saine (marché normalement approvisionné)':k===0?'Convergence parfaite spot / futur':k<=4?'Prime sur le physique (stress bancaire)':'Backwardation critique (fuite vers le physique, crise systémique)';
+    r.bGSt=!nn(k)?'NO DATA':k<tG[0]?'Contango extrême':k<tG[1]?'Contango standard':k===tG[1]?'Parité sans arbitrage':k<=tG[2]?'Tension':'Panique macro';
+    r.bGRk=!nn(k)?'':k<tG[0]?"Surcharge de portage (opportunité d'arbitrage cash & carry)":k<tG[1]?'Structure saine (marché normalement approvisionné)':k===tG[1]?'Convergence parfaite spot / futur':k<=tG[2]?'Prime sur le physique (stress bancaire)':'Backwardation critique (fuite vers le physique, crise systémique)';
     /* Confirmation Brent */
     r.zSp=zAt(spread,i,+P.zWin);r.pct=pctRank(spread,i,+P.pctWin);
     r.cC20=corr(s.brent,s.cnh,i,+P.cS);r.cC60=corr(s.brent,s.cnh,i,+P.cM);r.cWB=corr(s.brent,s.wti,i,+P.cS);
@@ -138,6 +141,14 @@ function renderCM(){
     <div class="card s12"><h2><span>${tab==='t'?'Tableau chronologique':'Tableau de confirmation'} <span class="meta">${nRows} séances sur ${N}</span></span><span class="row noprint"><button class="btn sm" data-act="cmall">${ui.cmAll?'60 dernières séances':'Toutes les séances'}</button><button class="btn sm" data-act="cmimp">Importer un export (CSV)</button>${ui.cmImp?`<select class="f" style="width:auto" data-ui="cmInst" aria-label="Instrument à mettre à jour">${Object.entries(CM_INST).map(([k,l])=>`<option value="${k}"${k===(ui.cmInst||'brent')?' selected':''}>${l}</option>`).join('')}</select><button class="btn pri sm" data-act="cmfile">Choisir le fichier</button>`:''}</span></h2><div class="tw" style="max-height:620px;overflow:auto">${table}</div></div>
     <div class="card s8"><h2>Paramètres des signaux <span class="meta">repris du classeur</span></h2>
       <div class="fields">${F('Fenêtre Z-score','cm.p.zWin','n',{u:'j'})}${F('Fenêtre percentile','cm.p.pctWin','n',{u:'j'})}${F('Corrélation court terme','cm.p.cS','n',{u:'j'})}${F('Corrélation moyen terme','cm.p.cM','n',{u:'j'})}${F('Corrélation forte au-delà de','cm.p.cStrong')}${F('Corrélation modérée au-delà de','cm.p.cMod')}${F('Z-score alerte','cm.p.zAlert')}${F('Z-score critique','cm.p.zCrit')}${F('Ratio Or/Argent refuge','cm.p.gsRef')}${F('Ratio Or/Brent déséquilibre','cm.p.gbDis')}</div></div>
+    <div class="card s12"><h2><span>Seuils de mise en conditionnelle <span class="meta">états du marché : backwardation, contango, basis</span></span><span class="meta">valeurs du classeur par défaut, crayon pour modifier</span></h2>
+      <div class="tw"><table class="tbl"><thead><tr><th>Indicateur</th><th>Bornes (de la plus basse à la plus haute)</th><th>États produits</th></tr></thead><tbody>
+        <tr><td>Spread Brent − WTI (USD)</td><td>${[0,1,2,3,4].map(j=>fld('cm.p.th.sp.'+j,'n',{al:'Seuil spread '+(j+1)})).join(' · ')}</td><td class="wrap">Risque logistique US ≤ b1 &lt; Moyen ≤ b2 &lt; Bon ≤ b3 &lt; Attention ≤ b4 &lt; Critique ≤ b5 &lt; Panique</td></tr>
+        <tr><td>Basis Brent : états (USD)</td><td>${[0,1,2,3].map(j=>fld('cm.p.th.bB.'+j,'n',{al:'Seuil basis Brent '+(j+1)})).join(' · ')}</td><td class="wrap">Contango ≤ b1 &lt; Flat ≤ b2 &lt; Backwardation modérée ≤ b3 &lt; Forte ≤ b4 &lt; Crise</td></tr>
+        <tr><td>Basis Brent : risques (USD)</td><td>${[0,1,2].map(j=>fld('cm.p.th.bBr.'+j,'n',{al:'Seuil risque Brent '+(j+1)})).join(' · ')}</td><td class="wrap">Backwardation saine ≤ r1 &lt; Forte ≤ r2 &lt; Surchauffe ≤ r3 &lt; Rupture</td></tr>
+        <tr><td>Basis Or (USD)</td><td>${[0,1,2].map(j=>fld('cm.p.th.bG.'+j,'n',{al:'Seuil basis or '+(j+1)})).join(' · ')}</td><td class="wrap">Contango extrême &lt; b1 ≤ Contango standard &lt; b2 = Parité ; Tension ≤ b3 &lt; Panique macro</td></tr>
+        <tr><td>Basis Argent (USD)</td><td>${[0,1,2].map(j=>fld('cm.p.th.bS.'+j,'n',{al:'Seuil basis argent '+(j+1)})).join(' · ')}</td><td class="wrap">Contango extrême &lt; b1 ≤ Contango standard &lt; b2 = Parité ; Tension ≤ b3 &lt; Panique</td></tr>
+      </tbody></table></div><p class="note">Toute modification recalcule immédiatement les états, risques et signaux de toutes les séances.</p></div>
     <div class="card s4"><h2>Sources</h2><div class="tw"><table class="tbl"><tbody>
       <tr><td>Cours quotidiens (spot, futurs M1, USD/CNH, S&P 500)</td><td>Exports Investing.com consolidés dans votre classeur TRADING_Dashboard, du ${fd(s.d[0])} au ${fd(lastD)}</td></tr>
       <tr><td>Règles d'état et de signal</td><td>Formules des onglets Tendance, Confirmation Brent et Confirmation Or-Argent du même classeur</td></tr>

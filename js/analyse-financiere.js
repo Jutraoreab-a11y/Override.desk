@@ -62,7 +62,7 @@ function renderAN(){
   const A=S.an.assets;let id=ui.tk;if(!A[id]){id=ui.tk=Object.keys(A)[0];}
   const R=anCalc(id),a=R.a,B=R.B,L=B.L,E=ui.edit,c=S.an.crit,P=k=>`an.assets.${id}.${k}`,cur=a.cur,rc=a.rcur;
   const LV=[{key:'sl',k:'Stop-loss',v:R.sl,c:TVC.down},{key:'buy',k:"Achat cible",v:R.buy,c:TVC.up},{key:'px',k:'Cours',v:+a.price,c:'#FAFAFA'},{key:'iv',k:'Valeur de référence',v:R.ref,c:'#A1A1AA'},{key:'tp',k:'Take-profit',v:R.tp,c:TVC.amber}];
-  const hrow=(lab,arr,fmt,key,cl)=>`<tr><td>${lab}</td>${arr.map((v,i)=>`<td class="n ${cl?(isFinite(v)?cls(v):''):''}">${key&&E?fld(`${P(key)}.${i}`,'n',{al:lab+' '+a.y[i]}):fmt(v)}</td>`).join('')}</tr>`;
+  const hrow=(lab,arr,fmt,key,cl)=>`<tr><td>${lab}</td>${arr.map((v,i)=>`<td class="n ${cl?(isFinite(v)?cls(v):''):''}">${key?penV(`${P(key)}.${i}`,fmt(v),{al:lab+' '+a.y[i]}):fmt(v)}</td>`).join('')}</tr>`;
   $('#p-an').innerHTML=`
   <div class="grid">
     ${prjBar('an')}
@@ -78,7 +78,7 @@ function renderAN(){
       </div>
       <div class="badge ${R.positive?'ok':'ko'}">${R.positive?'POSITIVE : PRENDRE POSITION':'NÉGATIVE : S\'ABSTENIR'}</div>
     </div>
-    ${E?`<div class="fields" style="margin-top:12px;max-width:760px">${F('Nom',P('n'),'t')}${F('Groupe de comparables',P('sec'),'t')}${F('Date du cours',P('pxDate'),'t')}${F('Devise de cotation',P('cur'),'t')}${F('Change comptes → cotation',P('fx'))}</div>`:''}</div>
+    ${true?`<div class="fields" style="margin-top:12px;max-width:760px">${F('Nom',P('n'),'t')}${F('Groupe de comparables',P('sec'),'t')}${F('Date du cours',P('pxDate'),'t')}${F('Devise de cotation',P('cur'),'t')}${F('Change comptes → cotation',P('fx'))}</div>`:''}</div>
 
     <div class="card s12"><h2>1. Décision d'investissement</h2>
       <div class="dec">${R.checks.map((x,i)=>`<div class="dc ${x[1]?'ok':'ko'}"><span class="dot ${x[1]?'ok':'ko'}"></span><div><b>${i+1}. ${x[0]}</b><span>${x[2]}</span></div></div>`).join('')}</div>

@@ -77,7 +77,7 @@ function statusHTML(){
   const n=document.querySelectorAll('.main .ovr').length;
   if(n)s+=`<span class="sti"><span class="dot am"></span>${n} valeur${n>1?'s':''} forcée${n>1?'s':''}</span>`;
   if(pending.size)s+=`<span class="sti"><span class="dot ac"></span>${pending.size} modification${pending.size>1?'s':''} en attente de recalcul</span>`;
-  s+=`<span class="r"><span>${ui.tab==='lbo'?'Euribor 3 mois 2,676 % (30/10/2026) · Damodaran janvier 2026':ui.tab==='pc'?'Leviers ESMA 2018 · EUR/USD 1,1219 (20/10/2026)':ui.tab==='jr'?'Saisie manuelle et rapports MT5':ui.tab==='an'||ui.tab==='pf'?'Données publiées MarketScreener, cours du 19-20/10/2026':ui.tab==='cm'?'Classeur TRADING_Dashboard (Investing.com)':ui.tab==='sc'?'Zones : FMI WEO':'Données de démonstration à sourcer'}</span><span>Calculé à ${lastCalc.toLocaleTimeString('fr-FR')}</span><span>${ui.edit?'<b style="color:var(--amber)">Override</b>':'Lecture'}</span></span>`;
+  s+=`<span class="r"><span>${ui.tab==='lbo'?`Euribor 3 mois ${nf(LBO_SRC.euribor.v,3)} % (${LBO_SRC.euribor.d}) · Damodaran janvier 2026`:ui.tab==='pc'?'Leviers ESMA 2018 · EUR/USD 1,1219 (20/10/2026)':ui.tab==='jr'?'Saisie manuelle et rapports MT5':ui.tab==='an'||ui.tab==='pf'?'Données publiées MarketScreener, cours du 19-20/10/2026':ui.tab==='cm'?'Classeur TRADING_Dashboard (Investing.com)':ui.tab==='sc'?'Zones : FMI WEO':'Données de démonstration à sourcer'}</span><span>Calculé à ${lastCalc.toLocaleTimeString('fr-FR')}</span><span>${ui.edit?'<b style="color:var(--amber)">Override</b>':'Lecture'}</span></span>`;
   return s;
 }
 function renderAll(){
@@ -90,9 +90,16 @@ function renderAll(){
   $('#editBtn').classList.toggle('on',ui.edit);$('#editBtn').setAttribute('aria-pressed',ui.edit);
   $('#editBtn').innerHTML=`${ic(ui.edit?'lock':'pen')}<span class="lbl">${ui.edit?'Verrouiller':'Override'}</span>`;
   $('#pdfBtn').innerHTML=`${ic('dl')}<span class="lbl">Exporter PDF</span>`;
+  $('#aiBtn').innerHTML=`${ic('ai')}<span class="lbl">Collecte IA</span>`;renderAI();
   updBar();
   const t={lbo:'Dossier d\'acquisition LBO',pc:'Calculateur de position',jr:'Journal de trading',bp:'Business plan',an:"Rapport d'analyse financière",sc:"Sélecteur d'entreprises & double mapping",pf:'Suivi des actifs et placements',cm:'Commodities & flows : '+((ui.cmT||'t')==='t'?'pression et approvisionnement':'confirmation et corrélations'),ab:'Abonnement'}[ui.tab],sub=ui.tab==='bp'?S.bp.name:ui.tab==='an'?(S.an.assets[ui.tk]||{}).n:ui.tab==='cm'?CM_ASSETS[ui.cmA||'brent']:ui.tab==='sc'?('zone '+geoAgg(ui.geo).lab+', '+((S.sc.list.find(c=>c.id===ui.sel)||{}).n||'')):'';
-  $('#printHead').innerHTML=`<h1>OVERRIDE.DESK : ${esc(t)}${sub?', '+esc(sub):''}</h1><p>Édité le ${new Date().toLocaleDateString('fr-FR',{day:'numeric',month:'long',year:'numeric'})}. ${document.querySelectorAll('#p-'+ui.tab+' .ovr').length} valeur(s) forcée(s) par l'analyste, signalées par *. Rapport d'aide à la décision, ne constitue pas un conseil en investissement.</p>`;
+  const SRC={bp:["Repères sectoriels : Damodaran (NYU Stern), janvier 2026, consulté le 21/10/2026","PIB et croissance : FMI, World Economic Outlook, consulté le 21/10/2026","Hypothèses du projet : données de démonstration à sourcer ("+esc(S.bp.srcDate||'')+")"],
+    an:["Comptes publiés et cours : MarketScreener, consultés les 19-20/10/2026","EUR/USD 1,1219 : poundsterlinglive, 20/10/2026"],sc:["Zones : FMI WEO, consulté le 21/10/2026","Secteurs : Damodaran janvier 2026"],
+    lbo:[`Euribor 3 mois ${nf(LBO_SRC.euribor.v,3)} % au ${LBO_SRC.euribor.d} : ${LBO_SRC.euribor.s}`,"Multiples sectoriels : Damodaran janvier 2026","Impôt sur les sociétés 25 % : Code général des impôts"],
+    pf:["Cours et résultats : MarketScreener, 19-20/10/2026",S.mt5.linked?"Compte MT5 : "+(S.mt5.mode==='metaapi'?'MetaApi':'rapport '+esc(S.mt5.file||''))+", synchronisé le "+(S.mt5.lastSync?new Date(S.mt5.lastSync).toLocaleDateString('fr-FR'):'—'):"Compte MT5 non lié"],
+    cm:["Cours quotidiens : exports Investing.com consolidés dans le classeur TRADING_Dashboard (01/2025 à 06/2026)","Seuils et signaux : formules du même classeur"],
+    pc:["Leviers : ESMA, décision (UE) 2018/796","EUR/USD 1,1219 au 20/10/2026"],jr:["Saisie manuelle et rapports MT5 importés"]}[ui.tab]||[];
+  $('#printHead').innerHTML=`<h1>OVERRIDE.DESK : ${esc(t)}${sub?', '+esc(sub):''}</h1>${SRC.length?`<p><b>Sources et dates de consultation :</b> ${SRC.join(' ; ')}.</p>`:''}<p>Édité le ${new Date().toLocaleDateString('fr-FR',{day:'numeric',month:'long',year:'numeric'})}. ${document.querySelectorAll('#p-'+ui.tab+' .ovr').length} valeur(s) forcée(s) par l'analyste, signalées par *. Rapport d'aide à la décision, ne constitue pas un conseil en investissement.</p>`;
 }
 function updBar(){
   $('#recalcBtn').innerHTML=`${ic('calc')}<span class="lbl">Recalculer</span>${pending.size?`<span class="pend">${pending.size}</span>`:''}`;
@@ -108,7 +115,7 @@ document.addEventListener('input',e=>{
   const el=e.target;
   if(el.dataset&&el.dataset.lk){const v=lkVal(el);if(v===undefined)return;setP(S,el.dataset.lk,v);if(el.dataset.live&&LIVE[ui.tab]){LIVE[ui.tab]();save();}return;}
   if(el.dataset&&el.dataset.ui){ui[el.dataset.ui]=el.value;renderAll();save();return;}
-  if(!el.classList||!el.classList.contains('f')||!ui.edit||!el.dataset.k)return;
+  if(!el.classList||!el.classList.contains('f')||!(ui.edit||el.dataset.pen)||!el.dataset.k)return;
   const k=el.dataset.k,t=el.dataset.t;let v=el.value;
   if(t==='nn')v=el.value===''?null:parseFloat(el.value);
   else if(t==='n'){v=el.value===''?0:parseFloat(el.value);if(!isFinite(v))return;}
@@ -118,14 +125,19 @@ document.addEventListener('change',e=>{
   const el=e.target;
   if(el.dataset&&el.dataset.prj){prjSwitch(el.dataset.prj,el.value,false);return;}
   if(el.dataset&&el.dataset.lbo){S.lbo.cur=el.value;renderAll();save();return;}
+  if(el.dataset&&el.dataset.lbosc){lboScAct('load',el.value);return;}
+  if(el.dataset&&el.dataset.pen&&el.dataset.k){ui.penK=null;ui.penOld=undefined;recalc('Valeur forcée : modèle recalculé en cascade');return;}
   if(el.dataset&&el.dataset.lbosrc){ui.lboSrc=el.value;save();return;}
   if(el.dataset&&el.dataset.ver){prjSwitch(el.dataset.ver,el.value,true);return;}
   if(!el.dataset||!el.dataset.lk)return;
   const v=lkVal(el);if(v!==undefined)setP(S,el.dataset.lk,v);
+  if(ui.penK===el.dataset.lk)ui.penK=null;
   if(el.dataset.lk==='pc.sym'){S.pc.entry=null;S.pc.sl=null;S.pc.tp=null;}
   save();setTimeout(()=>{const a=document.activeElement,k=a&&a.dataset?a.dataset.lk:null,sc=$('#main').scrollTop;renderAll();$('#main').scrollTop=sc;if(k){const n=document.querySelector(`[data-lk="${CSS.escape(k)}"]`);if(n)n.focus();}},0);
 });
 document.addEventListener('keydown',e=>{
+  if(e.key==='Escape'&&ui.penK){if(ui.penOld!==undefined&&getP(S,ui.penK)!==undefined)setP(S,ui.penK,ui.penOld);pending.delete(ui.penK);ui.penK=null;ui.penOld=undefined;renderAll();return;}
+  if(e.key==='Enter'&&e.target.dataset&&e.target.dataset.pen&&e.target.tagName==='INPUT'){e.preventDefault();e.target.blur();return;}
   if(e.key==='Enter'&&e.target.dataset&&e.target.dataset.lk&&e.target.tagName==='INPUT'){e.target.blur();return;}
   if(e.key==='Enter'&&e.target.id==='q'){e.preventDefault();doSearch();}
   if((e.key==='Enter'||e.key===' ')&&e.target.closest&&e.target.closest('g.pt[data-act]')){e.preventDefault();e.target.closest('g.pt').dispatchEvent(new MouseEvent('click',{bubbles:true}));}
@@ -180,6 +192,15 @@ document.addEventListener('click',e=>{
     case 'mt5sync':mt5Sync();break;
     case 'mt5unlink':S.mt5=Object.assign(clone(DEF.mt5),{mode:S.mt5.mode});ui.mt5Open=false;renderAll();save();toast('Compte MT5 délié (les trades importés restent dans le journal)');break;
     case 'cmfile':$('#cmFile').click();break;
+    case 'aiopen':ui.aiOpen=!ui.aiOpen;renderAI();break;
+    case 'aiclose':ui.aiOpen=false;renderAI();break;
+    case 'aicol':{const x=aiTargets().find(t=>t.k===id);if(x)aiCollect(x);break;}
+    case 'pen':{const k=b.dataset.k;ui.penOld=clone(getP(S,k)??null);ui.penK=k;renderAll();const n=document.querySelector(`[data-k="${CSS.escape(k)}"][data-pen]`);if(n){n.focus();if(n.select)try{n.select();}catch(_){}}break;}
+    case 'penok':{const a=document.activeElement;if(a&&a.dataset&&(a.dataset.pen||a.dataset.lk===ui.penK)){a.blur();}ui.penK=null;ui.penOld=undefined;recalc('Valeur forcée : modèle recalculé en cascade');break;}
+    case 'penreset':{const k=b.dataset.k;setP(S,k,clone(getP(DEF,k)));ui.penK=null;recalc('Valeur de référence rétablie');break;}
+    case 'penlin':{ui.penK=id;renderAll();const n=document.querySelector(`[data-lk="${CSS.escape(id)}"]`);if(n){n.focus();try{n.select();}catch(_){}}break;}
+    case 'penclr':setP(S,id,null);ui.penK=null;renderAll();save();toast('Valeur recalculée par le modèle');break;
+    case 'lbosc':{const[a,x]=id.split(':');lboScAct(a,x);break;}
     case 'lbonew':{const d=lboNew(ui.lboSrc||('sc:'+ui.sel));if(d){renderAll();save();$('#main').scrollTop=0;toast('Dossier LBO créé et pré-rempli : '+d.name);}else toast('Cible introuvable');break;}
     case 'lbogen':{const d=lboNew(id);if(d){ui.lboSrc=id;ui.tab='lbo';renderAll();save();$('#main').scrollTop=0;toast('Dossier LBO généré : '+d.name);}break;}
     case 'lbodel':{const d=lboCur();if(d){S.lbo.list=S.lbo.list.filter(x=>x.id!==d.id);S.lbo.cur=S.lbo.list.length?S.lbo.list[0].id:null;renderAll();save();toast('Dossier LBO supprimé');}break;}
@@ -194,3 +215,8 @@ renderAll();
 
 $('#mt5File').addEventListener('change',e=>{const f=e.target.files[0];if(!f)return;readReport(f,txt=>{const r=mt5Ingest(txt,f.name);e.target.value='';save();renderAll();
   toast(r.tot?`${r.tot} position${r.tot>1?'s':''} lue${r.tot>1?'s':''} dans le rapport, ${r.n} nouvelle${r.n>1?'s':''} ajoutée${r.n>1?'s':''} au journal`:r.info.balance!=null?'Rapport lu : solde et fonds propres mis à jour':'Rapport non reconnu : exportez l\'historique MT5 au format HTML');});});
+
+/* Petit crayon : garder le focus pendant le clic sur ✓ / ↺, sortir proprement si rien n'a changé */
+document.addEventListener('mousedown',e=>{if(e.target.closest('.pv-on .pen,.pen-wrap .pen'))e.preventDefault();});
+document.addEventListener('focusout',e=>{const el=e.target;if(!el.dataset||!ui.penK)return;if(!(el.dataset.pen||el.dataset.lk===ui.penK))return;
+  setTimeout(()=>{const a=document.activeElement;if(ui.penK&&!(a&&a.closest&&a.closest('.pv-on,.pen-wrap'))){ui.penK=null;ui.penOld=undefined;renderAll();}},120);});

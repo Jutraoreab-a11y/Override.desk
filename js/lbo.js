@@ -6,35 +6,47 @@ function lboTarget(src){
   if(type==='sc'){const c=S.sc.list.find(x=>x.id===id);if(!c)return null;const sec=SECT[c.sec]?c.sec:'saas',D=DAMO[sec]||DAMO.saas;
     const filt=FKEYS.map((k,i)=>[FQ[i][0],+c[k],[c.liqTxt,c.catTxt,c.faille,c.tamTxt][i]]);
     return{type,id,name:c.n,sec:(SECT[sec]||{}).l||sec,secKey:sec,rev:+c.arr,ebitda:+c.arr*(+c.ebm||0)/100,m:+c.ebm||0,g:+c.gr||0,score:attr(c),filt,mult:+D.eve,multSrc:`VE/EBITDA médian du secteur ${D.ind}, Damodaran janvier 2026`,
-      thesis:[c.pos,c.equity].filter(Boolean).join(' '),pres:[c.bmTxt,c.teamTxt].filter(Boolean).join(' '),srcLab:'Dossier du Sélecteur',prem:0,lead:c.lead};}
+      thesis:[c.pos,c.equity].filter(Boolean).join(' '),pres:[c.bmTxt,c.teamTxt].filter(Boolean).join(' '),sell:c.bmTxt||'',who:c.pos||'',edge:c.faille?'Angle mort du leader exploité : '+c.faille:'',srcLab:'Dossier du Sélecteur',prem:0,lead:c.lead};}
   if(type==='bp'){const b=S.bp,r=bpCalc(),k=r.mk,Y=r.Y,H=r.H,yr=Y[H-1],sec=SECT[b.sector]?b.sector:'saas',D=DAMO[sec]||DAMO.saas,T=b.tamis;
     const filt=k.filt.map(f=>[f[0],+f[1],f[2]]),sc=10*((+T.cat)*25+(+T.conc)*20+k.sizeS*25+7*15+(r.ratio>=3?8:5)*15)/100;
     return{type,id:'bp',name:b.name||'Projet',sec:(SECT[sec]||{}).l,secKey:sec,rev:yr.rev/1e6,ebitda:yr.ebitda/1e6,m:yr.em,g:Y[H-2]?(yr.rev/Y[H-2].rev-1)*100:20,score:sc,filt,mult:+D.eve,multSrc:`VE/EBITDA médian du secteur ${D.ind}, Damodaran janvier 2026`,
-      thesis:[b.posStmt,b.edge].filter(Boolean).join(' '),pres:b.whatSell,srcLab:`Business plan (année ${H} du prévisionnel, ${(+b.startY||2027)+H-1})`,prem:0};}
+      thesis:[b.posStmt,b.edge].filter(Boolean).join(' '),pres:b.whatSell,sell:b.whatSell||'',who:(b.fiche||{}).forWho||'',edge:b.edge||'',bm:(typeof BM_TYPES!=='undefined'?(BM_TYPES[(b.fiche||{}).bmType]||'')+' · '+(REV_TYPES[(b.fiche||{}).revType]||''):''),srcLab:`Business plan (année ${H} du prévisionnel, ${(+b.startY||2027)+H-1})`,prem:0};}
   if(type==='an'){const a=S.an.assets[id];if(!a)return null;const B=anBase(a),L=B.L,R=anCalc(id),k=a.rcur==='USD'?1/FX_EURUSD:1;
     return{type,id,name:`${a.n} (${a.t})`,sec:a.sec,secKey:null,rev:a.rev[L]*k,ebitda:a.ebitda[L]*k,m:B.em[L],g:isFinite(B.revG[L])?B.revG[L]:3,score:R.score,filt:R.filt.map(f=>[f[0],+f[1],f[2]]),mult:B.evE,multSrc:`VE/EBITDA actuel du titre (cours du ${a.pxDate||'—'})`,
-      thesis:R.concl,pres:`${a.sec}. Comptes ${a.y[L]} publiés, source ${a.src||'MarketScreener'}.`,srcLab:'Titre coté (retrait de la cote)',prem:25,netDebt:a.nd[L]*k};}
+      thesis:R.concl,pres:`${a.sec}. Comptes ${a.y[L]} publiés, source ${a.src||'MarketScreener'}.`,sell:'',who:'',edge:'',srcLab:'Titre coté (retrait de la cote)',prem:25,netDebt:a.nd[L]*k};}
   return null;
 }
 function lboNew(src){
   const T=lboTarget(src);if(!T)return null;const g=clamp(T.g,-5,40);
-  const d={id:uid('l'),name:'LBO '+T.name,src,date:today(),thesis:T.thesis||'',pres:T.pres||'',
-    p:{entryMult:+(isFinite(T.mult)&&T.mult>0?T.mult:8).toFixed(1),exitMult:+(isFinite(T.mult)&&T.mult>0?T.mult:8).toFixed(1),prem:T.prem,fees:3,seniorPct:55,margin:4,euribor:LBO_SRC.euribor.v,amortY:7,mezzPct:0,mezzRate:10,sweep:50,H:5,
+  const d={id:uid('l'),name:'LBO '+T.name,src,date:today(),thesis:T.thesis||'',pres:T.pres||'',sell:T.sell||'',who:T.who||'',edge:T.edge||'',bm:T.bm||'',
+    p:{basis:'emplois',entryMult:+(isFinite(T.mult)&&T.mult>0?T.mult:8).toFixed(1),exitMult:+(isFinite(T.mult)&&T.mult>0?T.mult:8).toFixed(1),prem:T.prem,fees:3,seniorPct:55,margin:4,euribor:LBO_SRC.euribor.v,amortY:7,mezzPct:0,mezzRate:10,sweep:50,H:5,
       g:[1,2,3,4,5].map(i=>+(g*Math.pow(0.85,i-1)).toFixed(1)),m0:+(+T.m||0).toFixed(1),mT:+Math.max(+T.m||0,(+T.m||0)+3).toFixed(1),capex:3,bfr:10,da:3,tax:LBO_SRC.tax.v,covLev:4.5,covDscr:1.2,irrT:20,synIncl:true},
     syn:[{lev:'Achats et sous-traitance mutualisés',zone:'France ↔ Afrique',k:0,y:2,note:'À chiffrer avec les fournisseurs'},{lev:'Ouverture commerciale',zone:'Afrique de l\'Ouest (zone franc CFA)',k:0,y:3,note:'Clients et distributeurs à identifier'},{lev:'Centre de services partagés',zone:'France → Afrique du Nord',k:0,y:3,note:'Coûts de structure à comparer'}],
     road:['100 premiers jours : gouvernance, reporting mensuel, revue des contrats clés','Plan de performance opérationnelle et achats','Croissance externe ciblée ou ouverture d\'un nouveau marché','Montée en puissance des synergies et désendettement','Préparation de la sortie : data room, vendor due diligence']};
-  /* Dette senior dimensionnée à 55 % de la VE, plafonnée à 4× l'EBITDA (capacité usuelle des banques) */
-  {const ev=(+T.ebitda)*d.p.entryMult*(1+(+d.p.prem||0)/100);if(T.ebitda>0&&ev>0)d.p.seniorPct=+Math.min(55,4*T.ebitda/ev*100).toFixed(1);}
-  S.lbo.list.push(d);S.lbo.cur=d.id;return d;
+  lboMig(d);S.lbo.list.push(d);S.lbo.cur=d.id;return d;
 }
-function lboCur(){return S.lbo.list.find(x=>x.id===S.lbo.cur)||S.lbo.list[0];}
+function lboCur(){const d=S.lbo.list.find(x=>x.id===S.lbo.cur)||S.lbo.list[0];if(d)lboMig(d);return d;}
+/* Dette senior : 50 à 60 % des emplois par défaut (règle v5). Scénarios multiples par dossier. */
+function lboMig(d){
+  if(d.p.basis!=='emplois'){d.p.basis='emplois';d.p.seniorPct=55;}
+  if(!d.ov)d.ov={rev:[],eb:[]};
+  if(d.sell===undefined){const T=lboTarget(d.src)||{};d.sell=T.sell||'';d.who=T.who||'';d.edge=T.edge||'';d.bm=T.bm||'';}
+  if(!d.scs||!d.scs.length){const s={id:uid('s'),name:'Scénario de base',date:today()};d.scs=[s];d.scCur=s.id;lboSync(d);}
+}
+function lboSync(d){const s=d.scs.find(x=>x.id===d.scCur);if(s)Object.assign(s,{p:clone(d.p),syn:clone(d.syn),road:clone(d.road),ov:clone(d.ov)});}
+function lboScView(d,s){return s.id===d.scCur?d:Object.assign({},d,{p:s.p,syn:s.syn,road:s.road,ov:s.ov||{rev:[],eb:[]}});}
+function lboScAct(act,id){const d=lboCur();if(!d)return;lboSync(d);const cur=d.scs.find(x=>x.id===d.scCur);
+  if(act==='new'){const n={id:uid('s'),name:'Nouveau scénario',date:today(),p:clone(d.p),syn:clone(d.syn),road:clone(d.road),ov:clone(d.ov)};d.scs.push(n);d.scCur=n.id;ui.lboScRen=n.id;toast('Scénario créé à partir de « '+cur.name+' » : renommez-le puis modifiez ses paramètres');}
+  else if(act==='load'){const n=d.scs.find(x=>x.id===id);if(n){d.scCur=n.id;d.p=clone(n.p);d.syn=clone(n.syn);d.road=clone(n.road);d.ov=clone(n.ov||{rev:[],eb:[]});toast('Scénario ouvert : '+n.name);}}
+  else if(act==='del'){if(d.scs.length<2){toast('Un dossier garde au moins un scénario');return;}d.scs=d.scs.filter(x=>x.id!==id);if(id===d.scCur){const n=d.scs[0];d.scCur=n.id;d.p=clone(n.p);d.syn=clone(n.syn);d.road=clone(n.road);d.ov=clone(n.ov||{rev:[],eb:[]});}toast('Scénario supprimé');}
+  renderAll();save();}
 function lboModel(d,ov){
-  const T=lboTarget(d.src)||{rev:0,ebitda:0,netDebt:0},P=Object.assign({},d.p,ov||{}),H=clamp(Math.round(+P.H),3,7);
+  const T=lboTarget(d.src)||{rev:0,ebitda:0,netDebt:0},P=Object.assign({},d.p,ov||{}),O=d.ov||{rev:[],eb:[]},H=clamp(Math.round(+P.H),3,7);
   const rate=(+P.euribor+ +P.margin)/100,m0=+P.m0/100,mT=+P.mT/100,rev0=T.rev,e0=rev0*m0;
-  const ev0=e0*(+P.entryMult)*(1+(+P.prem||0)/100),fees=ev0*(+P.fees)/100,sen0=ev0*(+P.seniorPct)/100,mez0=ev0*(+P.mezzPct)/100,eq0=ev0+fees-sen0-mez0;
+  const ev0=e0*(+P.entryMult)*(1+(+P.prem||0)/100),fees=ev0*(+P.fees)/100,emp=ev0+fees,sen0=emp*(+P.seniorPct)/100,mez0=emp*(+P.mezzPct)/100,eq0=emp-sen0-mez0;
   const Y=[];let rev=rev0,sen=sen0,cash=0;
-  for(let t=1;t<=H;t++){const g=+(P.g[t-1]??P.g[P.g.length-1])/100,rv=rev*(1+g),mg=m0+(mT-m0)*t/H;
-    const syn=(P.synIncl===true||P.synIncl==='true')?sum(d.syn.filter(s=>+s.y<=t).map(s=>(+s.k||0)/1000)):0,eb=rv*mg+syn,da=rv*(+P.da)/100,ebit=eb-da;
+  for(let t=1;t<=H;t++){const oR=O.rev[t-1],oE=O.eb[t-1],rv=oR!=null&&oR!==''&&isFinite(+oR)?+oR:rev*(1+(+(P.g[t-1]??P.g[P.g.length-1]))/100),g=(rv/rev-1),mg=m0+(mT-m0)*t/H;
+    const syn=(P.synIncl===true||P.synIncl==='true')?sum(d.syn.filter(s=>+s.y<=t).map(s=>(+s.k||0)/1000)):0,eb=oE!=null&&oE!==''&&isFinite(+oE)?+oE:rv*mg+syn,da=rv*(+P.da)/100,ebit=eb-da;
     const iS=sen*rate,iM=mez0*(+P.mezzRate)/100,tax=Math.max(0,(ebit-iS-iM)*(+P.tax)/100),capex=rv*(+P.capex)/100,dB=(rv-rev)*(+P.bfr)/100;
     const fcf=eb-capex-dB-tax,am=Math.min(sen,sen0/Math.max(1,+P.amortY)),after=cash+fcf-iS-iM-am,sw=Math.max(0,Math.min(sen-am,after*(+P.sweep)/100));
     const senC=sen-am-sw,cashC=after-sw,nd=senC+mez0-cashC;
@@ -69,14 +81,23 @@ function renderLBO(){
   if(!d){$('#p-lbo').innerHTML=`<div class="grid">${bar}<div class="card s12"><h2>Aucun dossier LBO</h2><p class="lead" style="margin-top:0">Choisissez une cible (dossier du Sélecteur, business plan ou titre coté) puis « + Nouveau dossier LBO » : le dossier est pré-rempli avec ses données et structuré en cinq parties pour le comité d'acquisition et les banques.</p><p class="note">Raccourci : bouton « Générer le dossier LBO » sur la fiche d'un dossier du Sélecteur.</p></div></div>`;return;}
   const i=L.indexOf(d),Pp=`lbo.list.${i}.p`,M=lboModel(d),T=M.T,P=M.P,Y=M.Y,H=M.H,v=lboVerdict(M),ch=lboChecks(M),u=' M€',mm=x=>nf(x,2);
   if(!T){$('#p-lbo').innerHTML=`<div class="grid">${bar}<div class="card s12 msg">La cible de ce dossier n'existe plus.</div></div>`;return;}
+  lboSync(d);
+  const scB=`<div class="card s12 prj noprint"><div class="prj-h"><span class="prj-l"><b>Scénario</b></span>
+      <select class="f" style="width:auto;max-width:260px" data-lbosc="1" aria-label="Scénario">${d.scs.map(s=>`<option value="${s.id}"${s.id===d.scCur?' selected':''}>${esc(s.name)} · ${fdate(s.date)}</option>`).join('')}</select>
+      <label class="fld" style="flex-direction:row;align-items:center;gap:6px;margin:0"><span class="lb" style="margin:0">Nom</span>${lin(`lbo.list.${i}.scs.${d.scs.findIndex(s=>s.id===d.scCur)}.name`,'t',{style:'width:200px',al:'Nom du scénario'})}</label>
+      <span class="row" style="margin-left:auto"><button class="btn sm" data-act="lbosc" data-id="new">+ Nouveau scénario</button><button class="btn sm" data-act="lbosc" data-id="del:${d.scCur}"${d.scs.length<2?' disabled':''}>Supprimer ce scénario</button></span></div>
+    ${d.scs.length>1?`<div class="tw" style="margin-top:10px"><table class="tbl fin"><thead><tr><th>Scénario</th><th class="n">Multiple d'entrée</th><th class="n">Dette senior</th><th class="n">Equity</th><th class="n">Levier</th><th class="n">DSCR min.</th><th class="n">TRI</th><th class="n">MoIC</th><th>Verdict</th><th></th></tr></thead><tbody>
+      ${d.scs.map(s=>{const m=lboModel(lboScView(d,s)),vv=lboVerdict(m);return`<tr${s.id===d.scCur?' class="on"':''}><td><b>${esc(s.name)}</b> <span class="meta">${fdate(s.date)}</span></td><td class="n">${nf(+s.p.entryMult,1)}×</td><td class="n">${nf(m.sen0,2)} M€ · ${pct(+s.p.seniorPct,0)}</td><td class="n">${nf(m.eq0,2)} M€</td><td class="n">${nf(m.lev0,1)}×</td><td class="n ${m.minDscr<+s.p.covDscr?'down':''}">${nf(m.minDscr,2)}</td><td class="n ${m.irr*100>=+s.p.irrT?'up':'down'}">${isFinite(m.irr)?pct(m.irr*100,1):'—'}</td><td class="n">${isFinite(m.moic)?nf(m.moic,2)+'×':'—'}</td><td><span class="tag ${vv[0]}">${vv[1].split(' (')[0]}</span></td><td style="white-space:nowrap">${s.id===d.scCur?'':`<button class="btn sm" data-act="lbosc" data-id="load:${s.id}">Ouvrir</button> <button class="btn sm" data-act="lbosc" data-id="del:${s.id}">Supprimer</button>`}</td></tr>`;}).join('')}
+    </tbody></table></div>`:''}</div>`;
+  const penC=(k,t,val)=>{const pth=`lbo.list.${i}.ov.${k}.${t}`,ov=d.ov[k][t]!=null&&d.ov[k][t]!=='';return ui.penK===pth?`<span class="pen-wrap">${lin(pth,'nn',{style:'width:84px',al:'Valeur forcée'})}<button class="pen" data-act="penok" title="Valider">✓</button></span>`:`<span class="pen-wrap${ov?' ovr':''}">${nf(val,2)}<button class="pen" data-act="penlin" data-id="${pth}" title="Forcer la valeur">${ic('pen')}</button>${ov?`<button class="pen" data-act="penclr" data-id="${pth}" title="Revenir au calcul">↺</button>`:''}</span>`;};
   const yrs=Y.map(y=>'A'+y.t),row=(l,a,c,f)=>`<tr class="${c||''}"><td>${l}</td>${a.map(x=>{x=Math.abs(x)<5e-4?0:x;return`<td class="n${x<0&&!f?' down':''}">${f?f(x):mm(x)}</td>`;}).join('')}</tr>`;
   const br=M.bridge,brT=br.growth+br.mult+br.delev+br.fees;
-  $('#p-lbo').innerHTML=`<div class="grid">${bar}
+  $('#p-lbo').innerHTML=`<div class="grid">${bar}${scB}
     <div class="ph s12" style="grid-column:1/-1"><div><h1>Dossier d'acquisition LBO : ${esc(T.name)}</h1><p>Comité d'acquisition et banques · ${esc(T.srcLab)} · établi le ${fdate(d.date)} · montants en millions d'euros</p></div></div>
     <div class="card s12 noprint"><h2><span>Configuration du montage</span><span class="meta">chaque valeur est modifiable et recalcule le dossier</span></h2>
       <div class="fields">${LF('Nom du dossier',`lbo.list.${i}.name`,'t')}${LF('Multiple d\'entrée VE / EBITDA',Pp+'.entryMult','n',{u:'×'})}${LF('Prime de contrôle',Pp+'.prem','n',{u:'%'})}${LF('Frais de transaction',Pp+'.fees','n',{u:'% VE'})}
-        ${LF('Dette senior',Pp+'.seniorPct','n',{u:'% VE'})}${LF('Euribor 3 mois',Pp+'.euribor','n',{u:'%'})}${LF('Marge bancaire senior',Pp+'.margin','n',{u:'%'})}${LF('Durée d\'amortissement senior',Pp+'.amortY','n',{u:'ans'})}
-        ${LF('Dette mezzanine',Pp+'.mezzPct','n',{u:'% VE'})}${LF('Taux mezzanine (in fine)',Pp+'.mezzRate','n',{u:'%'})}${LF('Remboursement anticipé (cash sweep)',Pp+'.sweep','n',{u:'% excédent'})}${LF('Horizon de sortie',Pp+'.H','n',{u:'ans'})}
+        ${LF('Dette senior',Pp+'.seniorPct','n',{u:'% emplois'})}${LF('Euribor 3 mois',Pp+'.euribor','n',{u:'%'})}${LF('Marge bancaire senior',Pp+'.margin','n',{u:'%'})}${LF('Durée d\'amortissement senior',Pp+'.amortY','n',{u:'ans'})}
+        ${LF('Dette mezzanine',Pp+'.mezzPct','n',{u:'% emplois'})}${LF('Taux mezzanine (in fine)',Pp+'.mezzRate','n',{u:'%'})}${LF('Remboursement anticipé (cash sweep)',Pp+'.sweep','n',{u:'% excédent'})}${LF('Horizon de sortie',Pp+'.H','n',{u:'ans'})}
         ${LF('Multiple de sortie',Pp+'.exitMult','n',{u:'×'})}${LF('Marge EBITDA actuelle',Pp+'.m0','n',{u:'%'})}${LF('Marge EBITDA cible',Pp+'.mT','n',{u:'%'})}${LF('Investissements',Pp+'.capex','n',{u:'% CA'})}
         ${LF('BFR',Pp+'.bfr','n',{u:'% CA'})}${LF('Amortissements',Pp+'.da','n',{u:'% CA'})}${LF('Impôt sur les sociétés',Pp+'.tax','n',{u:'%'})}${LF('TRI cible',Pp+'.irrT','n',{u:'%'})}
         ${LF('Levier maximal (covenant)',Pp+'.covLev','n',{u:'×'})}${LF('DSCR minimal (covenant)',Pp+'.covDscr','n')}${LF('Synergies dans le modèle',Pp+'.synIncl','s',{opts:{true:'Oui',false:'Non'}})}</div>
@@ -96,7 +117,11 @@ function renderLBO(){
           <tr><td>Société</td><td><b>${esc(T.name)}</b></td></tr><tr><td>Secteur</td><td>${esc(T.sec)}</td></tr>
           <tr><td>Chiffre d'affaires de référence</td><td class="num">${mm(T.rev)}${u}</td></tr><tr><td>EBITDA de référence</td><td class="num ${M.e0<0?'down':''}">${mm(M.e0)}${u} (marge ${pct(+P.m0,1)})</td></tr>
           <tr><td>Croissance récente</td><td class="num">${sgn(T.g,1)}</td></tr><tr><td>Origine des données</td><td>${esc(T.srcLab)}</td></tr></tbody></table></div>
-          <div class="lb" style="margin-top:8px">Activité</div>${lin(`lbo.list.${i}.pres`,'a',{rows:3})}</div>
+          <div class="lb" style="margin-top:8px">Activité</div>${lin(`lbo.list.${i}.pres`,'a',{rows:3})}
+          <div class="lb" style="margin-top:8px">Ce que la cible vend</div>${lin(`lbo.list.${i}.sell`,'a',{rows:2,ph:'Produits ou services exacts'})}
+          <div class="lb" style="margin-top:8px">À qui</div>${lin(`lbo.list.${i}.who`,'a',{rows:2,ph:'Clients, taille, acheteurs et décideurs'})}
+          <div class="lb" style="margin-top:8px">Business model</div>${lin(`lbo.list.${i}.bm`,'t',{ph:'ex. SaaS par abonnement, maintenance sous contrat'})}
+          <div class="lb" style="margin-top:8px">Avantage injuste (edge)</div>${lin(`lbo.list.${i}.edge`,'a',{rows:2,ph:'Ce que les concurrents ne peuvent pas copier'})}</div>
         <div class="s6" style="min-width:0"><h3 class="h3">Thèse d'investissement</h3>${lin(`lbo.list.${i}.thesis`,'a',{rows:6,ph:'Pourquoi cette cible, pourquoi maintenant, comment on crée la valeur'})}
           <div class="dec" style="grid-template-columns:1fr;margin-top:8px">${ch.map(x=>`<div class="dc"><span class="dot ${x[1]?'ok':'ko'}"></span><div><b>${x[0]}</b><span>${x[2]}</span></div></div>`).join('')}</div></div>
       </div></div>
@@ -119,7 +144,7 @@ function renderLBO(){
 
     <div id="lbo-s4" class="card s12"><h2><span>4. Modèle de remboursement</span><span class="meta">cash-flows prévisionnels, service de la dette et sortie</span></h2>
       <div class="tw"><table class="tbl fin"><thead><tr><th>M€</th>${yrs.map(y=>`<th class="n">${y}</th>`).join('')}</tr></thead><tbody>
-        ${row("Chiffre d'affaires",Y.map(y=>y.rev))}${row('Croissance',Y.map(y=>y.g),'',x=>sgn(x,1))}${row('EBITDA',Y.map(y=>y.eb),'tot')}${row('dont synergies',Y.map(y=>y.syn))}${row('Marge EBITDA',Y.map(y=>y.m),'',x=>pct(x,1))}
+        <tr><td>Chiffre d'affaires</td>${Y.map((y,t)=>`<td class="n">${penC('rev',t,y.rev)}</td>`).join('')}</tr>${row('Croissance',Y.map(y=>y.g),'',x=>sgn(x,1))}<tr class="tot"><td>EBITDA</td>${Y.map((y,t)=>`<td class="n">${penC('eb',t,y.eb)}</td>`).join('')}</tr>${row('dont synergies',Y.map(y=>y.syn))}${row('Marge EBITDA',Y.map(y=>y.m),'',x=>pct(x,1))}
         ${row('Impôt',Y.map(y=>-y.tax))}${row('Investissements',Y.map(y=>-y.capex))}${row('Variation du BFR',Y.map(y=>-y.dB))}${row('Cash-flow disponible avant dette',Y.map(y=>y.fcf),'tot')}
         ${row('Intérêts senior',Y.map(y=>-y.iS))}${M.mez0>0?row('Intérêts mezzanine',Y.map(y=>-y.iM)):''}${row('Amortissement contractuel',Y.map(y=>-y.am))}${row('Remboursement anticipé',Y.map(y=>-y.sw))}
         ${row('Dette senior fin d\'année',Y.map(y=>y.senC),'tot')}${row('Trésorerie fin d\'année',Y.map(y=>y.cash))}${row('Dette nette / EBITDA',Y.map(y=>y.lev),'',x=>`<span class="${x>+P.covLev?'down':''}">${nf(x,1)}×</span>`)}${row('DSCR',Y.map(y=>y.dscr),'',x=>`<span class="${x<+P.covDscr?'down':''}">${nf(x,2)}</span>`)}
@@ -131,6 +156,7 @@ function renderLBO(){
           <tr class="tot"><td>Valeur des fonds propres</td><td class="n">${mm(M.eqX)}</td></tr><tr><td>Fonds propres investis</td><td class="n">${mm(M.eq0)}</td></tr>
           <tr><td>TRI</td><td class="n ${M.irr*100>=+P.irrT?'up':'down'}">${isFinite(M.irr)?pct(M.irr*100,1):'—'}</td></tr><tr><td>MoIC</td><td class="n">${isFinite(M.moic)?nf(M.moic,2)+'×':'—'}</td></tr></tbody></table></div></div>
       </div>
+      <p class="note noprint">Le crayon force le chiffre d'affaires ou l'EBITDA d'une année : tout le modèle se recalcule en cascade (dette, DSCR, TRI) et la valeur forcée est marquée d'une pastille ; ↺ revient au calcul.</p>
       <h3 class="h3">Sensibilité du TRI aux multiples d'entrée et de sortie</h3>${sensGrid(d)}</div>
 
     <div id="lbo-s5" class="card s12"><h2><span>5. Plan de création de valeur</span><span class="meta">d'où vient le gain des actionnaires</span></h2>

@@ -86,3 +86,6 @@ Object.assign(DEF.bp.comp[2],{impl:'National et européen',prix:'Module inclus d
 /* ============ v4.1 : dossier LBO ============ */
 const LBO_SRC={euribor:{v:2.676,d:'30/10/2026',s:'euribor-rates.eu'},tax:{v:25,s:'Code général des impôts, taux normal de l\'impôt sur les sociétés'}};
 DEF.lbo={list:[],cur:null};
+
+/* v5 : seuils de mise en conditionnelle des matières premières (classeur TRADING_Dashboard) */
+DEF.cm.p.th={sp:[0,3,6,10,15],bB:[0,1,3,6],bBr:[1.5,3.5,6],bS:[-0.15,0,0.08],bG:[-8,0,4]};

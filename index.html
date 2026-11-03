@@ -14,6 +14,7 @@
     <div class="brand"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="1" y="1" width="22" height="22" rx="4" fill="#FAFAFA"/><path d="M6 16.5l4-4.5 3 3 5-6.5" stroke="#09090B" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/><circle cx="18" cy="8.5" r="1.6" fill="#09090B"/></svg><b>OVERRIDE<i>.DESK</i></b></div>
     <div class="ctx" id="ctx"></div>
     <div class="acts">
+      <button class="tbtn" data-act="aiopen" id="aiBtn" title="Collecte IA et sources"></button>
       <button class="tbtn" id="editBtn" data-act="edit" aria-pressed="false"></button>
       <button class="tbtn" data-act="recalc" id="recalcBtn"></button>
       <span class="vsep"></span>
@@ -42,6 +43,7 @@
 </div>
 <input type="file" id="cmFile" accept=".csv,text/csv,text/plain" hidden>
 <input type="file" id="mt5File" accept=".htm,.html,.csv,text/html,text/csv" hidden>
+<div id="ai" class="ai" hidden></div>
 <div id="toast" role="status" aria-live="polite"></div>
 
 <script src="js/data.js"></script>
@@ -58,6 +60,7 @@
 <script src="js/journal.js"></script>
 <script src="js/mt5.js"></script>
 <script src="js/lbo.js"></script>
+<script src="js/collecte.js"></script>
 <script src="js/app.js"></script>
 </body>
 </html>

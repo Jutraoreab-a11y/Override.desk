@@ -16,7 +16,7 @@ const ZONE={
   ww:{l:'Monde',s:1,src:'FMI World Economic Outlook, Banque mondiale'}
 };
 const MONTHS=['Janv.','Févr.','Mars','Avr.','Mai','Juin','Juil.','Août','Sept.','Oct.','Nov.','Déc.'];
-const FX_EURUSD=1.1219,FX_DATE='20/10/2026',FX_SRC='poundsterlinglive.com (clôture EUR/USD)';
+let FX_EURUSD=1.1219,FX_DATE='20/10/2026',FX_SRC='poundsterlinglive.com (clôture EUR/USD)';
 
 /* Titres cotés : données publiées (MarketScreener, consultation du 21/10/2026). Montants en millions de la devise de reporting. */
 const A=(o)=>Object.assign({roic:null,ovNote:''},o);

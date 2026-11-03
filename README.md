@@ -1,6 +1,6 @@
 # OVERRIDE.DESK
 
-Station d'analyse institutionnelle en 8 volets, en une seule page HTML autonome (`index.html`). Version 4.1.
+Station d'analyse institutionnelle en 8 volets, en une seule page HTML autonome (`index.html`). Version 5.0.
 
 Le menu sépare deux familles :
 - **Finance d'entreprise** : Business plan, Analyse financière, Sélecteur & mapping, Dossier LBO, Suivi & placements ;
@@ -79,5 +79,13 @@ js/calculateur.js             volet 6
 js/journal.js                 volet 7 et lecture des rapports MT5
 js/mt5.js                     liaison MetaTrader 5 (import, MetaApi)
 js/lbo.js                     dossier d'acquisition LBO
+js/collecte.js                collecte IA connectée et traçabilité
 js/app.js                     navigation, panneau latéral, événements, abonnement
 ```
+
+## Version 5.0
+- **Petit crayon** : chaque valeur saisie (BP, analyse financière, sélecteur, suivi, seuils des commodities) porte un crayon. Un clic l'ouvre en édition, Entrée valide et recalcule tout le modèle en cascade, Échap annule, ↺ revient à la valeur de référence. La valeur forcée est marquée d'une pastille. Dans le LBO, le CA et l'EBITDA de chaque année se forcent aussi.
+- **Scénarios LBO** : chaque dossier garde plusieurs scénarios nommés et datés. Un tableau compare leur TRI, MoIC, DSCR et levier, et chaque scénario se supprime en un clic.
+- **Dette senior** : 55 % des emplois par défaut (fourchette demandée 50 à 60 %), modifiable.
+- **Commodities** : les seuils de backwardation, contango et basis sont modifiables.
+- **Collecte IA** (bouton en haut) : Claude ouvre les sources validées dans le navigateur intégré de l'application Claude, extrait la donnée et vérifie que l'extrait cité figure dans la page. Sources : Euribor (euribor-rates.eu), EUR/USD (BCE), cours Brent, WTI, Or, Argent (Investing.com), cours des titres (Google Finance). Chaque valeur conserve son URL et sa date de consultation, reprises dans les exports PDF. Ne fonctionne que dans l'application Claude sur ordinateur.
