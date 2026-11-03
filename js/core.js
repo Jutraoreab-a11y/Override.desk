@@ -9,7 +9,7 @@ const STORE='override-desk-v9';
 try{const raw=localStorage.getItem(STORE);if(raw){const d=JSON.parse(raw);if(d.S&&d.S.bp&&d.S.an&&d.S.sc&&d.S.pf)S=d.S;if(d.ui)ui=Object.assign(ui,d.ui,{edit:false});}}catch(e){}
 Object.keys(DEF).forEach(k=>{if(!S[k])S[k]=clone(DEF[k]);});
 Object.keys(DEF).forEach(m=>{Object.keys(DEF[m]).forEach(k=>{if(S[m][k]===undefined)S[m][k]=clone(DEF[m][k]);});});
-if(!['bp','an','sc','pf','cm','pc','jr','ab'].includes(ui.tab))ui.tab='bp';
+if(!['bp','an','sc','lbo','pf','cm','pc','jr','ab'].includes(ui.tab))ui.tab='bp';
 /* Migrations v4 */
 if(!S.bp.mkt.base)S.bp.mkt.base='K:France';if(!S.bp.mkt.cities)S.bp.mkt.cities=[];if(!S.bp.scope)S.bp.scope='K:France';
 if(!S.bp.fiche)S.bp.fiche=clone(DEF.bp.fiche);
@@ -156,6 +156,7 @@ const ICON={
   search:'<circle cx="11" cy="11" r="6"/><path d="M20 20l-4.5-4.5"/>',
   pc:'<rect x="5" y="3" width="14" height="18" rx="1.5"/><path d="M8 7h8v3H8z"/><path d="M8.5 14h.01M12 14h.01M15.5 14h.01M8.5 17.5h.01M12 17.5h.01M15.5 17.5h.01"/>',
   jr:'<path d="M5 4h11a3 3 0 0 1 3 3v13H8a3 3 0 0 1-3-3z"/><path d="M5 17a3 3 0 0 1 3-3h11"/><path d="M9 8h6"/>',
+  lbo:'<path d="M4 20h16"/><path d="M6 20V10l6-5 6 5v10"/><path d="M10 20v-5h4v5"/><path d="M9.5 11h5"/>',
   fold:'<path d="M3 6h6l2 2h10v11H3z"/>',
   link:'<path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1"/><path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/>'
 };

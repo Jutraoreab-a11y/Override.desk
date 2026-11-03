@@ -52,7 +52,7 @@ function renderSC(){
   let detail='';
   if(c){const f=coFlags(c),implied=c.arr*c.mult,ok=passes(c),cl=L.find(x=>x.lead&&x.sec===c.sec),mult=c.tgt&&c.pre?c.tgt/c.pre:NaN;
     const tile=(i,k,txt)=>`<div class="tm ${c[k]>=min?'ok':'ko'}"><div class="tm-h"><b>${FQ[i][0]}</b><span class="num">${fld(P(k),'n',{al:FQ[i][0]})}<span class="meta"> /10</span></span></div><div class="meter${c[k]<min?' lo':''}"><b style="width:${clamp(c[k],0,10)*10}%"></b></div><p class="tm-q">${FQ[i][1]}</p>${fld(P(txt),'a',{rows:2,al:FQ[i][0]})}</div>`;
-    detail=`<div class="card s12"><h2><span>${esc(c.n)} <span class="meta">${esc((SECT[c.sec]||{}).l||c.sec)}${c.fromBP?', issu du business plan':''}</span></span><span class="tag ${c.lead?'':ok?'ok':'ko'}">${c.lead?'Leader de référence':ok?'Retenu par le tamis':'Écarté par le tamis'}</span></h2>
+    detail=`<div class="card s12"><h2><span>${esc(c.n)} <span class="meta">${esc((SECT[c.sec]||{}).l||c.sec)}${c.fromBP?', issu du business plan':''}</span></span><span class="row">${c.lead?'':`<button class="btn sm noprint" data-act="lbogen" data-id="sc:${esc(c.id)}">Générer le dossier LBO</button>`}<span class="tag ${c.lead?'':ok?'ok':'ko'}">${c.lead?'Leader de référence':ok?'Retenu par le tamis':'Écarté par le tamis'}</span></span></h2>
       ${E?`<div class="fields" style="max-width:520px;margin-bottom:10px">${F('Nom',P('n'),'t')}${F('Date du dossier',P('dt'),'t',{ph:'AAAA-MM-JJ'})}${F('Secteur',P('sec'),'s',{opts:Object.fromEntries(secKeys.map(k=>[k,SECT[k].l]))})}</div>`:''}
       <h3 class="h3">I. Tamis d'entrée</h3>
       <div class="tamis four">${tile(0,'liq','liqTxt')}${tile(1,'cat','catTxt')}${tile(2,'conc','faille')}${tile(3,'tam','tamTxt')}</div>

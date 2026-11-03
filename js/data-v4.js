@@ -39,3 +39,50 @@ DEF.sc.per={mode:'all',m:'2026-10',y:'2026',from:'2026-01-01',to:'2026-10-27'};
 (()=>{const D=['2026-10-14','2026-09-22','2026-07-08','2026-05-19','2026-03-03','2026-01-27','2025-11-12','2025-09-30','2025-06-16','2025-03-11'];let i=0;
   DEF.sc.list.forEach(c=>{if(!c.dt)c.dt=c.lead?'':D[(i++)%D.length];});})();
 DEF.bp.mkt.cities=[];
+
+/* ============ v4.1 : business plan en 3 parties et étude de marché approfondie ============ */
+Object.assign(DEF.bp,{
+  sectorQ:{
+    regl:"Logiciel non réglementé en soi, mais déployé sur des sites industriels : directive NIS2 (cybersécurité des entités essentielles et importantes, transposée en droit français), RGPD si des données de personnes sont traitées, exigences contractuelles de cybersécurité des clients (segmentation des réseaux machines, IEC 62443).",
+    fisc:"Éligibilité à vérifier au crédit d'impôt recherche (CIR) et au crédit d'impôt innovation (CII) sur les dépenses de R&D ; statut de jeune entreprise innovante (JEI) possible pendant les premières années ; TVA à 20 % sur les abonnements.",
+    sante:"Marché en croissance à deux chiffres sur 5 ans (voir historique) porté par le coût des arrêts non planifiés et la pénurie de techniciens. Perspectives : poursuite de la croissance tant que l'investissement industriel européen se maintient.",
+    innov:"Modèles prédictifs entraînés sur données multi-signaux, capteurs sans fil à bas coût, edge computing sur site, intégration native aux GMAO, IA générative pour l'assistance au diagnostic.",
+    seasTxt:"Marché saisonnier : décisions concentrées en septembre-décembre (budgets annuels), creux en juillet-août (fermetures estivales des usines)."
+  },
+  dem:{
+    zone:"France métropolitaine, priorité aux trois premières régions industrielles (Auvergne-Rhône-Alpes, Hauts-de-France, Grand Est), à moins de 3 heures d'un site pilote.",
+    habits:"Achats de maintenance sous contrat annuel, pièces en urgence, recours aux tableurs et à la GMAO ; décisions validées par le directeur d'usine puis le groupe.",
+    revenus:"ETI de 50 à 1 500 M€ de chiffre d'affaires, 1 à 10 sites, budget maintenance annuel de 2 à 5 % de la valeur du parc machines.",
+    age:"Acheteurs : responsables maintenance de 35 à 50 ans ; décideurs : directeurs d'usine de 45 à 60 ans.",
+    besoins:"Réduire les arrêts non planifiés, planifier les interventions, compenser le départ des techniciens expérimentés, prouver les économies d'énergie.",
+    motiv:"Coût d'un arrêt de ligne (souvent plusieurs milliers d'euros par heure), pression du groupe sur la disponibilité, reporting énergétique obligatoire.",
+    pref:"Déploiement rapide sans projet informatique lourd, abonnement plutôt qu'investissement, preuves chiffrées sur leurs propres machines avant signature.",
+    percep:"Le leader est jugé fiable mais lent et cher ; les challengers produisent trop de fausses alertes ; les intégrateurs ERP sont perçus comme généralistes.",
+    amelio:"Délai de mise en service, taux de fausses alertes, intégration aux GMAO existantes, accompagnement terrain des techniciens."
+  },
+  etude:{
+    quanti:{src:"Historique de marché à sourcer (étude sectorielle ou fédération professionnelle), enquête prix auprès de 64 sites qualifiés.",n:64,txt:"Taille et croissance du marché, distribution des prix acceptables (Van Westendorp), part des sites déjà équipés."},
+    quali:{n:14,profil:"Responsables maintenance et directeurs d'usine d'ETI agroalimentaires, chimiques et plasturgie",txt:"Les arrêts non planifiés sont le premier irritant ; la confiance passe par une preuve sur leurs propres données ; refus des projets supérieurs à 3 mois."},
+    docs:[{t:"Rapport sectoriel maintenance prédictive (à acquérir)",src:"À préciser",date:""},{t:"Statistiques de l'industrie manufacturière",src:"INSEE",date:""},{t:"Textes NIS2 et transposition française",src:"ANSSI, Légifrance",date:""}],
+    concl:"Le marché est en croissance, la demande est identifiée et validée par des pilotes payants, et le leader laisse un angle mort sur les ETI de moins de 10 sites. L'opportunité est confirmée sous réserve de sourcer l'historique de marché."
+  },
+  strat:{
+    com:"Vente directe aux ETI des trois régions prioritaires, appuyée sur les sites pilotes comme références ; partenariats avec deux intégrateurs GMAO à partir de l'année 2.",
+    appro:"Hébergement cloud européen (contrat annuel), connecteurs GMAO développés en interne, aucun capteur propriétaire : utilisation des données machines existantes ; capteurs tiers proposés via un partenaire si nécessaire.",
+    moyens:"Équipe de 4 personnes au démarrage (direction, technique, commercial, data), bureaux à Lyon, postes et licences de développement ; recrutements selon le plan de l'année 2.",
+    prod:"Déploiement en 4 semaines : connexion aux données (semaine 1), calibrage du modèle (semaines 2-3), formation des techniciens et mise en service (semaine 4) ; support à distance ensuite."
+  },
+  milestones:[{d:'2027-01',t:'Immatriculation de la société et ouverture du compte bancaire'},{d:'2027-03',t:'Signature des 3 pilotes en contrats annuels'},{d:'2027-06',t:'Encaissement de la levée d\'amorçage'},{d:'2027-09',t:'Ouverture commerciale des trois régions prioritaires'},{d:'2028-03',t:'Premier partenariat intégrateur GMAO'}],
+  motiv:"Les fondateurs ont vécu de l'intérieur le coût des arrêts non planifiés et le départ des techniciens expérimentés ; ils veulent rendre la maintenance prédictive accessible aux ETI que les solutions actuelles délaissent.",
+  capTable:[{n:'Claire M.',r:'Présidente, cofondatrice',ap:40000,pct:40},{n:'Hugo D.',r:'Cofondateur',ap:35000,pct:35},{n:'Samir K.',r:'Cofondateur',ap:25000,pct:25}],
+  gouv:"SAS présidée par Claire M. ; décisions stratégiques en comité des associés ; pacte d'associés avec clauses de bonne et mauvaise sortie, préemption et inaliénabilité de 3 ans.",
+  cmt:{cr:'',bilan:'',fin:'',treso:'',inv:'',bfr:'',seuil:''}
+});
+DEF.bp.comp.forEach(c=>Object.assign(c,{ca:null,eff:null,impl:'',prix:'',polcom:'',distrib:'',cible:''}));
+Object.assign(DEF.bp.comp[0],{impl:'National, siège en Île-de-France',prix:'Projet de 9 mois, licence annuelle élevée',polcom:'Contrats-cadres pluriannuels avec les groupes',distrib:'Vente directe et intégrateurs certifiés',cible:'Grands groupes multi-sites'});
+Object.assign(DEF.bp.comp[1],{impl:'National',prix:'Abonnement, remises agressives',polcom:'Marketing digital intensif, essais gratuits',distrib:'Vente directe en ligne',cible:'PME et ETI'});
+Object.assign(DEF.bp.comp[2],{impl:'National et européen',prix:'Module inclus dans les projets ERP',polcom:'Vente via la DSI',distrib:'Réseau d\'intégrateurs',cible:'DSI des ETI et groupes'});
+
+/* ============ v4.1 : dossier LBO ============ */
+const LBO_SRC={euribor:{v:2.676,d:'30/10/2026',s:'euribor-rates.eu'},tax:{v:25,s:'Code général des impôts, taux normal de l\'impôt sur les sociétés'}};
+DEF.lbo={list:[],cur:null};

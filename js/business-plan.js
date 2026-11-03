@@ -52,7 +52,7 @@ function bpToSelector(){
 
 const FQ=[['Liquidité',"Le marché est-il liquide ? Peut-on entrer et sortir du capital, ou revendre l'actif, sans décote massive ?"],['Catalyseur',"Le marché est-il porté par un catalyseur externe fort : réglementation, subvention, transition, rupture technologique, inflation sectorielle ?"],['Concurrence',"Qui est le leader, quelles sont ses forces, et surtout quelle faille exploitable laisse-t-il ?"],['Taille de marché',"Le marché total adressable est-il assez vaste, et quelle est sa dynamique de croissance historique et projetée ?"]];
 /* ============ Volet 1 : Business plan ============ */
-const ROWTPL={'bp.mkt.cities':{n:'Nouvelle ville',reg:'',c:0},'bp.team':{n:'Nouveau membre',r:'',p:''},'bp.personas':{n:'Nouveau persona',who:'',spend:'',when:'',why:'',fears:'',where:''},'bp.offers':{n:'Nouvelle offre',p:0,seg:'',d:''},'bp.channels':{n:'Nouveau canal',sh:0,cac:0},'bp.comp':{n:'Nouveau concurrent',x:50,y:50,sv:0,sq:0,f:'',k:'',z:'',a:''},'bp.mkt.regions':{n:'Nouvelle région',sh:0},'bp.mkt.intl':{n:'Nouveau pays',v:0,ph:'',note:''},'bp.ptypes':{n:'Nouveau type d\'offre',sv:0,sq:0},'pf.positions':{tk:'AAPL',q:0,pru:0,d:'',qd:'',qeps:null,qepsP:null,qrev:null,qrevP:null}};
+const ROWTPL={'bp.capTable':{n:'Nouvel associé',r:'',ap:0,pct:0},'bp.milestones':{d:'',t:'Nouvelle étape'},'bp.etude.docs':{t:'Nouveau document',src:'',date:''},'bp.mkt.cities':{n:'Nouvelle ville',reg:'',c:0},'bp.team':{n:'Nouveau membre',r:'',p:''},'bp.personas':{n:'Nouveau persona',who:'',spend:'',when:'',why:'',fears:'',where:''},'bp.offers':{n:'Nouvelle offre',p:0,seg:'',d:''},'bp.channels':{n:'Nouveau canal',sh:0,cac:0},'bp.comp':{n:'Nouveau concurrent',x:50,y:50,sv:0,sq:0,f:'',k:'',z:'',a:''},'bp.mkt.regions':{n:'Nouvelle région',sh:0},'bp.mkt.intl':{n:'Nouveau pays',v:0,ph:'',note:''},'bp.ptypes':{n:'Nouveau type d\'offre',sv:0,sq:0},'pf.positions':{tk:'AAPL',q:0,pru:0,d:'',qd:'',qeps:null,qepsP:null,qrev:null,qrevP:null}};
 const kk=v=>isFinite(v)?nf(Math.round(v/1000),0):'—';
 const isOv=ps=>ps.some(p=>JSON.stringify(getP(S,p))!==JSON.stringify(getP(DEF,p)));
 function bpCalc(){
@@ -178,7 +178,9 @@ function renderBP(){
   const ko=AL.filter(a=>a.l==='ko'),st=ko.length?['ko','Modèle non viable en l\'état']:AL.length?['am','Modèle cohérent sous réserves']:['ok','Modèle cohérent'];
   const head=Yr.map(y=>'A'+y.t),sectOpts=Object.fromEntries(Object.entries(SECT).map(([k,v])=>[k,v.l])),zoneOpts=Object.fromEntries(Object.entries(ZONE).map(([k,v])=>[k,v.l]));
   const Hy=Yr[H-1],ty=Math.min(H,Math.max(1,+ui.ty||1)),MY=r.M.filter(x=>x.t===ty);
-  const sec=(n,t,body)=>`<section class="bps" id="bp-s${n}"><div class="bph"><span class="bpn">${String(n).padStart(2,'0')}</span><h2>${t}</h2></div><div class="grid">${body}</div></section>`;
+  const cmt=(k,auto)=>`<div class="cmt"><span class="lb">Commentaire</span><p class="note" style="margin:2px 0 4px">${auto}</p>${ui.edit||String(b.cmt&&b.cmt[k]||'').trim()?fld('bp.cmt.'+k,'a',{rows:2,al:'Commentaire'}):''}</div>`;
+  const SEC={},sec=(n,t,body)=>{SEC[n]={t,body};return`@@S${n}@@`;};
+  const secH=(n,id,t,body)=>`<section class="bps" id="bp-s${n}"><div class="bph"><span class="bpn">${String(n).padStart(2,'0')}</span><h2>${t}</h2></div><div class="grid">${body}</div></section>`;
   const T=(label,p,rows=3)=>`<div class="fld"><span class="lb">${label}</span>${fld(p,'a',{rows,al:label})}</div>`;
   const verdict=`<div class="verdict ${st[0]}"><div class="vh">${st[1]}</div>${AL.length?`<ul class="diag">${AL.map(a=>`<li><span class="tag ${a.l}">${a.l==='ko'?'Bloquant':'Réserve'}</span> ${a.t}</li>`).join('')}</ul>`:'<p class="note" style="margin:6px 0 0">Aucune incohérence détectée sur les hypothèses saisies.</p>'}</div>`;
   const sumTxt=`${esc(b.name)} vise ${big(Hy.rev)} de chiffre d'affaires en année ${H}, soit ${pct(r.somShare,1)} du marché obtenable. ${r.be?`L'EBITDA devient positif en année ${r.be.t}.`:`L'EBITDA reste négatif sur ${H} ans.`} Le plan mobilise ${big(r.funding)} de financements (apports ${big(+b.equity)}, levée ${big(+b.raise)} au mois ${b.raiseM}, emprunt ${big(+b.loan)}, aides ${big(+b.grant)}). Point bas de trésorerie : ${big(r.min.cash)} au mois ${r.min.k} de l'année ${r.min.t}.`;
@@ -196,7 +198,7 @@ function renderBP(){
   const compPts=b.comp.map(c=>({x:+c.x,y:+c.y,label:c.n})).concat([{x:+b.px,y:+b.py,label:b.name||'Projet',cls:'me',r:7}]);
   const k=r.mk,m=b.mkt;
   const SF=DAMO[b.sector]||DAMO.saas,PO=b.porter.length?sum(b.porter.map(f=>+f.s||0))/b.porter.length:NaN,FR=y=>(y.bal.capital+y.bal.grant+y.bal.retained+y.bal.debt-y.bal.fixed)/y.rev*365;
-  $('#p-bp').innerHTML=`
+  let __h=`
   <div class="ph"><div><h1>${esc(b.name)||'Projet sans nom'}</h1><p>Business plan ${esc(r.s.l)}, étude de marché ${esc(bpScope().G.lab)}, TAM ${esc(r.z.l)}, horizon ${H} ans.</p></div></div>
   <div class="grid">${prjBar('bp')}</div>
   ${(()=>{const fm=ficheMiss(),tot=FICHE.length+2,ok=tot-fm.length,f='bp.fiche';return`<section class="bps" id="bp-s0"><div class="bph"><span class="bpn">00</span><h2>Fiche de renseignements</h2><span class="tag ${fm.length?'ko':'ok'}" style="margin-left:auto">${fm.length?`${fm.length} élément${fm.length>1?'s':''} manquant${fm.length>1?'s':''}`:'Complète'}</span></div><div class="grid">
@@ -232,9 +234,15 @@ function renderBP(){
     <p class="lead">${sumTxt}</p>
     ${T('Synthèse du projet et de l\'enjeu','bp.summary',4)}
     <div style="margin-top:10px">${T('Avantage injuste (edge)','bp.edge',3)}</div></div>`)}
-  ${sec(2,'Le porteur de projet et son équipe',`
+  ${sec(2,'Le porteur de projet, son équipe et la structure juridique',`
+    <div class="card s12"><h2>Motivations : pourquoi lancer ce projet</h2>${fld('bp.motiv','a',{rows:3,al:'Motivations'})}</div>
     <div class="card s8"><h2>Équipe fondatrice et clés</h2>${etable('bp.team',[['n','Nom','t','width:140px'],['r','Rôle','t','width:150px'],['p','Parcours et track-record','a']])}</div>
-    <div class="card s4"><h2>Complémentarité et résilience</h2>${fld('bp.teamTxt','a',{rows:6})}<p class="note">Effectif prévu : ${Yr.map(y=>`A${y.t} ${y.hc} ETP`).join(', ')}.</p></div>`)}
+    <div class="card s4"><h2>Complémentarité et résilience</h2>${fld('bp.teamTxt','a',{rows:6})}<p class="note">Effectif prévu : ${Yr.map(y=>`A${y.t} ${y.hc} ETP`).join(', ')}.</p></div>
+    ${(()=>{const ct=b.capTable||[],ap=sum(ct.map(x=>+x.ap||0)),pc=sum(ct.map(x=>+x.pct||0));return`<div class="card s7"><h2>Forme juridique et composition du capital</h2>
+      <div class="fields" style="margin-bottom:10px">${F('Forme juridique','bp.fiche.forme','t')}${F('Siège','bp.fiche.ville','t')}${F('Création prévue','bp.fiche.created','t')}</div>
+      ${etable('bp.capTable',[['n','Associé','t'],['r','Qualité','t'],['ap','Apport (€)','n','width:110px'],['pct','Capital (%)','n','width:90px']])}
+      <p class="note">Total des apports ${big(ap)} pour ${pct(pc,0)} du capital${Math.abs(pc-100)>0.5?' <span class="down">(la répartition doit totaliser 100 %)</span>':''}${Math.abs(ap-(+b.equity))>1?` ; <span class="down">écart avec les apports du modèle financier (${big(+b.equity)})</span>`:' ; cohérent avec les apports du modèle financier'}. La levée de ${big(+b.raise)} au mois ${b.raiseM} diluera ces pourcentages.</p></div>
+    <div class="card s5"><h2>Gouvernance et pacte d'associés</h2>${fld('bp.gouv','a',{rows:6})}</div>`;})()}`)}
   ${sec(3,'Étude de marché et analyse granulaire',`
     <div class="card s12 noprint"><div class="row" style="gap:12px;flex-wrap:wrap;align-items:center"><span class="lb" style="margin:0">Périmètre de l'étude</span>${geoSel('bp.scope',{style:'width:auto;max-width:260px'})}<span class="lb" style="margin:0">Données saisies pour</span>${geoSel('bp.mkt.base',{style:'width:auto;max-width:200px'})}
       <span class="meta">${k.sc.same?`Valeurs de marché telles que saisies pour ${esc(k.sc.G.lab)}.`:`Valeurs ramenées à ${esc(k.sc.G.lab)} : marché saisi pour ${esc(k.sc.B.lab)} × ${nf(k.sc.fac,2)} (rapport des PIB, FMI WEO). Estimation à remplacer par une étude du périmètre dès que possible.`}</span>${k.sc.same?'':'<span class="tag am">Estimation</span>'}</div></div>
@@ -291,13 +299,25 @@ function renderBP(){
         <tr><td>VE / EBITDA</td><td class="n">${nf(SF.eve,1)}×</td><td class="n" colspan="2">sociétés à EBITDA positif : ${nf(SF.eveP,1)}×</td><td></td></tr>
       </tbody></table></div>
       <p class="note">Source : Aswath Damodaran (NYU Stern), données de janvier 2026 sur les sociétés cotées américaines (marges, PER, multiples de valeur, BFR). Taux d'EBITDA dérivé : VE/CA divisé par VE/EBITDA. Le FRNG moyen n'est pas publié par cette source. ${SF.note||''}</p></div>
-    <div class="card s12"><h2>Segmentation et demande</h2><div class="grid"><div class="s6">${fld('bp.segments','a',{rows:4})}</div><div class="s6">${fld('bp.demand','a',{rows:4})}</div></div></div>`)}
+    <div class="card s12"><h2>Segmentation et demande</h2><div class="grid"><div class="s6">${fld('bp.segments','a',{rows:4})}</div><div class="s6">${fld('bp.demand','a',{rows:4})}</div></div></div>
+    <div class="card s12"><h2><span>Le secteur et sa réglementation</span><span class="meta">premier pilier de l'étude : l'environnement</span></h2><div class="qgrid">
+      <div><h3>Réglementation applicable</h3>${fld('bp.sectorQ.regl','a',{rows:4,al:'Réglementation'})}</div>
+      <div><h3>Dispositions fiscales spécifiques</h3>${fld('bp.sectorQ.fisc','a',{rows:4,al:'Fiscalité'})}</div>
+      <div><h3>Santé du marché et perspectives</h3>${fld('bp.sectorQ.sante','a',{rows:4,al:'Perspectives'})}<p class="note">Mesuré : CAGR valeur ${pct(k.cagrV)}, dernière année ${sgn(k.yoyV[k.n-1])} ; marge EBITDA moyenne du secteur coté ${pct(SF.ebm,1)} (Damodaran).</p></div>
+      <div><h3>Dernières innovations</h3>${fld('bp.sectorQ.innov','a',{rows:4,al:'Innovations'})}</div>
+      <div><h3>Régularité ou saisonnalité</h3>${fld('bp.sectorQ.seasTxt','a',{rows:4,al:'Saisonnalité'})}<p class="note">Mesuré : pic en ${MONTHS[k.W.indexOf(Math.max(...k.W))].toLowerCase()}, creux en ${MONTHS[k.W.indexOf(Math.min(...k.W))].toLowerCase()} ; écart pic / creux ${nf(Math.max(...k.W)/Math.min(...k.W),1)}×.</p></div>
+    </div></div>
+    ${(()=>{const e=b.etude;return`<div class="card s12"><h2><span>Méthodologie de l'étude</span><span class="meta">quantitative, qualitative et documentaire</span></h2><div class="qgrid three">
+      <div><h3>Étude quantitative</h3><div class="fields one">${F('Taille de l\'échantillon','bp.etude.quanti.n','n',{u:'répondants'})}</div><div class="lb" style="margin-top:6px">Sources et chiffres clés</div>${fld('bp.etude.quanti.src','a',{rows:2})}<div class="lb" style="margin-top:6px">Ce qui a été mesuré</div>${fld('bp.etude.quanti.txt','a',{rows:2})}</div>
+      <div><h3>Étude qualitative</h3><div class="fields one">${F('Entretiens réalisés','bp.etude.quali.n','n',{u:'entretiens'})}</div><div class="lb" style="margin-top:6px">Profil des personnes interrogées</div>${fld('bp.etude.quali.profil','a',{rows:2})}<div class="lb" style="margin-top:6px">Enseignements</div>${fld('bp.etude.quali.txt','a',{rows:3})}</div>
+      <div><h3>Étude documentaire</h3>${etable('bp.etude.docs',[['t','Document','t'],['src','Source','t','width:110px'],['date','Consulté le','t','width:100px']])}</div>
+    </div><p class="note">${+e.quanti.n>0&&+e.quali.n>0?'Approche mixte : la mesure quantitative est complétée par une exploration qualitative de la demande.':+e.quanti.n>0?'Étude uniquement quantitative : ajouter des entretiens pour comprendre les attentes et les freins.':+e.quali.n>0?'Étude uniquement qualitative : l\'échantillon est peu représentatif, la compléter par des données chiffrées.':'Aucune étude terrain renseignée.'}</p></div>`;})()}`)}
   ${sec(4,'Marketing, offre et prix',`
     <div class="card s12"><h2>Mix marketing : les 4P</h2><div class="four4">
       <div><h3>Produit</h3>${fld('bp.p4.prod','a',{rows:4,al:'Produit'})}<p class="note">${b.offers.length} offres : ${b.offers.map(o=>esc(o.n)).join(', ')}.</p></div>
       <div><h3>Prix</h3>${fld('bp.p4.prix','a',{rows:4,al:'Prix'})}<p class="note">Prix recommandé ${big(+b.priceRec)} ; ARPU ${big(+b.arpu)} ; zone acceptable ${nf(+b.vw.ch,0)} à ${nf(+b.vw.ex,0)} €.</p></div>
-      <div><h3>Distribution</h3>${fld('bp.p4.place','a',{rows:4,al:'Distribution'})}<p class="note">Canaux du modèle : ${b.channels.map(c=>esc(c.n)+' '+pct(+c.sh,0)).join(', ')}.</p></div>
-      <div><h3>Communication</h3>${fld('bp.p4.promo','a',{rows:4,al:'Communication'})}<p class="note">Budget d'acquisition A1 : ${big(Yr[0].mkt)}.</p></div>
+      <div><h3>Distribution (Place)</h3>${fld('bp.p4.place','a',{rows:4,al:'Distribution (Place)'})}<p class="note">Canaux du modèle : ${b.channels.map(c=>esc(c.n)+' '+pct(+c.sh,0)).join(', ')}.</p></div>
+      <div><h3>Promotion (Promotion)</h3>${fld('bp.p4.promo','a',{rows:4,al:'Promotion'})}<p class="note">Budget d'acquisition A1 : ${big(Yr[0].mkt)}.</p></div>
     </div></div>
     <div class="card s5"><h2>Proposition de valeur</h2>${fld('bp.valueProp','a',{rows:4})}
       <h2><span>Ce que le marché achète aujourd'hui</span>${srcTag(b.srcPt)}</h2>
@@ -316,7 +336,18 @@ function renderBP(){
       <p class="note">Seuils issus de l'enquête de prix (médiane des réponses). En dessous de ${nf(+b.vw.tc,0)} €, l'offre est jugée de qualité insuffisante ; au-dessus de ${nf(+b.vw.te,0)} €, elle est rejetée pour son prix.</p></div>
     <div class="card s12"><h2>Grille tarifaire par segment</h2>
       ${E?etable('bp.offers',[['n','Offre','t','width:130px'],['seg','Segment visé','t'],['p','Prix mensuel (€)','n','width:120px'],['d','Contenu','t']]):`<div class="tw"><table class="tbl"><thead><tr><th>Offre</th><th>Segment visé</th><th class="n">Prix mensuel</th><th>Position psychologique</th><th>Contenu</th></tr></thead><tbody>${b.offers.map(o=>{const p=+o.p,z=p<+b.vw.tc?['ko','Qualité douteuse']:p<+b.vw.ch?['am','Bonne affaire']:p<=+b.vw.ex?['ok','Acceptable']:p<=+b.vw.te?['am','Cher, envisageable']:['ko','Trop cher'];return`<tr><td><b>${esc(o.n)}</b></td><td>${esc(o.seg)}</td><td class="n">${nf(p,0)} €</td><td><span class="tag ${z[0]}">${z[1]}</span></td><td>${esc(o.d)}</td></tr>`;}).join('')}</tbody></table></div>`}</div>`)}
-  ${sec(5,'Psychologie client et comportement d\'achat',`
+  ${sec(5,'La demande : clientèle, besoins et comportement d\'achat',`
+    <div class="card s12"><h2><span>Caractéristiques de la clientèle visée</span><span class="meta">deuxième pilier de l'étude : la demande</span></h2><div class="qgrid">
+      <div><h3>Zone de chalandise</h3>${fld('bp.dem.zone','a',{rows:3,al:'Zone de chalandise'})}<p class="note">Périmètre de l'étude chiffrée : ${esc(bpScope().G.lab)}.</p></div>
+      <div><h3>Habitudes de consommation</h3>${fld('bp.dem.habits','a',{rows:3,al:'Habitudes'})}</div>
+      <div><h3>Revenus ou taille des clients</h3>${fld('bp.dem.revenus','a',{rows:3,al:'Revenus'})}</div>
+      <div><h3>Âge et profil des décideurs</h3>${fld('bp.dem.age','a',{rows:3,al:'Âge'})}</div>
+      <div><h3>Besoins</h3>${fld('bp.dem.besoins','a',{rows:3,al:'Besoins'})}</div>
+      <div><h3>Motivations d'achat</h3>${fld('bp.dem.motiv','a',{rows:3,al:'Motivations'})}</div>
+      <div><h3>Préférences</h3>${fld('bp.dem.pref','a',{rows:3,al:'Préférences'})}</div>
+      <div><h3>Perception de l'offre concurrente</h3>${fld('bp.dem.percep','a',{rows:3,al:'Perception'})}</div>
+      <div><h3>Ce qui pourrait être amélioré</h3>${fld('bp.dem.amelio','a',{rows:3,al:'Améliorations'})}</div>
+    </div></div>
     <div class="card s12"><h2>Psychologie client et personas <span class="meta">qui, où, quand, pourquoi, freins, contact</span></h2>
       <div class="personas">${b.personas.map((p,i)=>`<div class="persona"><h3><span>${fld(`bp.personas.${i}.n`,'t',{al:'Persona'})}</span>${E?`<button class="btn sm ghost" data-act="delrow" data-list="bp.personas" data-i="${i}" aria-label="Supprimer le persona">✕</button>`:''}</h3>${[['who','Qui sont-ils'],['spend','Où allait leur budget jusqu\'ici'],['when','Quand achètent-ils'],['why','Pourquoi ils achètent'],['fears','Freins et objections'],['where','Où les trouver, comment les contacter']].map(([f,l])=>`<div class="pq"><span class="lb">${l}</span>${fld(`bp.personas.${i}.${f}`,'a',{rows:2,al:l})}</div>`).join('')}</div>`).join('')}</div>
       ${E?`<button class="btn sm" data-act="addrow" data-list="bp.personas" style="margin-top:8px">Ajouter un persona</button>`:''}</div>
@@ -344,15 +375,35 @@ function renderBP(){
       <p class="note">Marché projeté depuis ${k.last.y} : ${big(k.proj[k.proj.length-1].v)} et ${nf(k.proj[k.proj.length-1].q,0)} ${esc(m.unitQ)} en A${H}, au CAGR retenu (${pct(r.cagr)}) en valeur et au CAGR historique (${pct(k.cagrQ)}) en volume. Court terme : A1-A2 ; moyen terme : A${H}.</p></div>
     <div class="card s7"><h2><span>Passage au tamis OVERRIDE <span class="meta">4 filtres amont</span></span><span class="tag ${k.passN===4?'ok':k.passN>=3?'am':'ko'}">${k.passN}/4 filtres franchis</span></h2>
       <div class="tamis">${k.filt.map((f,i)=>`<div class="tm ${f[1]>=S.sc.min?'ok':'ko'}"><div class="tm-h"><b>${FQ[i][0]}</b><span class="num">${i<3?fld(['bp.tamis.liq','bp.tamis.cat','bp.tamis.conc'][i],'n',{al:FQ[i][0]}):nf(f[1],1)}<span class="meta"> /10</span></span></div><div class="meter${f[1]<S.sc.min?' lo':''}"><b style="width:${clamp(f[1],0,10)*10}%"></b></div><p class="tm-q">${FQ[i][1]}</p>${i<3?fld(['bp.tamis.liqTxt','bp.tamis.catTxt','bp.tamis.concTxt'][i],'a',{rows:2,al:FQ[i][0]}):`<p class="v txt">${esc(f[2])}</p>`}</div>`).join('')}</div>
-      <div class="row noprint" style="margin-top:12px"><button class="btn" data-act="bp2sc">Envoyer le projet au Sélecteur</button><span class="meta">Le projet est positionné sur le mapping de son secteur avec ses scores.</span></div></div>
+      <div class="row noprint" style="margin-top:12px"><button class="btn" data-act="bp2sc">Envoyer le projet au Sélecteur</button><button class="btn" data-act="lbogen" data-id="bp">Générer le dossier LBO</button><span class="meta">Le projet est positionné sur le mapping de son secteur avec ses scores.</span></div></div>
     <div class="card s12"><h2><span>Les 5 forces de Porter <span class="meta">intensité de 1 (faible) à 5 (forte)</span></span><span class="tag ${PO>=4?'ko':PO>=3?'am':'ok'}">Intensité moyenne ${nf(PO,1)}/5 : secteur ${PO>=4?'peu':PO>=3?'moyennement':'très'} attractif</span></h2>
       <div class="porter">${b.porter.map((f,i)=>`<div class="pr"><div class="pr-h"><b>${esc(f.n)}</b><span class="num">${fld('bp.porter.'+i+'.s','n',{al:f.n})}<span class="meta"> /5</span></span></div><div class="meter${+f.s>=4?' lo':''}"><b style="width:${clamp(+f.s,0,5)*20}%"></b></div>${fld('bp.porter.'+i+'.t','a',{rows:2,al:f.n})}</div>`).join('')}</div></div>
 
     <div class="card s12"><h2>Analyse PESTEL</h2><div class="six">${[['p','Politique'],['e','Économique'],['s','Sociologique'],['t','Technologique'],['env','Écologique'],['l','Législatif']].map(([q,l])=>`<div><h3>${l}</h3>${fld('bp.pestel.'+q,'a',{rows:3,al:l})}</div>`).join('')}</div></div>
     <div class="card s12"><h2>Analyse SWOT</h2><div class="swot">
         <div><h3>Forces</h3>${fld('bp.swot.s','a',{rows:3})}</div><div><h3>Faiblesses</h3>${fld('bp.swot.w','a',{rows:3})}</div>
-        <div><h3>Opportunités</h3>${fld('bp.swot.o','a',{rows:3})}</div><div><h3>Menaces</h3>${fld('bp.swot.t','a',{rows:3})}</div></div></div>`)}
-  ${sec(7,'Stratégie commerciale et marketing',`
+        <div><h3>Opportunités</h3>${fld('bp.swot.o','a',{rows:3})}</div><div><h3>Menaces</h3>${fld('bp.swot.t','a',{rows:3})}</div></div></div>
+    <div class="card s12"><h2><span>Fiche des principaux concurrents</span><span class="meta">troisième pilier de l'étude : l'offre</span></h2>
+      ${E?etable('bp.comp',[['n','Acteur','t','width:130px'],['ca','CA (M€)','nn','width:80px'],['eff','Effectif','nn','width:70px'],['impl','Implantation','t'],['prix','Prix pratiqués','a'],['polcom','Politique commerciale','a'],['distrib','Distribution','a'],['cible','Clientèle visée','a']])
+      :`<div class="tw"><table class="tbl"><thead><tr><th>Acteur</th><th class="n">CA</th><th class="n">Effectif</th><th>Implantation</th><th>Prix pratiqués</th><th>Politique commerciale</th><th>Distribution</th><th>Clientèle visée</th></tr></thead><tbody>${b.comp.map(c=>`<tr><td><b>${esc(c.n)}</b></td><td class="n">${c.ca!=null&&c.ca!==''?nf(+c.ca,1)+' M€':'<span class="meta">à renseigner</span>'}</td><td class="n">${c.eff!=null&&c.eff!==''?nf(+c.eff,0):'<span class="meta">à renseigner</span>'}</td><td>${esc(c.impl||'—')}</td><td class="wrap">${esc(c.prix||'—')}</td><td class="wrap">${esc(c.polcom||'—')}</td><td class="wrap">${esc(c.distrib||'—')}</td><td class="wrap">${esc(c.cible||'—')}</td></tr>`).join('')}</tbody></table></div>`}
+      <p class="note">Produits existants sur le marché : ${b.ptypes.map(x=>esc(x.n)+' ('+pct(+x.sv,0)+' du CA)').join(', ')}.</p></div>
+    ${(()=>{const d=b.dem,e=b.etude,q=b.sectorQ,len=s=>String(s||'').trim().length,cp=b.comp.filter(c=>len(c.prix)>3&&len(c.polcom)>3).length;
+      const tr=[['Analyse de la demande',len(d.besoins)>20&&len(d.motiv)>20&&b.personas.length>0&&+e.quali.n>0,'Besoins, motivations, personas et entretiens qualitatifs renseignés.','Compléter besoins, motivations et mener des entretiens clients.'],
+        ['Zone de chalandise délimitée',len(d.zone)>20,`Zone décrite ; étude chiffrée sur ${bpScope().G.lab}.`,'Décrire précisément la zone où l\'entreprise vendra réellement.'],
+        ['Analyse de la concurrence',cp>=3&&b.comp.length>=3,`${cp} concurrents documentés (prix et politique commerciale).`,'Documenter au moins 3 concurrents : prix, politique commerciale, distribution.'],
+        ['Réglementation du secteur',len(q.regl)>20,'Réglementation et fiscalité décrites.','Identifier la réglementation et les obligations légales du secteur.']];
+      const lead=k.leader,sScore=(k.cagrV>3?1:k.cagrV>0?0.5:0)+(SF.ebm>10?1:SF.ebm>0?0.5:0)+((+(lead||{}).sv||0)<40?1:0.3)+(tr[0][1]?1:0);
+      const v=sScore>=3.5?['ok','Opportunité confirmée']:sScore>=2.5?['am','Opportunité à approfondir']:['ko','Opportunité défavorable'];
+      return`<div class="card s6"><h2>Pièges à éviter <span class="meta">contrôle automatique</span></h2><div class="dec" style="grid-template-columns:1fr">${tr.map(x=>`<div class="dc"><span class="dot ${x[1]?'ok':'ko'}"></span><div><b>${x[0]}</b><span>${x[1]?x[2]:x[3]}</span></div></div>`).join('')}</div></div>
+      <div class="card s6"><h2>Conclusion de l'étude de marché <span class="tag ${v[0]}" style="margin-left:auto">${v[1]}</span></h2>
+        <div class="tw"><table class="tbl"><tbody>
+          <tr><td>Secteur</td><td>${k.cagrV>3?'en croissance':k.cagrV>0?'en croissance faible':'en déclin'} (${pct(k.cagrV)} par an)</td></tr>
+          <tr><td>Rentabilité du secteur</td><td>marge EBITDA moyenne ${pct(SF.ebm,1)} (Damodaran)</td></tr>
+          <tr><td>Concentration</td><td>leader ${esc((lead||{}).n||'—')} à ${pct(+(lead||{}).sv||0,0)} du marché : ${(+(lead||{}).sv||0)<40?'marché ouvert':'marché dominé par un acteur'}</td></tr>
+          <tr><td>Demande</td><td>${tr[0][1]?'identifiée et validée':'insuffisamment analysée'}</td></tr>
+        </tbody></table></div>
+        <div class="lb" style="margin-top:8px">Conclusion de l'entrepreneur</div>${fld('bp.etude.concl','a',{rows:3})}</div>`;})()}`)}
+  ${sec(7,'Stratégie commerciale et plan de lancement',`
     <div class="card s7"><h2>Canaux d'acquisition</h2>${etable('bp.channels',[['n','Canal','t'],['sh','Part des acquisitions (%)','n','width:150px'],['cac','CAC du canal (€)','n','width:130px']])}
       ${Math.abs(b.channels.reduce((a,c)=>a+(+c.sh||0),0)-100)>0.5?'<p class="note down">La somme des parts doit faire 100 % : le CAC est pondéré sur le total saisi.</p>':''}</div>
     <div class="card s5"><div class="stats" style="grid-template-columns:1fr 1fr">
@@ -360,7 +411,14 @@ function renderBP(){
       <div class="stat"><div class="k">Clients à acquérir</div><div class="x">${nf(Yr.reduce((a,y)=>a+y.newC,0),0)}</div><div class="d">sur ${H} ans, churn compris</div></div>
       <div class="stat"><div class="k">Budget d'acquisition A1</div><div class="x">${big(Yr[0].mkt)}</div><div class="d">${pct(Yr[0].mkt/Yr[0].rev*100,0)} du CA</div></div>
       <div class="stat"><div class="k">Budget d'acquisition A${H}</div><div class="x">${big(Hy.mkt)}</div><div class="d">${pct(Hy.mkt/Hy.rev*100,0)} du CA</div></div></div>
-      <h2 style="margin-top:14px">Stratégie de pénétration</h2>${fld('bp.penetration','a',{rows:4})}</div>`)}
+      <h2 style="margin-top:14px">Stratégie de pénétration</h2>${fld('bp.penetration','a',{rows:4})}</div>
+    <div class="card s12"><h2>Mise en œuvre : stratégie, approvisionnements, moyens et production</h2><div class="qgrid">
+      <div><h3>Stratégie commerciale</h3>${fld('bp.strat.com','a',{rows:4,al:'Stratégie commerciale'})}</div>
+      <div><h3>Sources d'approvisionnement</h3>${fld('bp.strat.appro','a',{rows:4,al:'Approvisionnements'})}</div>
+      <div><h3>Moyens humains et matériels</h3>${fld('bp.strat.moyens','a',{rows:4,al:'Moyens'})}</div>
+      <div><h3>Déroulement de la production</h3>${fld('bp.strat.prod','a',{rows:4,al:'Production'})}</div>
+    </div></div>
+    <div class="card s12"><h2>Calendrier de mise en place</h2>${E?etable('bp.milestones',[['d','Échéance (AAAA-MM)','t','width:150px'],['t','Étape','t']]):`<div class="tl">${[...b.milestones].sort((x,y)=>String(x.d).localeCompare(String(y.d))).map(m=>`<div class="tl-i"><span class="tl-d">${esc(m.d)}</span><span class="tl-t">${esc(m.t)}</span></div>`).join('')}</div>`}</div>`)}
   ${sec(8,'Paramètres économiques, marché adressable et sources',`
     <div class="card s4"><h2>Hypothèses macroéconomiques</h2>${fld('bp.macro','a',{rows:5})}</div>
     <div class="card s4"><h2>Moteurs de croissance</h2>${fld('bp.drivers','a',{rows:5})}</div>
@@ -392,7 +450,7 @@ function renderBP(){
       </tbody></table></div>
       ${E?`<div class="fields" style="margin-top:10px;max-width:320px">${F('Date de consultation','bp.srcDate','t')}</div>`:''}
       <p class="note">Les références sectorielles intégrées sont des ordres de grandeur. Avant diffusion, remplacez-les par les chiffres exacts de l'étude citée via Override.</p></div>`)}
-  ${sec(9,'Partie financière',`
+  ${sec(9,'Prévisionnel financier : états et tableaux commentés',`
     <div class="card s12">${verdict}</div>
     <div class="card s12"><h2><span>Trésorerie mensuelle <span class="meta">${H} ans à partir de janvier ${+b.startY||2027}</span></span><span class="meta">Point bas ${big(r.min.cash)}, mois ${r.min.k} de l'année ${r.min.t}</span></h2><div class="lwc" id="ch-cash"></div>
       <div class="legend"><span><i style="background:var(--up)"></i>Trésorerie positive</span><span><i style="background:var(--down)"></i>Trésorerie négative</span><span><i style="background:rgba(16,185,129,.5)"></i>Flux net du mois</span><span>Glisser pour naviguer, pincer pour zoomer</span></div></div>
@@ -403,16 +461,16 @@ function renderBP(){
       ["Chiffre d'affaires",Yr.map(y=>y.rev),'tot'],['Coût des ventes',Yr.map(y=>-y.cogs)],['Marge brute',Yr.map(y=>y.gp),'tot'],
       ['Acquisition clients',Yr.map(y=>-y.mkt)],['Charges de personnel',Yr.map(y=>-y.pers)],['Charges externes',Yr.map(y=>-y.other)],
       ['EBITDA',Yr.map(y=>y.ebitda),'tot',1],['Marge EBITDA',Yr.map(y=>pct(y.em,0))],['Dotations aux amortissements',Yr.map(y=>-y.da)],
-      ['EBIT',Yr.map(y=>y.ebit),'tot',1],['Charges financières',Yr.map(y=>-y.int)],['Impôt sur les sociétés',Yr.map(y=>-y.tax)],['Résultat net',Yr.map(y=>y.net),'tot',1]])}</div>
+      ['EBIT',Yr.map(y=>y.ebit),'tot',1],['Charges financières',Yr.map(y=>-y.int)],['Impôt sur les sociétés',Yr.map(y=>-y.tax)],['Résultat net',Yr.map(y=>y.net),'tot',1]])}${cmt('cr',`CA multiplié par ${nf(Hy.rev/Yr[0].rev,1)} entre A1 et A${H} ; marge brute ${pct(Hy.gp/Hy.rev*100,0)} ; ${r.be?`EBITDA positif dès l'année ${r.be.t}, marge de ${pct(Hy.em,0)} en A${H}.`:'EBITDA négatif sur tout l\'horizon.'} Résultat net cumulé ${big(sum(Yr.map(y=>y.net)))}.`)}</div>
     <div class="card s6"><h2>Bilan prévisionnel <span class="meta">fin d'exercice</span></h2>${ftable(head,[
       ['§','Actif'],['Immobilisations nettes',Yr.map(y=>y.bal.fixed)],['Créances clients',Yr.map(y=>y.bal.rec)],['Trésorerie',Yr.map(y=>y.bal.cash),'',1],['Total actif',Yr.map(y=>y.bal.assets),'tot'],
       ['§','Passif'],['Capital et primes',Yr.map(y=>y.bal.capital)],['Subventions',Yr.map(y=>y.bal.grant)],['Résultats cumulés',Yr.map(y=>y.bal.retained),'',1],['Dettes financières',Yr.map(y=>y.bal.debt)],['Dettes fournisseurs',Yr.map(y=>y.bal.pay)],['Total passif',Yr.map(y=>y.bal.liab),'tot'],
       ['Contrôle actif − passif',Yr.map(y=>Math.abs(y.gap)<1?'0':kk(y.gap))]])}
-      <p class="note">Capitaux propres fin A${H} : <b class="num">${big(Hy.bal.capital+Hy.bal.grant+Hy.bal.retained)}</b>${Hy.bal.capital+Hy.bal.grant+Hy.bal.retained<0?' <span class="down">(négatifs : reconstitution obligatoire)</span>':''}.</p></div>
+      ${cmt('bilan',`Trésorerie fin A${H} ${big(Hy.bal.cash)} ; dettes financières ${big(Hy.bal.debt)} ; BFR ${big(Hy.bal.bfr)}. Le bilan est équilibré chaque année (contrôle actif − passif).`)}<p class="note">Capitaux propres fin A${H} : <b class="num">${big(Hy.bal.capital+Hy.bal.grant+Hy.bal.retained)}</b>${Hy.bal.capital+Hy.bal.grant+Hy.bal.retained<0?' <span class="down">(négatifs : reconstitution obligatoire)</span>':''}.</p></div>
     <div class="card s6"><h2>Plan de financement</h2>${ftable(head,[
       ['§','Ressources'],['Capacité d\'autofinancement',Yr.map(y=>y.R.caf)],['Apports et levées',Yr.map(y=>y.R.eq)],['Subventions',Yr.map(y=>y.R.grant)],['Emprunts',Yr.map(y=>y.R.debt)],['Dégagement de BFR',Yr.map(y=>y.R.bfr)],['Total ressources',Yr.map(y=>y.Rt),'tot'],
       ['§','Emplois'],['Insuffisance d\'autofinancement',Yr.map(y=>y.E.caf)],['Investissements',Yr.map(y=>y.E.capex)],['Augmentation du BFR',Yr.map(y=>y.E.bfr)],['Remboursements d\'emprunt',Yr.map(y=>y.E.repay)],['Total emplois',Yr.map(y=>y.Et),'tot'],
-      ['Variation de trésorerie',Yr.map(y=>y.Rt-y.Et),'tot',1],['Trésorerie fin d\'exercice',Yr.map(y=>y.cash),'',1]])}</div>
+      ['Variation de trésorerie',Yr.map(y=>y.Rt-y.Et),'tot',1],['Trésorerie fin d\'exercice',Yr.map(y=>y.cash),'',1]])}${cmt('fin',`Ressources mobilisées ${big(r.funding)} (apports, levée, emprunt, aides) ; ${Yr.every(y=>y.cash>=0)?'la trésorerie reste positive en fin de chaque exercice.':'la trésorerie devient négative en fin d\'exercice : financement complémentaire nécessaire.'}`)}</div>
     <div class="card s6"><h2>Budget de trésorerie annuel</h2>${ftable(head,[
       ['§','Encaissements'],['Clients',Yr.map(y=>y.coll)],['Apports et levées',Yr.map(y=>y.inEq)],['Emprunts et subventions',Yr.map(y=>y.inDebt+y.inGrant)],['Total encaissements',Yr.map(y=>y.coll+y.inEq+y.inDebt+y.inGrant),'tot'],
       ['§','Décaissements'],['Fournisseurs et charges externes',Yr.map(y=>y.paySup)],['Acquisition clients',Yr.map(y=>y.mkt)],['Salaires chargés',Yr.map(y=>y.pers)],['Investissements',Yr.map(y=>y.capex)],['Intérêts',Yr.map(y=>y.int)],['Impôt sur les sociétés',Yr.map(y=>y.tax)],['Remboursements d\'emprunt',Yr.map(y=>y.repay)],
@@ -422,17 +480,29 @@ function renderBP(){
       ${ftable(MY.map(x=>'M'+x.k),[
         ['Encaissements clients',MY.map(x=>x.coll)],['Apports et levées',MY.map(x=>x.inEq)],['Emprunts et subventions',MY.map(x=>x.inFin)],['Total encaissements',MY.map(x=>x.inTot),'tot'],
         ['Fournisseurs et charges externes',MY.map(x=>x.paySup)],['Acquisition clients',MY.map(x=>x.mkt)],['Salaires chargés',MY.map(x=>x.pers)],['Investissements',MY.map(x=>x.capex)],['Intérêts et impôt',MY.map(x=>x.intr+x.tax)],['Remboursements',MY.map(x=>x.principal)],['Total décaissements',MY.map(x=>x.outTot),'tot'],
-        ['Solde du mois',MY.map(x=>x.flow),'',1],['Trésorerie fin de mois',MY.map(x=>x.cash),'tot',1]])}</div>
+        ['Solde du mois',MY.map(x=>x.flow),'',1],['Trésorerie fin de mois',MY.map(x=>x.cash),'tot',1]])}${cmt('treso',`Point bas de trésorerie ${big(r.min.cash)} au mois ${r.min.k} de l'année ${r.min.t}${r.min.cash<0?' : découvert à couvrir avant cette date.':' : aucun découvert sur l\'horizon.'}`)}</div>
+    ${(()=>{const S_=Yr.map(y=>{const cf=y.pers+y.other+y.da+y.int,cv=y.cogs+y.mkt,tm=(y.rev-cv)/y.rev,s=tm>0?cf/tm:NaN;return{cf,cv,tm,s,ms:y.rev-s,pm:isFinite(s)&&y.rev>0?s/y.rev*12:NaN};});
+      const fb=S_.findIndex(x=>x.ms>=0);let gross=0;const inv=Yr.map(y=>{gross+=y.capex;return{gross};});
+      return`<div class="card s12"><h2>Tableau des investissements</h2>${ftable(head,[['Investissements de l\'année',Yr.map(y=>y.capex)],['Immobilisations brutes cumulées',inv.map(x=>x.gross)],['Dotations aux amortissements',Yr.map(y=>-y.da)],['Immobilisations nettes',Yr.map(y=>y.bal.fixed),'tot'],['Financés par emprunt',Yr.map((y,i)=>i===0?+b.loan:0)]])}
+        ${cmt('inv',`Programme de ${big(sum(Yr.map(y=>y.capex)))} sur ${H} ans, amorti en ${b.amortY} ans ; ${+b.loan>0?`l'emprunt de ${big(+b.loan)} couvre ${pct(+b.loan/Math.max(1,sum(Yr.map(y=>y.capex)))*100,0)} des investissements.`:'aucun emprunt dédié.'}`)}</div>
+      <div class="card s12"><h2>Seuil de rentabilité</h2>${ftable(head,[['Charges fixes (personnel, externes, amortissements, intérêts)',S_.map(x=>-x.cf)],['Charges variables (coût des ventes, acquisition)',S_.map(x=>-x.cv)],['Taux de marge sur coûts variables',S_.map(x=>pct(x.tm*100,0))],['Seuil de rentabilité (CA)',S_.map(x=>x.s),'tot',1],['Chiffre d\'affaires',Yr.map(y=>y.rev)],['Marge de sécurité',S_.map(x=>x.ms),'',1],['Point mort atteint au mois',S_.map(x=>isFinite(x.pm)&&x.pm<=12?nf(x.pm,1):'non atteint')]])}
+        ${cmt('seuil',fb>=0?`Le CA dépasse le seuil de rentabilité à partir de l'année ${fb+1} ; en A${H}, la marge de sécurité est de ${big(S_[H-1].ms)} (${pct(S_[H-1].ms/Hy.rev*100,0)} du CA).`:`Le seuil de rentabilité n'est atteint sur aucune année de l'horizon : le modèle n'est pas rentable en l'état.`)}</div>`;})()}
     <div class="card s4"><h2>Unit economics</h2><div class="tw"><table class="tbl">
       <tr><td>ARPU mensuel</td><td class="n">${big(+b.arpu)}</td></tr><tr><td>Marge de contribution mensuelle</td><td class="n">${big(r.mc)}</td></tr>
       <tr><td>CAC pondéré</td><td class="n">${big(r.cac)}</td></tr><tr><td>Durée de vie client (plafonnée à 60 mois)</td><td class="n">${nf(r.life,0)} mois</td></tr>
       <tr class="tot"><td>LTV</td><td class="n">${big(r.ltv)}</td></tr><tr><td>LTV / CAC</td><td class="n ${r.ratio>=3?'up':'down'}">${nf(r.ratio,1)}×</td></tr><tr><td>Remboursement du CAC</td><td class="n ${r.payback<=18?'up':'down'}">${nf(r.payback,1)} mois</td></tr></table></div></div>
-    <div class="card s4"><h2>Besoin en fonds de roulement</h2>${ftable(head,[['Créances clients',Yr.map(y=>y.bal.rec)],['Dettes fournisseurs',Yr.map(y=>-y.bal.pay)],['BFR',Yr.map(y=>y.bal.bfr),'tot'],['BFR en jours de CA',Yr.map(y=>nf(y.bal.bfr/y.rev*365,0)+' j')]])}</div>
+    <div class="card s4"><h2>Besoin en fonds de roulement</h2>${ftable(head,[['Créances clients',Yr.map(y=>y.bal.rec)],['Dettes fournisseurs',Yr.map(y=>-y.bal.pay)],['BFR',Yr.map(y=>y.bal.bfr),'tot'],['Variation du BFR',Yr.map((y,i)=>y.bal.bfr-(i?Yr[i-1].bal.bfr:0))],['BFR en jours de CA',Yr.map(y=>nf(y.bal.bfr/y.rev*365,0)+' j')]])}${cmt('bfr',`BFR = créances clients (${b.dso} jours) − dettes fournisseurs (${b.dpo} jours) ; il atteint ${big(Hy.bal.bfr)} en A${H}, soit ${nf(Hy.bal.bfr/Hy.rev*365,0)} jours de CA à financer.`)}</div>
     <div class="card s4"><h2>Tableau de cohérence</h2>${ftable(head,[['CA par ETP',Yr.map(y=>y.hc?y.rev/y.hc:NaN)],['Personnel / CA',Yr.map(y=>pct(y.pers/y.rev*100,0))],['Acquisition / CA',Yr.map(y=>pct(y.mkt/y.rev*100,0))],['Croissance du CA',Yr.map((y,i)=>i?pct((y.rev/Yr[i-1].rev-1)*100,0):'—')],['Dette fin. / fonds propres',Yr.map(y=>{const e=y.bal.capital+y.bal.grant+y.bal.retained;return e>0?nf(y.bal.debt/e,2)+'×':'n.s.';})]])}</div>`)}
   ${sec(10,'Annexes et conseils d\'exécution',`
     <div class="card s7"><h2>Lignes directrices issues du modèle</h2><ol class="adv">${advice.map(a=>`<li>${a}</li>`).join('')}</ol></div>
     <div class="card s5"><h2>Conseils de l'analyste</h2>${fld('bp.advice','a',{rows:6})}
       <p class="note">Conventions du modèle : mois de 30 jours ; montée en charge du parc clients selon la saisonnalité du marché (ou linéaire si désactivée) ; acquisition décaissée au mois de signature ; impôt payé en fin d'exercice ; subventions classées en quasi-fonds propres ; amortissement linéaire de l'emprunt après différé.</p></div>`)}`;
+  {const part=(n,t,goal)=>`<div class="bpart"><span>Partie ${n}</span><h2>${t}</h2><p>${goal}</p></div>`;let n=0;const S_=k=>{n++;return secH(n,k,SEC[k].t,SEC[k].body);};
+   const ord=part(1,'Le projet, le marché et la stratégie',"Ce que vous proposez, le marché que vous attaquez et la manière dont vous allez lancer le projet.")+S_(1)+S_(3)+S_(5)+S_(6)+S_(4)+S_(7)
+     +part(2,'Le porteur de projet et la structure',"Votre capacité à gérer le projet, vos motivations, l'équipe et le cadre juridique.")+S_(2)
+     +part(3,'Le prévisionnel',"Rentabilité, solidité et cohérence financière du projet, tableaux commentés.")+S_(8)+S_(9)+S_(10);
+   __h=__h.replace(/@@S1@@[\s\S]*@@S10@@/,ord);}
+  $('#p-bp').innerHTML=__h;
 
   const tm=x=>`${(+b.startY||2027)+x.t-1}-${String(x.k).padStart(2,'0')}-01`;
   queueChart('ch-cash',el=>{const ch=lwBase(el,kfmt);

@@ -1,23 +1,24 @@
 /* ============ Abonnement ============ */
-const MODNAMES={bp:'Business plan',an:'Analyse financière',sc:'Sélecteur & mapping',pf:'Suivi & placements',cm:'Commodities & flows',pc:'Calculateur de position',jr:'Journal de trading'};
+const MODNAMES={bp:'Business plan',an:'Analyse financière',sc:'Sélecteur & mapping',lbo:'Dossier LBO',pf:'Suivi & placements',cm:'Commodities & flows',pc:'Calculateur de position',jr:'Journal de trading'};
 function renderAB(){
   const full=39*Object.keys(MODNAMES).length;if(!MODNAMES[ui.plan])ui.plan='bp';
-  $('#p-ab').innerHTML=`<div class="ph"><div><h1>Abonnement</h1><p>Un module à l'unité ou les sept volets en pack. Sans engagement, résiliable à tout moment.</p></div></div>
+  $('#p-ab').innerHTML=`<div class="ph"><div><h1>Abonnement</h1><p>Un module à l'unité ou les huit volets en pack. Sans engagement, résiliable à tout moment.</p></div></div>
   <div class="plans">
     <div class="plan"><h2 style="margin:0;font-size:16px">Module</h2><div class="price">39 € <small>HT / mois</small></div><div class="note" style="margin:0">Un volet au choix</div>
       <div class="chips" role="radiogroup" aria-label="Choix du module">${Object.entries(MODNAMES).map(([k,l])=>`<button class="chip" role="radio" data-act="plan" data-id="${k}" aria-pressed="${ui.plan===k}" aria-checked="${ui.plan===k}">${l}</button>`).join('')}</div>
       <ul><li>Override complet sur le volet</li><li>Export PDF institutionnel</li><li>Sauvegarde des dossiers</li></ul>
       <button class="btn" data-act="buy">S'abonner : ${MODNAMES[ui.plan]}</button></div>
-    <div class="plan best"><h2 style="margin:0;font-size:16px">Pack global <span class="tag ok">−${nf((1-69/full)*100,0)} %</span></h2><div class="price">69 € <small>HT / mois</small></div><div class="note" style="margin:0">Les sept volets, au lieu de ${full} €</div>
-      <ul><li>Business plan, Analyse financière, Sélecteur, Suivi et MT5, Commodities, Calculateur, Journal</li><li>Données partagées entre volets</li><li>Override et export PDF illimités</li></ul>
+    <div class="plan best"><h2 style="margin:0;font-size:16px">Pack global <span class="tag ok">−${nf((1-69/full)*100,0)} %</span></h2><div class="price">69 € <small>HT / mois</small></div><div class="note" style="margin:0">Les huit volets, au lieu de ${full} €</div>
+      <ul><li>Finance d'entreprise : Business plan, Analyse financière, Sélecteur, Dossier LBO, Suivi</li><li>Finance de marché : Commodities, Calculateur, Journal</li><li>Données partagées entre volets</li><li>Override et export PDF illimités</li></ul>
       <button class="btn pri" data-act="buy">S'abonner au pack global</button></div>
   </div>`;
 }
 
 /* ============ Rendu global ============ */
-const MODS=[['bp','Business plan','bp'],['an','Analyse financière','an'],['sc','Sélecteur & mapping','sc'],['pf','Suivi & placements','pf'],['cm','Commodities & flows','cm'],['pc','Calculateur de position','pc'],['jr','Journal de trading','jr']];
-const PANELS=['bp','an','sc','pf','cm','pc','jr','ab'];
-const BPSEC=['Fiche de renseignements','Executive summary et offre','Équipe','Étude de marché','Marketing, offre et prix','Psychologie client','Concurrence et environnement','Commercial','Paramètres et marché adressable','Partie financière','Annexes'];
+const MODS=[['bp','Business plan','bp'],['an','Analyse financière','an'],['sc','Sélecteur & mapping','sc'],['lbo','Dossier LBO','lbo'],['pf','Suivi & placements','pf'],['cm','Commodities & flows','cm'],['pc','Calculateur de position','pc'],['jr','Journal de trading','jr']];
+const PANELS=['bp','an','sc','lbo','pf','cm','pc','jr','ab'];
+const RAILG=[["Finance<br>d'entreprise",5],['Finance<br>de marché',3]];
+const BPSEC=['Fiche de renseignements','Executive summary et offre','Étude de marché : secteur','La demande','L\'offre et la concurrence','Marketing, offre et prix','Stratégie et lancement','Porteur et structure','Paramètres et marché adressable','Prévisionnel financier','Annexes'];
 let lastCalc=new Date();
 function bpState(){const r=bpCalc(),AL=bpAlerts(r),ko=AL.filter(a=>a.l==='ko').length;return{r,AL,ko,res:AL.length-ko,st:ko?['ko',"Modèle non viable en l'état"]:AL.length?['am','Cohérent sous réserves']:['ok','Modèle cohérent']};}
 function ctxHTML(){
@@ -26,6 +27,7 @@ function ctxHTML(){
   if(ui.tab==='sc'){const D=S.sc.list.filter(c=>!c.lead&&scPer().inP(c)),n=D.filter(passes).length;return`<span class="ctx-t">Sélecteur d'entreprises</span><span class="ctx-s">${n} dossier${n>1?'s':''} retenu${n>1?'s':''} sur ${D.length}</span>`;}
   if(ui.tab==='cm')return`<div class="seg" role="tablist" aria-label="Actif">${Object.entries(CM_ASSETS).map(([k,l])=>`<button role="tab" data-act="cma" data-id="${k}" aria-selected="${(ui.cmA||'brent')===k}">${l}</button>`).join('')}</div><span class="vsep"></span><div class="seg" role="tablist" aria-label="Vue">${[['t','Pression & approvisionnement'],['c','Confirmation & corrélations']].map(([k,l])=>`<button role="tab" data-act="cmt" data-id="${k}" aria-selected="${(ui.cmT||'t')===k}">${l}</button>`).join('')}</div>`;
   if(ui.tab==='pf')return`<span class="ctx-t">Suivi des actifs et placements</span><span class="ctx-s">${S.pf.positions.length} lignes · MT5 ${S.mt5.linked?'lié':'non lié'}</span>`;
+  if(ui.tab==='lbo'){const d=lboCur();return`<span class="ctx-t">Dossier d'acquisition LBO</span><span class="ctx-s">${d?esc(d.name):'aucun dossier'} · ${S.lbo.list.length} dossier${S.lbo.list.length>1?'s':''}</span>`;}
   if(ui.tab==='pc'){const c=pcCalc();return`<span class="ctx-t">Calculateur de position</span><span class="ctx-s">${esc(S.pc.sym)} · ${isFinite(c.lots)?nf(c.lots,2)+' lot(s)':'entrée et stop à saisir'} · risque ${pct(+S.pc.risk,2)}</span>`;}
   if(ui.tab==='jr'){jrInit();return`<span class="ctx-t">Journal de trading</span><span class="ctx-s">${S.jr.trades.length} trade${S.jr.trades.length>1?'s':''} enregistré${S.jr.trades.length>1?'s':''}</span>`;}
   return`<span class="ctx-t">Abonnement</span>`;
@@ -48,6 +50,9 @@ function sideHTML(){
     <div class="wl-h"><span>Entreprise</span><span>Attract.</span><span>Liquid.</span></div>
     ${L.map(x=>`<button class="wl${x.id===ui.sel?' on':''}" data-act="pick" data-id="${esc(x.id)}"><span class="wl-s"><span class="dot ${passes(x)?'ok':'ko'}"></span><b>${esc(x.n)}</b><small>${esc((SECT[x.sec]||{}).l||x.sec)}</small></span><span class="wl-p">${nf(attr(x),0)}</span><span class="wl-c" style="color:var(--mute)">${auto(x.liq)}/10</span></button>`).join('')}`;}
   if(ui.tab==='cm'){const{s,R,N}=cmCalc();return`<div class="sideh">Matières premières <span class="meta">${new Date(s.d[N-1]+'T00:00:00').toLocaleDateString('fr-FR')}</span></div><div class="wl-h"><span>Actif</span><span>Cours</span><span>Var.</span></div>${Object.entries(CM_ASSETS).map(([k,l])=>{let i=N-1;while(i>0&&s[k][i]===null)i--;const r=R[i],sg=k==='brent'?r.sigChine:k==='gold'?r.sigGold:r.sigSilver,v=s[k+'V'][i];return`<button class="wl${k===(ui.cmA||'brent')?' on':''}" data-act="cma" data-id="${k}"><span class="wl-s"><span class="dot ${cmCls(sg)}"></span><b>${l}</b><small>${esc(cmStrip(sg).split(' : ')[0])}</small></span><span class="wl-p">${nf(s[k][i],2)}</span><span class="wl-c ${v!==null?cls(v):''}">${v!==null?sgn(v*100,2):'—'}</span></button>`;}).join('')}<div class="sideh" style="margin-top:8px">Ratios</div><div class="kv"><span>Or / Argent</span><b>${nf(R[N-1].gs,1)}</b></div><div class="kv"><span>Or / Brent</span><b>${nf(R[N-1].gb,1)}</b></div><div class="kv"><span>USD/CNH</span><b>${nf(s.cnh[N-1],4)}</b></div>`;}
+  if(ui.tab==='lbo'){const d=lboCur();if(!d)return'';const M=lboModel(d),v=lboVerdict(M);
+    return`<div class="sideh">Synthèse du dossier</div><div class="vbox ${v[0]}"><b><span class="dot ${v[0]}"></span>${v[1]}</b><span>${esc(M.T?M.T.name:'')}</span></div>${kv('Valeur d\'entreprise',nf(M.ev0,1)+' M€')}${kv('Multiple payé',nf(M.ev0/(M.e0||1),1)+'×')}${kv('Dette / EBITDA',nf(M.lev0,1)+'×',M.lev0>+M.P.covLev)}${kv('Fonds propres',nf(M.eq0,1)+' M€')}${kv('TRI',isFinite(M.irr)?pct(M.irr*100,1):'—',!(M.irr*100>=+M.P.irrT))}${kv('MoIC',isFinite(M.moic)?nf(M.moic,2)+'×':'—',!(M.moic>=2))}${kv('DSCR minimal',nf(M.minDscr,2),M.minDscr<+M.P.covDscr)}
+    <div class="sideh" style="margin-top:8px">Sections</div><div class="secl">${['Executive summary','Scoring macro et tamis','Montage financier','Modèle de remboursement','Plan de création de valeur'].map((t,i)=>`<button data-act="goto" data-id="lbo-s${i+1}"><span>${String(i+1).padStart(2,'0')}</span>${t}</button>`).join('')}</div>`;}
   if(ui.tab==='pc'){const c=pcCalc(),pl=S.pc.plan,u=S.pc.ccy;return`<div class="sideh">Plan de risque</div>${kv('Compte',nf(+pl.acct,0)+' '+u)}${kv('Risque par trade',pct(+pl.rpt,2)+' · '+nf(pl.acct*pl.rpt/100,2)+' '+u)}${kv('Perte maximale par jour',pct(+pl.day,1)+' · '+nf(pl.acct*pl.day/100,0)+' '+u)}${kv('Perte maximale totale',pct(+pl.tot,1)+' · '+nf(pl.acct*pl.tot/100,0)+' '+u)}${kv('Trades par jour',pl.maxT)}
     <div class="sideh" style="margin-top:8px">Contrôles du trade</div>${c.checks.map(x=>`<div class="kv"><span><span class="dot ${x[3]?'ok':'ko'}"></span> ${x[0]}</span><b>${x[1]}</b></div>`).join('')}`;}
   if(ui.tab==='jr'){jrInit();const T=S.jr.trades,st=jrStats(T.filter(t=>t.d.slice(0,7)===ui.jrM)),L=[...T].sort((a,b)=>(b.d+(b.t||'')).localeCompare(a.d+(a.t||''))).slice(0,8),u=S.pc.ccy;
@@ -65,27 +70,28 @@ function statusHTML(){
   else if(ui.tab==='an'){const a=S.an.assets[ui.tk];if(a){const r=anCalc(ui.tk);s=`<span class="sti"><span class="dot ${r.positive?'ok':'ko'}"></span><b>${esc(a.t)} : décision ${r.positive?'positive':'négative'}</b></span>`;}}
   else if(ui.tab==='sc'){const n=S.sc.list.filter(c=>!c.lead&&scPer().inP(c)&&passes(c)).length;s=`<span class="sti"><span class="dot ok"></span><b>${n} dossier${n>1?'s':''} retenu${n>1?'s':''}</b></span>`;}
   else if(ui.tab==='cm'){const{R,N}=cmCalc(),r=R[N-1];s=`<span class="sti"><span class="dot ${cmCls(r.sigChine)}"></span><b>Brent : ${esc(cmStrip(r.sigChine).split(' : ')[0])}</b></span><span class="sti"><span class="dot ${cmCls(r.sigGold)}"></span><b>Or : ${esc(cmStrip(r.sigGold).split(' : ')[0])}</b></span>`;}
+  else if(ui.tab==='lbo'){const d=lboCur();if(d){const v=lboVerdict(lboModel(d));s=`<span class="sti"><span class="dot ${v[0]}"></span><b>${esc(d.name)} : ${v[1]}</b></span>`;}}
   else if(ui.tab==='pc'){const c=pcCalc(),ok=c.checks.every(x=>x[3]);s=`<span class="sti"><span class="dot ${ok?'ok':'ko'}"></span><b>${ok?'Trade conforme au plan':'Hors plan : '+c.checks.filter(x=>!x[3]).map(x=>x[0].toLowerCase()).join(', ')}</b></span>`;}
   else if(ui.tab==='jr'){const st=jrStats(S.jr.trades);s=`<span class="sti"><span class="dot ${st.tot>=0?'ok':'ko'}"></span><b>${st.n} trades · ${nf(st.tot,2)} ${S.pc.ccy}</b></span>`;}
   else if(ui.tab==='pf'){const K=pfCalc();s=`<span class="sti"><span class="dot ${K.alert?'ko':K.div?'am':'ok'}"></span><b>${K.div} divergence${K.div>1?'s':''}, ${K.alert} alerte${K.alert>1?'s':''}</b></span>`;}
   const n=document.querySelectorAll('.main .ovr').length;
   if(n)s+=`<span class="sti"><span class="dot am"></span>${n} valeur${n>1?'s':''} forcée${n>1?'s':''}</span>`;
   if(pending.size)s+=`<span class="sti"><span class="dot ac"></span>${pending.size} modification${pending.size>1?'s':''} en attente de recalcul</span>`;
-  s+=`<span class="r"><span>${ui.tab==='pc'?'Leviers ESMA 2018 · EUR/USD 1,1219 (20/10/2026)':ui.tab==='jr'?'Saisie manuelle et rapports MT5':ui.tab==='an'||ui.tab==='pf'?'Données publiées MarketScreener, cours du 19-20/10/2026':ui.tab==='cm'?'Classeur TRADING_Dashboard (Investing.com)':ui.tab==='sc'?'Zones : FMI WEO':'Données de démonstration à sourcer'}</span><span>Calculé à ${lastCalc.toLocaleTimeString('fr-FR')}</span><span>${ui.edit?'<b style="color:var(--amber)">Override</b>':'Lecture'}</span></span>`;
+  s+=`<span class="r"><span>${ui.tab==='lbo'?'Euribor 3 mois 2,676 % (30/10/2026) · Damodaran janvier 2026':ui.tab==='pc'?'Leviers ESMA 2018 · EUR/USD 1,1219 (20/10/2026)':ui.tab==='jr'?'Saisie manuelle et rapports MT5':ui.tab==='an'||ui.tab==='pf'?'Données publiées MarketScreener, cours du 19-20/10/2026':ui.tab==='cm'?'Classeur TRADING_Dashboard (Investing.com)':ui.tab==='sc'?'Zones : FMI WEO':'Données de démonstration à sourcer'}</span><span>Calculé à ${lastCalc.toLocaleTimeString('fr-FR')}</span><span>${ui.edit?'<b style="color:var(--amber)">Override</b>':'Lecture'}</span></span>`;
   return s;
 }
 function renderAll(){
   document.body.classList.toggle('editing',ui.edit);
-  $('#rail').innerHTML=MODS.map(([k,l,i],n)=>`<button class="rb" data-act="tab" data-id="${k}" title="${n+1}. ${l}"${ui.tab===k?' aria-current="page"':''}>${ic(i)}<span><b class="rbn">${n+1}</b>${l}</span></button>`).join('')+`<span class="rail-sp"></span><button class="rb" data-act="tab" data-id="ab" title="Abonnement"${ui.tab==='ab'?' aria-current="page"':''}>${ic('ab')}<span>Offre</span></button>`;
+  $('#rail').innerHTML=(()=>{let o=0;return RAILG.map(([g,n])=>{const it=MODS.slice(o,o+n);o+=n;return`<div class="rg" role="group" aria-label="${g.replace('<br>',' ')}"><span class="rg-l">${g}</span>${it.map(([k,l,i])=>`<button class="rb" data-act="tab" data-id="${k}" title="${l}"${ui.tab===k?' aria-current="page"':''}>${ic(i)}<span>${l}</span></button>`).join('')}</div>`;}).join('');})()+`<span class="rail-sp"></span><button class="rb" data-act="tab" data-id="ab" title="Abonnement"${ui.tab==='ab'?' aria-current="page"':''}>${ic('ab')}<span>Offre</span></button>`;
   $('#ctx').innerHTML=ctxHTML();
   PANELS.forEach(k=>$('#p-'+k).classList.toggle('on',ui.tab===k));
-  renderBP();renderAN();renderSC();renderPF();renderCM();renderPC();renderJR();renderAB();
+  renderBP();renderAN();renderSC();renderLBO();renderPF();renderCM();renderPC();renderJR();renderAB();
   const side=sideHTML();$('#side').innerHTML=side;$('#app').classList.toggle('noside',!side);
   $('#editBtn').classList.toggle('on',ui.edit);$('#editBtn').setAttribute('aria-pressed',ui.edit);
   $('#editBtn').innerHTML=`${ic(ui.edit?'lock':'pen')}<span class="lbl">${ui.edit?'Verrouiller':'Override'}</span>`;
   $('#pdfBtn').innerHTML=`${ic('dl')}<span class="lbl">Exporter PDF</span>`;
   updBar();
-  const t={pc:'Calculateur de position',jr:'Journal de trading',bp:'Business plan',an:"Rapport d'analyse financière",sc:"Sélecteur d'entreprises & double mapping",pf:'Suivi des actifs et placements',cm:'Commodities & flows : '+((ui.cmT||'t')==='t'?'pression et approvisionnement':'confirmation et corrélations'),ab:'Abonnement'}[ui.tab],sub=ui.tab==='bp'?S.bp.name:ui.tab==='an'?(S.an.assets[ui.tk]||{}).n:ui.tab==='cm'?CM_ASSETS[ui.cmA||'brent']:ui.tab==='sc'?('zone '+geoAgg(ui.geo).lab+', '+((S.sc.list.find(c=>c.id===ui.sel)||{}).n||'')):'';
+  const t={lbo:'Dossier d\'acquisition LBO',pc:'Calculateur de position',jr:'Journal de trading',bp:'Business plan',an:"Rapport d'analyse financière",sc:"Sélecteur d'entreprises & double mapping",pf:'Suivi des actifs et placements',cm:'Commodities & flows : '+((ui.cmT||'t')==='t'?'pression et approvisionnement':'confirmation et corrélations'),ab:'Abonnement'}[ui.tab],sub=ui.tab==='bp'?S.bp.name:ui.tab==='an'?(S.an.assets[ui.tk]||{}).n:ui.tab==='cm'?CM_ASSETS[ui.cmA||'brent']:ui.tab==='sc'?('zone '+geoAgg(ui.geo).lab+', '+((S.sc.list.find(c=>c.id===ui.sel)||{}).n||'')):'';
   $('#printHead').innerHTML=`<h1>OVERRIDE.DESK : ${esc(t)}${sub?', '+esc(sub):''}</h1><p>Édité le ${new Date().toLocaleDateString('fr-FR',{day:'numeric',month:'long',year:'numeric'})}. ${document.querySelectorAll('#p-'+ui.tab+' .ovr').length} valeur(s) forcée(s) par l'analyste, signalées par *. Rapport d'aide à la décision, ne constitue pas un conseil en investissement.</p>`;
 }
 function updBar(){
@@ -111,6 +117,8 @@ document.addEventListener('input',e=>{
 document.addEventListener('change',e=>{
   const el=e.target;
   if(el.dataset&&el.dataset.prj){prjSwitch(el.dataset.prj,el.value,false);return;}
+  if(el.dataset&&el.dataset.lbo){S.lbo.cur=el.value;renderAll();save();return;}
+  if(el.dataset&&el.dataset.lbosrc){ui.lboSrc=el.value;save();return;}
   if(el.dataset&&el.dataset.ver){prjSwitch(el.dataset.ver,el.value,true);return;}
   if(!el.dataset||!el.dataset.lk)return;
   const v=lkVal(el);if(v!==undefined)setP(S,el.dataset.lk,v);
@@ -137,7 +145,7 @@ document.addEventListener('click',e=>{
     case 'edit':ui.edit=!ui.edit;if(!ui.edit&&pending.size){recalc();}else renderAll();break;
     case 'recalc':recalc();break;
     case 'print':{const was=ui.edit;if(pending.size)recalc('Recalculé avant export');ui.edit=false;renderAll();setTimeout(()=>{window.print();if(was){ui.edit=true;renderAll();}},120);break;}
-    case 'reset':{const v=ui.tab;if(v==='jr'){toast('Le journal n\'est jamais réinitialisé : supprimez les trades un par un');break;}if(S[v]){S[v]=clone(DEF[v]);pending.clear();renderAll();save();toast('Volet réinitialisé aux valeurs de référence');}break;}
+    case 'reset':{const v=ui.tab;if(v==='jr'||v==='lbo'){toast('Le journal n\'est jamais réinitialisé : supprimez les trades un par un');break;}if(S[v]){S[v]=clone(DEF[v]);pending.clear();renderAll();save();toast('Volet réinitialisé aux valeurs de référence');}break;}
     case 'tk':ui.tk=id;ui.qmsg='';renderAll();save();break;
     case 'goan':ui.tk=id;ui.tab='an';ui.qmsg='';renderAll();save();$('#main').scrollTop=0;break;
     case 'search':doSearch();break;
@@ -172,6 +180,11 @@ document.addEventListener('click',e=>{
     case 'mt5sync':mt5Sync();break;
     case 'mt5unlink':S.mt5=Object.assign(clone(DEF.mt5),{mode:S.mt5.mode});ui.mt5Open=false;renderAll();save();toast('Compte MT5 délié (les trades importés restent dans le journal)');break;
     case 'cmfile':$('#cmFile').click();break;
+    case 'lbonew':{const d=lboNew(ui.lboSrc||('sc:'+ui.sel));if(d){renderAll();save();$('#main').scrollTop=0;toast('Dossier LBO créé et pré-rempli : '+d.name);}else toast('Cible introuvable');break;}
+    case 'lbogen':{const d=lboNew(id);if(d){ui.lboSrc=id;ui.tab='lbo';renderAll();save();$('#main').scrollTop=0;toast('Dossier LBO généré : '+d.name);}break;}
+    case 'lbodel':{const d=lboCur();if(d){S.lbo.list=S.lbo.list.filter(x=>x.id!==d.id);S.lbo.cur=S.lbo.list.length?S.lbo.list[0].id:null;renderAll();save();toast('Dossier LBO supprimé');}break;}
+    case 'lbosynadd':{const d=lboCur();d.syn.push({lev:'Nouvelle synergie',zone:'',k:0,y:2,note:''});renderAll();save();break;}
+    case 'lbosyndel':{const d=lboCur();d.syn.splice(+id,1);renderAll();save();break;}
     case 'plan':ui.plan=id;renderAB();save();break;
     case 'buy':toast('Paiement à brancher au déploiement : Stripe Checkout et droits Supabase');break;
   }
