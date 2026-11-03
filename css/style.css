@@ -548,3 +548,18 @@ details.brd>summary .num{margin-left:auto;color:var(--text)}
 .cmpb-b i.cut{position:relative;border-top-right-radius:0;border-bottom-right-radius:0}
 .cmpb-b i.cut::after{content:"";position:absolute;right:-6px;top:-1px;border-left:6px solid currentColor;border-top:5px solid transparent;border-bottom:5px solid transparent;color:inherit}
 .cmpb-b i.cut[style*="--down"]::after{color:var(--down)}
+/* ===== v7.1 : sensibilités (tornade) ===== */
+.torn{display:flex;flex-direction:column;gap:7px}
+.torn-r{display:grid;grid-template-columns:minmax(0,150px) 1fr 120px;gap:8px;align-items:center;font-size:12px}
+.torn-l em{font-style:normal;color:var(--mute);font-size:11px;display:block}
+.torn-t{position:relative;height:14px;background:var(--raised,#18181B);border-radius:2px}
+.torn-t .mid{position:absolute;left:50%;top:-2px;bottom:-2px;width:1px;background:var(--line2)}
+.torn-t b{position:absolute;top:2px;bottom:2px;border-radius:2px}
+.torn-t b.neg{background:var(--down)}.torn-t b.pos{background:var(--up)}
+.torn-v{font-size:11px;color:var(--mute);text-align:right}
+/* ===== v7.1 : contrôle qualité et avertissement ===== */
+.qa-b{margin-left:12px;border:0;background:none;color:var(--mute);font:inherit;display:inline-flex;align-items:center;gap:6px;cursor:pointer;padding:0}
+.qa-b:hover{color:var(--hi)}
+.ai-h .seg{margin:0 auto 0 16px}
+.disc{margin:14px 6px 18px;font-size:11px;line-height:1.5;color:var(--mute2,var(--mute));max-width:980px}
+@media print{.disc{display:block!important;margin-top:18px;font-size:9pt}}

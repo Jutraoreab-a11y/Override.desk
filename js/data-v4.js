@@ -92,3 +92,6 @@ DEF.cm.p.th={sp:[0,3,6,10,15],bB:[0,1,3,6],bBr:[1.5,3.5,6],bS:[-0.15,0,0.08],bG:
 
 /* v7 : backend (vide = même site que la page) */
 DEF.liveCfg={base:''};
+
+/* v7.1 : audit financier */
+DEF.bp.isPme=false;DEF.bp.privDisc=30;DEF.bp.dcfRate=30;DEF.bp.futDil=20;DEF.bp.scen={bear:{arpu:-15,churn:50,cac:25,g:-30},bull:{arpu:10,churn:-25,cac:-15,g:20}};

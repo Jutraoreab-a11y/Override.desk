@@ -6,11 +6,11 @@ function lboTarget(src){
   if(type==='sc'){const c=S.sc.list.find(x=>x.id===id);if(!c)return null;const sec=SECT[c.sec]?c.sec:'saas',D=DAMO[sec]||DAMO.saas;
     const filt=FKEYS.map((k,i)=>[FQ[i][0],+c[k],[c.liqTxt,c.catTxt,c.faille,c.tamTxt][i]]);
     return{type,id,name:c.n,sec:(SECT[sec]||{}).l||sec,secKey:sec,rev:+c.arr,ebitda:+c.arr*(+c.ebm||0)/100,m:+c.ebm||0,g:+c.gr||0,score:attr(c),filt,mult:+D.eve,multSrc:`VE/EBITDA médian du secteur ${D.ind}, Damodaran janvier 2026`,
-      thesis:[c.pos,c.equity].filter(Boolean).join(' '),pres:[c.bmTxt,c.teamTxt].filter(Boolean).join(' '),sell:c.bmTxt||'',who:c.pos||'',edge:c.faille?'Angle mort du leader exploité : '+c.faille:'',srcLab:'Dossier du Sélecteur',prem:0,lead:c.lead};}
+      thesis:[c.pos,c.equity].filter(Boolean).join(' '),pres:[c.bmTxt,c.teamTxt].filter(Boolean).join(' '),sell:c.bmTxt||'',who:c.pos||'',edge:c.faille?'Angle mort du leader exploité : '+c.faille:'',srcLab:'Dossier du Sélecteur',prem:0,lead:c.lead,evs:+D.evs};}
   if(type==='bp'){const b=S.bp,r=bpCalc(),k=r.mk,Y=r.Y,H=r.H,yr=Y[H-1],sec=SECT[b.sector]?b.sector:'saas',D=DAMO[sec]||DAMO.saas,T=b.tamis;
     const filt=k.filt.map(f=>[f[0],+f[1],f[2]]),sc=10*((+T.cat)*25+(+T.conc)*20+k.sizeS*25+7*15+(r.ratio>=3?8:5)*15)/100;
     return{type,id:'bp',name:b.name||'Projet',sec:(SECT[sec]||{}).l,secKey:sec,rev:yr.rev/1e6,ebitda:yr.ebitda/1e6,m:yr.em,g:Y[H-2]?(yr.rev/Y[H-2].rev-1)*100:20,score:sc,filt,mult:+D.eve,multSrc:`VE/EBITDA médian du secteur ${D.ind}, Damodaran janvier 2026`,
-      thesis:[b.posStmt,b.edge].filter(Boolean).join(' '),pres:b.whatSell,sell:b.whatSell||'',who:(b.fiche||{}).forWho||'',edge:b.edge||'',bm:(typeof BM_TYPES!=='undefined'?(BM_TYPES[(b.fiche||{}).bmType]||'')+' · '+(REV_TYPES[(b.fiche||{}).revType]||''):''),srcLab:`Business plan (année ${H} du prévisionnel, ${(+b.startY||2027)+H-1})`,prem:0};}
+      thesis:[b.posStmt,b.edge].filter(Boolean).join(' '),pres:b.whatSell,sell:b.whatSell||'',who:(b.fiche||{}).forWho||'',edge:b.edge||'',bm:(typeof BM_TYPES!=='undefined'?(BM_TYPES[(b.fiche||{}).bmType]||'')+' · '+(REV_TYPES[(b.fiche||{}).revType]||''):''),srcLab:`Business plan (année ${H} du prévisionnel, ${(+b.startY||2027)+H-1})`,prem:0,evs:+D.evs};}
   if(type==='an'){const a=S.an.assets[id];if(!a)return null;const B=anBase(a),L=B.L,R=anCalc(id),k=a.rcur==='USD'?1/FX_EURUSD:1;
     return{type,id,name:`${a.n} (${a.t})`,sec:a.sec,secKey:null,rev:a.rev[L]*k,ebitda:a.ebitda[L]*k,m:B.em[L],g:isFinite(B.revG[L])?B.revG[L]:3,score:R.score,filt:R.filt.map(f=>[f[0],+f[1],f[2]]),mult:B.evE,multSrc:`VE/EBITDA actuel du titre (cours du ${a.pxDate||'—'})`,
       thesis:R.concl,pres:`${a.sec}. Comptes ${a.y[L]} publiés, source ${a.src||'MarketScreener'}.`,sell:'',who:'',edge:'',srcLab:'Titre coté (retrait de la cote)',prem:25,netDebt:a.nd[L]*k};}
@@ -20,7 +20,7 @@ function lboNew(src){
   const T=lboTarget(src);if(!T)return null;const g=clamp(T.g,-5,40);
   const d={id:uid('l'),name:'LBO '+T.name,src,date:today(),thesis:T.thesis||'',pres:T.pres||'',sell:T.sell||'',who:T.who||'',edge:T.edge||'',bm:T.bm||'',
     p:{basis:'emplois',entryMult:+(isFinite(T.mult)&&T.mult>0?T.mult:8).toFixed(1),exitMult:+(isFinite(T.mult)&&T.mult>0?T.mult:8).toFixed(1),prem:T.prem,fees:3,seniorPct:55,margin:4,euribor:LBO_SRC.euribor.v,amortY:7,mezzPct:0,mezzRate:10,sweep:50,H:5,
-      g:[1,2,3,4,5].map(i=>+(g*Math.pow(0.85,i-1)).toFixed(1)),m0:+(+T.m||0).toFixed(1),mT:+Math.max(+T.m||0,(+T.m||0)+3).toFixed(1),capex:3,bfr:10,da:3,tax:LBO_SRC.tax.v,covLev:4.5,covDscr:1.2,irrT:20,synIncl:true},
+      g:[1,2,3,4,5].map(i=>+(g*Math.pow(0.85,i-1)).toFixed(1)),m0:+(+T.m||0).toFixed(1),mT:+Math.max(+T.m||0,(+T.m||0)+3).toFixed(1),capex:3,bfr:10,da:3,tax:LBO_SRC.tax.v,covLev:4.5,covDscr:1.2,irrT:20,synIncl:true,debtCap:true,privDisc:T.type==='an'?0:30},
     syn:[{lev:'Achats et sous-traitance mutualisés',zone:'France ↔ Afrique',k:0,y:2,note:'À chiffrer avec les fournisseurs'},{lev:'Ouverture commerciale',zone:'Afrique de l\'Ouest (zone franc CFA)',k:0,y:3,note:'Clients et distributeurs à identifier'},{lev:'Centre de services partagés',zone:'France → Afrique du Nord',k:0,y:3,note:'Coûts de structure à comparer'}],
     road:['100 premiers jours : gouvernance, reporting mensuel, revue des contrats clés','Plan de performance opérationnelle et achats','Croissance externe ciblée ou ouverture d\'un nouveau marché','Montée en puissance des synergies et désendettement','Préparation de la sortie : data room, vendor due diligence']};
   lboMig(d);S.lbo.list.push(d);S.lbo.cur=d.id;return d;
@@ -30,6 +30,7 @@ function lboCur(){const d=S.lbo.list.find(x=>x.id===S.lbo.cur)||S.lbo.list[0];if
 function lboMig(d){
   if(d.p.basis!=='emplois'){d.p.basis='emplois';d.p.seniorPct=55;}
   if(!d.ov)d.ov={rev:[],eb:[]};
+  if(d.p.debtCap===undefined)d.p.debtCap=true;if(d.p.privDisc===undefined)d.p.privDisc=String(d.src).startsWith('an:')?0:30;
   if(d.sell===undefined){const T=lboTarget(d.src)||{};d.sell=T.sell||'';d.who=T.who||'';d.edge=T.edge||'';d.bm=T.bm||'';}
   if(!d.scs||!d.scs.length){const s={id:uid('s'),name:'Scénario de base',date:today()};d.scs=[s];d.scCur=s.id;lboSync(d);}
 }
@@ -43,7 +44,14 @@ function lboScAct(act,id){const d=lboCur();if(!d)return;lboSync(d);const cur=d.s
 function lboModel(d,ov){
   const T=lboTarget(d.src)||{rev:0,ebitda:0,netDebt:0},P=Object.assign({},d.p,ov||{}),O=d.ov||{rev:[],eb:[]},H=clamp(Math.round(+P.H),3,7);
   const rate=(+P.euribor+ +P.margin)/100,m0=+P.m0/100,mT=+P.mT/100,rev0=T.rev,e0=rev0*m0;
-  const ev0=e0*(+P.entryMult)*(1+(+P.prem||0)/100),fees=ev0*(+P.fees)/100,emp=ev0+fees,sen0=emp*(+P.seniorPct)/100,mez0=emp*(+P.mezzPct)/100,eq0=emp-sen0-mez0;
+  /* Audit v7.1 : (1) décote de taille et d'illiquidité appliquée aux multiples de sociétés cotées quand la cible ne l'est pas ;
+     (2) EBITDA négatif : valorisation au multiple VE/CA du secteur et aucune dette d'acquisition (pas de cash-flow à servir) ;
+     (3) prime de contrôle appliquée à la valeur des titres, pas à la valeur d'entreprise ;
+     (4) dette senior = % des emplois, plafonnée au levier du covenant (pratique bancaire). */
+  const disc=1-clamp(+P.privDisc||0,0,90)/100,neg=!(e0>0),nd0=+T.netDebt||0;
+  const evMult=neg?rev0*(+T.evs||0)*disc:e0*(+P.entryMult)*disc,eqv=evMult-nd0,ev0=eqv*(1+(+P.prem||0)/100)+nd0;
+  const fees=ev0*(+P.fees)/100,emp=ev0+fees,mez0=neg?0:emp*(+P.mezzPct)/100;
+  const senW=neg?0:emp*(+P.seniorPct)/100,senCap=(P.debtCap===false||P.debtCap==='false')?Infinity:Math.max(0,(+P.covLev)*e0-mez0),sen0=Math.min(senW,senCap),eq0=emp-sen0-mez0;
   const Y=[];let rev=rev0,sen=sen0,cash=0;
   for(let t=1;t<=H;t++){const oR=O.rev[t-1],oE=O.eb[t-1],rv=oR!=null&&oR!==''&&isFinite(+oR)?+oR:rev*(1+(+(P.g[t-1]??P.g[P.g.length-1]))/100),g=(rv/rev-1),mg=m0+(mT-m0)*t/H;
     const syn=(P.synIncl===true||P.synIncl==='true')?sum(d.syn.filter(s=>+s.y<=t).map(s=>(+s.k||0)/1000)):0,eb=oE!=null&&oE!==''&&isFinite(+oE)?+oE:rv*mg+syn,da=rv*(+P.da)/100,ebit=eb-da;
@@ -52,9 +60,9 @@ function lboModel(d,ov){
     const senC=sen-am-sw,cashC=after-sw,nd=senC+mez0-cashC;
     Y.push({t,rev:rv,g:g*100,m:eb/rv*100,syn,eb,da,ebit,iS,iM,tax,capex,dB,fcf,am,sw,senO:sen,senC,mez:mez0,cash:cashC,nd,lev:eb>0?nd/eb:NaN,dscr:(iS+iM+am)>0?fcf/(iS+iM+am):NaN});
     rev=rv;sen=senC;cash=cashC;}
-  const yH=Y[H-1],evX=yH.eb*(+P.exitMult),eqX=evX-yH.nd,moic=eq0>0?eqX/eq0:NaN,irr=eq0>0&&eqX>0?Math.pow(eqX/eq0,1/H)-1:NaN;
+  const yH=Y[H-1],evX=yH.eb>0?yH.eb*(+P.exitMult)*disc:yH.rev*(+T.evs||0)*disc,eqX=evX-yH.nd,moic=eq0>0?eqX/eq0:NaN,irr=eq0>0&&eqX>0?Math.pow(eqX/eq0,1/H)-1:NaN;
   const m0e=ev0/(e0||1),bridge={growth:(yH.eb-e0)*m0e,mult:(+P.exitMult-m0e)*yH.eb,delev:sen0+mez0-yH.nd,fees:-fees};
-  return{T,P,H,rate,rev0,e0,ev0,fees,sen0,mez0,eq0,Y,evX,eqX,moic,irr,bridge,lev0:e0>0?(sen0+mez0)/e0:NaN,senLev0:e0>0?sen0/e0:NaN,minDscr:Math.min(...Y.map(y=>y.dscr).filter(isFinite)),maxLev:Math.max(...Y.map(y=>y.lev).filter(isFinite))};
+  return{T,P,H,rate,rev0,e0,ev0,fees,sen0,mez0,eq0,Y,disc,neg,senW,capped:sen0<senW-1e-9,evX,eqX,moic,irr,bridge,lev0:e0>0?(sen0+mez0)/e0:NaN,senLev0:e0>0?sen0/e0:NaN,minDscr:Math.min(...Y.map(y=>y.dscr).filter(isFinite)),maxLev:Math.max(...Y.map(y=>y.lev).filter(isFinite))};
 }
 function lboChecks(M){const P=M.P;return[
   ['EBITDA de la cible positif',M.e0>0,`EBITDA de référence ${nf(M.e0,2)} M€`],
@@ -96,7 +104,7 @@ function renderLBO(){
     <div class="ph s12" style="grid-column:1/-1"><div><h1>Dossier d'acquisition LBO : ${esc(T.name)}</h1><p>Comité d'acquisition et banques · ${esc(T.srcLab)} · établi le ${fdate(d.date)} · montants en millions d'euros</p></div></div>
     <div class="card s12 noprint"><h2><span>Configuration du montage</span><span class="meta">chaque valeur est modifiable et recalcule le dossier</span></h2>
       <div class="fields">${LF('Nom du dossier',`lbo.list.${i}.name`,'t')}${LF('Multiple d\'entrée VE / EBITDA',Pp+'.entryMult','n',{u:'×'})}${LF('Prime de contrôle',Pp+'.prem','n',{u:'%'})}${LF('Frais de transaction',Pp+'.fees','n',{u:'% VE'})}
-        ${LF('Dette senior',Pp+'.seniorPct','n',{u:'% emplois'})}${LF('Euribor 3 mois',Pp+'.euribor','n',{u:'%'})}${LF('Marge bancaire senior',Pp+'.margin','n',{u:'%'})}${LF('Durée d\'amortissement senior',Pp+'.amortY','n',{u:'ans'})}
+        ${LF('Dette senior',Pp+'.seniorPct','n',{u:'% emplois'})}${LF('Plafonner au levier du covenant',Pp+'.debtCap','s',{opts:{true:'Oui (pratique bancaire)',false:'Non'}})}${LF('Décote taille et illiquidité',Pp+'.privDisc','n',{u:'% multiples'})}${LF('Euribor 3 mois',Pp+'.euribor','n',{u:'%'})}${LF('Marge bancaire senior',Pp+'.margin','n',{u:'%'})}${LF('Durée d\'amortissement senior',Pp+'.amortY','n',{u:'ans'})}
         ${LF('Dette mezzanine',Pp+'.mezzPct','n',{u:'% emplois'})}${LF('Taux mezzanine (in fine)',Pp+'.mezzRate','n',{u:'%'})}${LF('Remboursement anticipé (cash sweep)',Pp+'.sweep','n',{u:'% excédent'})}${LF('Horizon de sortie',Pp+'.H','n',{u:'ans'})}
         ${LF('Multiple de sortie',Pp+'.exitMult','n',{u:'×'})}${LF('Marge EBITDA actuelle',Pp+'.m0','n',{u:'%'})}${LF('Marge EBITDA cible',Pp+'.mT','n',{u:'%'})}${LF('Investissements',Pp+'.capex','n',{u:'% CA'})}
         ${LF('BFR',Pp+'.bfr','n',{u:'% CA'})}${LF('Amortissements',Pp+'.da','n',{u:'% CA'})}${LF('Impôt sur les sociétés',Pp+'.tax','n',{u:'%'})}${LF('TRI cible',Pp+'.irrT','n',{u:'%'})}
@@ -140,7 +148,7 @@ function renderLBO(){
         ${M.mez0>0?`<tr><td>Dette mezzanine (${nf(+P.mezzRate,1)} %, in fine)</td><td class="n">${mm(M.mez0)}</td><td class="n">${pct(M.mez0/(M.ev0+M.fees)*100,1)}</td><td class="n">${nf(M.mez0/M.e0,1)}×</td></tr>`:''}
         <tr><td>Fonds propres (equity)</td><td class="n">${mm(M.eq0)}</td><td class="n">${pct(M.eq0/(M.ev0+M.fees)*100,1)}</td><td class="n">—</td></tr>
         <tr class="tot"><td>Total des ressources</td><td class="n">${mm(M.ev0+M.fees)}</td><td class="n">100 %</td><td class="n">${nf(M.lev0,1)}×</td></tr></tbody></table></div>
-      <p class="note">Multiple VE / EBITDA payé : ${nf(M.ev0/(M.e0||1),1)}×${+P.prem?` (dont prime de contrôle de ${pct(+P.prem,0)})`:''}. Taux de la dette senior : ${pct(M.rate*100,2)}. Hypothèse : cible acquise sans trésorerie ni dette.</p></div>
+      <p class="note">${M.neg?`EBITDA de référence négatif : cible valorisée à ${nf(+M.T.evs||0,2)}× le CA (VE/CA du secteur) et <b>aucune dette d'acquisition</b>, faute de cash-flow pour la servir. `:`Multiple VE / EBITDA payé : ${nf(M.ev0/(M.e0||1),1)}×${+P.prem?` (prime de contrôle de ${pct(+P.prem,0)} sur la valeur des titres)`:''}${M.disc<1?`, après décote de taille et d'illiquidité de ${pct((1-M.disc)*100,0)} sur le multiple de référence ${nf(+P.entryMult,1)}× (sociétés cotées, à justifier : les études de décote d'illiquidité situent l'ordre de grandeur entre 20 et 35 %)`:''}. `}${M.capped?`Dette senior plafonnée à ${nf(+P.covLev,1)}× l'EBITDA (${nf(M.sen0,2)} M€ au lieu de ${nf(M.senW,2)} M€ à ${pct(+P.seniorPct,0)} des emplois) : le complément est apporté en fonds propres. `:''} Taux de la dette senior : ${pct(M.rate*100,2)}. Hypothèse : cible acquise sans trésorerie ni dette.</p></div>
 
     <div id="lbo-s4" class="card s12"><h2><span>4. Modèle de remboursement</span><span class="meta">cash-flows prévisionnels, service de la dette et sortie</span></h2>
       <div class="tw"><table class="tbl fin"><thead><tr><th>M€</th>${yrs.map(y=>`<th class="n">${y}</th>`).join('')}</tr></thead><tbody>

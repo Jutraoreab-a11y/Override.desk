@@ -136,6 +136,7 @@ function pfDash(){
       <div class="tw" style="margin-top:8px"><table class="tbl fin"><thead><tr><th>Par portefeuille</th><th class="n">Cash</th><th class="n">Part</th></tr></thead><tbody>${grp(cash,'pf').map(([k,x])=>`<tr><td>${esc(k)}</td><td class="n">${big(x.cash)}</td><td class="n">${pct(x.cash/cashT*100,1)}</td></tr>`).join('')}</tbody></table></div>
       <div class="tw" style="margin-top:8px"><table class="tbl fin"><thead><tr><th>Par classe de compte</th><th class="n">Cash</th><th class="n">Part</th></tr></thead><tbody>${grp(cash,null,l=>l.pf==='Trading'?'Trading (CFD)':brKind(l.br)).map(([k,x])=>`<tr><td>${esc(k)}</td><td class="n">${big(x.cash)}</td><td class="n">${pct(x.cash/cashT*100,1)}</td></tr>`).join('')}</tbody></table></div>`:'<p class="note">Aucune liquidité remontée : elles arrivent par les passerelles des courtiers et par la marge libre du compte de trading.</p>'}</div>
     <div class="card s6"><h2>Alerte de divergence psychologique</h2>${(()=>{const K=pfCalc(),dv=K.ls.filter(l=>l.sig[1].startsWith('Divergence')||l.sig[0]==='ko');return dv.length?`<div class="dec" style="grid-template-columns:1fr">${dv.map(l=>`<div class="dc"><span class="dot ${l.sig[0]}"></span><div><b>${esc(l.a.t)} : ${esc(l.sig[1])}</b><span>${esc(l.sig[2])}</span></div></div>`).join('')}</div>`:'<p class="note">Aucune divergence.</p>';})()}</div>
+    ${typeof pfRiskCard==='function'?pfRiskCard(L):''}
   </div>`;
 }
 function holdImport(txt,br){

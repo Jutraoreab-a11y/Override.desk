@@ -73,7 +73,7 @@ function cmpBars(rows,o={}){const all=rows.flatMap(r=>r.v.map(x=>Math.abs(+x)).f
     <div class="legend">${(o.series||[]).map((s,j)=>`<span><i class="c${j}"></i>${esc(s)}</span>`).join('')}</div>`;}
 /* Bloc unique des repères sectoriels : aucune de ces métriques n'est répétée ailleurs dans la plateforme */
 function bpSectorCard(r,SF){const b=S.bp,Y=r.Y,H=r.H,Hy=Y[H-1],y1=Y[0],FR=y=>(y.bal.capital+y.bal.grant+y.bal.retained+y.bal.debt-y.bal.fixed)/y.rev*365;
-  const bfrD=y=>y.bal.bfr/y.rev*365,sWc=SF.wc/100*365,arr1=b.clients1*b.arpu*12,vImpl=SF.evs*arr1,vS=SF.evs*Hy.rev,vE=Hy.ebitda>0?SF.eve*Hy.ebitda:NaN;
+  const dk=1-clamp(+b.privDisc||0,0,90)/100,bfrD=y=>y.bal.bfr/y.rev*365,sWc=SF.wc/100*365,arr1=b.clients1*b.arpu*12,vImpl=SF.evs*dk*arr1,vS=SF.evs*dk*Hy.rev,vE=Hy.ebitda>0?SF.eve*dk*Hy.ebitda:NaN;
   const sh=+b.shares,eps=y=>sh>0?y.net/sh:NaN,perP=Hy.net>0?(+b.preMoney)/Hy.net:NaN,frS=isNum(b.frng)?+b.frng:NaN;
   const g=[gauge({l:`Taux d'EBITDA A${H}`,v:Hy.em,ref:SF.ebm,max:Math.max(60,SF.ebm*2,Hy.em||0),min:Math.min(0,Hy.em||0),fmt:v=>pct(v,1),good:'band',tol:20,sub:'A1 '+pct(y1.em,0)}),
     gauge({l:`Marge nette A${H}`,v:Hy.net/Hy.rev*100,ref:SF.nm,max:Math.max(40,SF.nm*2),min:Math.min(0,Hy.net/Hy.rev*100||0),fmt:v=>pct(v,1)}),
@@ -86,7 +86,7 @@ function bpSectorCard(r,SF){const b=S.bp,Y=r.Y,H=r.H,Hy=Y[H-1],y1=Y[0],FR=y=>(y.
       <div class="s6" style="min-width:0"><h3 class="h3">Fonds de roulement (jours de CA)</h3>${cmpBars([{l:'BFR',v:[sWc,bfrD(y1),bfrD(Hy)]},{l:'FRNG / FRNC',v:[frS,FR(y1),FR(Hy)]}],{fmt:v=>nf(v,0)+' j',series:['Secteur','Projet A1','Projet A'+H]})}
         <p class="note" style="margin-top:4px">FRNC du secteur : ${fld('bp.frng','nn',{empty:'non publié',al:'FRNG / FRNC moyen du secteur (jours de CA)'})} jours (à saisir avec sa source si disponible).</p></div></div>
     <div class="tw" style="margin-top:8px"><table class="tbl"><thead><tr><th>Valorisation et bénéfice par action</th><th class="n">Secteur</th><th class="n">Projet</th><th>Lecture</th></tr></thead><tbody>
-      <tr><td>Valorisation moyenne : VE / CA</td><td class="n">${nf(SF.evs,2)}×</td><td class="n">${big(vS)} sur le CA A${H}</td><td class="meta">valeur implicite sur l'ARR fin A1 : ${big(vImpl)} · pre-money visé ${big(+b.preMoney)}${+b.preMoney>2*vImpl?' : plus de 2 fois la valeur implicite':''}</td></tr>
+      <tr><td>Valorisation moyenne : VE / CA</td><td class="n">${nf(SF.evs,2)}×</td><td class="n">${big(vS)} sur le CA A${H}</td><td class="meta">valeurs du projet après décote de taille et d'illiquidité de ${pct((1-dk)*100,0)} · valeur implicite sur l'ARR fin A1 : ${big(vImpl)} · pre-money visé ${big(+b.preMoney)}${+b.preMoney>2*vImpl?' : plus de 2 fois la valeur implicite':''}</td></tr>
       <tr><td>Valorisation moyenne : VE / EBITDA</td><td class="n">${nf(SF.eve,1)}× <span class="meta">(${nf(SF.eveP,1)}× si EBITDA positif)</span></td><td class="n">${isFinite(vE)?big(vE)+' sur l\'EBITDA A'+H:'EBITDA A'+H+' négatif'}</td><td></td></tr>
       <tr><td>PER sectoriel</td><td class="n">${nf(SF.pe,1)}× <span class="meta">(prévisionnel ${nf(SF.fpe,1)}×)</span></td><td class="n">${isFinite(perP)?nf(perP,1)+'×':'résultat A'+H+' négatif'}</td><td class="meta">projet : pre-money ÷ résultat net A${H}</td></tr>
       <tr><td>BPA moyen</td><td class="n">${pct(100/SF.pe,1)} du cours</td><td class="n">${sh>0?`A1 ${nf(eps(y1),2)} € · A${H} ${nf(eps(Hy),2)} €`:'—'}</td><td class="meta">secteur : rendement bénéficiaire (1 / PER), un BPA en euros n'étant pas comparable entre sociétés. Projet : résultat net ÷ ${fld('bp.shares','nn',{empty:'nombre d\'actions à saisir',al:'Nombre d\'actions'})} actions.</td></tr>
@@ -121,7 +121,7 @@ function bpTargetCard(r){bpV7Init();const b=S.bp,c=b.cible,price=b.arpu*12,bud=+
 
 /* ---- Diagnostic financier et verdict d'arbitrage ---- */
 function bpGo(r,AL,SF){const b=S.bp,H=r.H,Hy=r.Y[H-1],k=r.mk,ko=AL.filter(a=>a.l==='ko');
-  const bfrD=Hy.bal.bfr/Hy.rev*365,sWc=SF.wc/100*365,arr1=b.clients1*b.arpu*12,vImpl=SF.evs*arr1,post=(+b.preMoney)+(+b.raise),vH=SF.evs*Hy.rev,mult=post>0?vH/post:NaN,irr=isFinite(mult)&&mult>0&&H>1?(mult**(1/(H-1))-1)*100:NaN;
+  const dk=1-clamp(+b.privDisc||0,0,90)/100,bear=bpWith(bpScenMod((b.scen||DEF.bp.scen).bear)),bfrD=Hy.bal.bfr/Hy.rev*365,sWc=SF.wc/100*365,arr1=b.clients1*b.arpu*12,vImpl=SF.evs*dk*arr1,post=(+b.preMoney)+(+b.raise),vH=SF.evs*dk*Hy.rev,mult=post>0?vH/post:NaN,irr=isFinite(mult)&&mult>0&&H>1?(mult**(1/(H-1))-1)*100:NaN;
   const C=[
     {l:'Taille du marché',w:12,s:tamScore(r.tam)>=5?1:tamScore(r.tam)>=3?.5:0,v:`TAM ${big(r.tam)} (${esc(bpScope().G.lab)})`,pos:'marché adressable suffisant',neg:'TAM trop faible pour porter un acteur de taille'},
     {l:'Croissance du marché',w:8,s:r.cagr>=8?1:r.cagr>=3?.5:0,v:`CAGR ${pct(r.cagr)}`,pos:'marché porteur',neg:'croissance du marché trop faible'},
@@ -133,25 +133,85 @@ function bpGo(r,AL,SF){const b=S.bp,H=r.H,Hy=r.Y[H-1],k=r.mk,ko=AL.filter(a=>a.l
     {l:'Marge EBITDA',w:6,s:Hy.em>SF.ebm+20?.5:Hy.em>=SF.ebm?1:Hy.em>=SF.ebm*.5?.5:0,v:`${pct(Hy.em,0)} en A${H} (secteur ${pct(SF.ebm,0)})`,pos:'marge au niveau du secteur',neg:Hy.em>SF.ebm+20?'marge très supérieure au secteur : hypothèse à démontrer':'marge inférieure au secteur'},
     {l:'Capture du SOM',w:8,s:r.somShare<=50?1:r.somShare<=100?.5:0,v:`${pct(r.somShare,1)} du SOM en A${H}`,pos:'objectif de CA réaliste au regard du marché obtenable',neg:'objectif de CA trop agressif au regard du marché obtenable'},
     {l:'Tamis OVERRIDE',w:7,s:k.passN/4,v:`${k.passN}/4 filtres`,pos:'liquidité, catalyseur et marge de sécurité validés',neg:'un ou plusieurs filtres amont non franchis'},
-    {l:'ROI investisseur',w:10,s:mult>=5?1:mult>=3?.5:0,v:isFinite(mult)?`${nf(mult,1)}× en A${H}${isFinite(irr)?', TRI '+pct(irr,0):''}`:'—',pos:'multiple de sortie élevé au multiple VE/CA du secteur',neg:'multiple de sortie insuffisant pour le risque pris'}];
+    {l:'Scénario défavorable',w:8,s:bear.min.cash>=0?1:bear.min.cash>=r.min.cash-Math.abs(+b.raise||0)*0.2?.5:0,v:`point bas ${big(bear.min.cash)}`,pos:'le plan reste financé si prix, rétention, acquisition et croissance se dégradent ensemble',neg:'le plan n\'est plus financé en scénario défavorable : marge de sécurité insuffisante'},
+    {l:'ROI investisseur',w:10,s:mult>=5?1:mult>=3?.5:0,v:isFinite(mult)?`${nf(mult,1)}× en A${H}${isFinite(irr)?', TRI '+pct(irr,0):''}`:'—',pos:'multiple de sortie élevé au multiple VE/CA du secteur après décote',neg:'multiple de sortie insuffisant pour le risque pris'}];
   const tw=sum(C.map(c=>c.w)),score=Math.round(sum(C.map(c=>c.w*c.s))/tw*100);
-  const verdict=ko.length?['ko','NO-GO','Points bloquants à lever avant tout engagement']:score>=70?['ok','GO','Le dossier réunit les conditions d\'un investissement']:score>=50?['am','GO SOUS CONDITIONS','Investissable si les réserves ci-dessous sont levées']:['ko','NO-GO','Le couple rendement-risque ne justifie pas l\'investissement'];
-  return{C,score,verdict,ko,mult,irr,vH,post};}
+  const verdict=ko.length?['ko','NO-GO','Points bloquants à lever avant tout engagement']:score>=70&&bear.min.cash<0?['am','GO SOUS CONDITIONS',`Score de ${score}/100, mais le plan n'est plus financé en scénario défavorable (besoin de ${big(-bear.min.cash)}) : sécuriser cette marge avant d'investir`]:score>=70?['ok','GO','Le dossier réunit les conditions d\'un investissement']:score>=50?['am','GO SOUS CONDITIONS','Investissable si les réserves ci-dessous sont levées']:['ko','NO-GO','Le couple rendement-risque ne justifie pas l\'investissement'];
+  return{C,score,verdict,ko,mult,irr,vH,post,bear};}
 function bpGoCard(r,AL,SF){const b=S.bp,G=bpGo(r,AL,SF),pos=G.C.filter(c=>c.s>=1),neg=G.C.filter(c=>c.s<1);
   return`<div class="card s12 gocard ${G.verdict[0]}"><div class="go-h">
       <div class="go-v"><span class="lb">Verdict d'arbitrage</span><b>${G.verdict[1]}</b><span>${G.verdict[2]}</span></div>
       ${gauge({l:'Score global du terminal',v:G.score,ref:70,max:100,fmt:v=>nf(v,0)+' / 100',refL:'',sub:'seuil GO à 70'})}
-      <div class="go-k"><div><span>ROI implicite</span><b>${isFinite(G.mult)?nf(G.mult,1)+'×':'—'}</b><em>valeur A${r.H} (VE/CA secteur) ÷ post-money ${big(G.post)}</em></div><div><span>TRI implicite</span><b>${isFinite(G.irr)?pct(G.irr,0):'—'}</b><em>entrée en A1, sortie en A${r.H}</em></div><div><span>Points bloquants</span><b class="${G.ko.length?'down':''}">${G.ko.length}</b><em>issus des contrôles du modèle</em></div></div></div>
+      <div class="go-k"><div><span>ROI implicite</span><b>${isFinite(G.mult)?nf(G.mult,1)+'×':'—'}</b><em>valeur A${r.H} (VE/CA secteur après décote) ÷ post-money ${big(G.post)}</em></div><div><span>TRI implicite</span><b>${isFinite(G.irr)?pct(G.irr,0):'—'}</b><em>entrée en A1, sortie en A${r.H}</em></div><div><span>Points bloquants</span><b class="${G.ko.length?'down':''}">${G.ko.length}</b><em>issus des contrôles du modèle</em></div></div></div>
     <div class="grid" style="margin-top:8px">
       <div class="s6" style="min-width:0"><h3 class="h3 up">Pourquoi on y va</h3><ul class="gol">${pos.map(c=>`<li><b>${c.l}</b> · ${c.v} : ${c.pos}.</li>`).join('')||'<li class="meta">Aucun critère pleinement validé.</li>'}
         ${String(b.edge||'').trim()?`<li><b>Edge</b> · ${esc(b.edge)}</li>`:''}</ul></div>
       <div class="s6" style="min-width:0"><h3 class="h3 down">Pourquoi on n'y va pas</h3><ul class="gol">${G.ko.map(a=>`<li><span class="tag ko">Bloquant</span> ${a.t}</li>`).join('')}${neg.map(c=>`<li><b>${c.l}</b> · ${c.v} : ${c.neg}.</li>`).join('')||(G.ko.length?'':'<li class="meta">Aucune réserve sur les critères du terminal.</li>')}</ul></div></div>
     <div class="tw" style="margin-top:6px"><table class="tbl"><thead><tr><th>Critère</th><th>Mesure</th><th class="n">Poids</th><th>Note</th></tr></thead><tbody>${G.C.map(c=>`<tr><td>${c.l}</td><td>${c.v}</td><td class="n">${c.w}</td><td><span class="tag ${c.s>=1?'ok':c.s>0?'am':'ko'}">${c.s>=1?'validé':c.s>0?'partiel':'non validé'}</span></td></tr>`).join('')}</tbody></table></div>
     <div class="lb" style="margin-top:10px">Avis de l'analyste</div>${fld('bp.goNote','a',{rows:3,al:"Avis de l'analyste",ph:'Conclusion argumentée : thèse, conditions préalables, prochaines étapes'})}
-    <p class="note">Score pondéré sur 11 critères issus du modèle, du tamis OVERRIDE et des repères sectoriels. Tout point bloquant entraîne un NO-GO. Le ROI implicite valorise le CA de l'année ${r.H} au multiple VE/CA du secteur, sans dette nette ni dilution ultérieure : ordre de grandeur, pas une valorisation.</p></div>`;}
+    <p class="note">Score pondéré sur 12 critères issus du modèle, du tamis OVERRIDE et des repères sectoriels. Tout point bloquant entraîne un NO-GO ; un besoin de financement en scénario défavorable plafonne le verdict à GO SOUS CONDITIONS. Le ROI implicite valorise le CA de l'année ${r.H} au multiple VE/CA du secteur après décote de taille et d'illiquidité, sans dette nette ni dilution ultérieure : ordre de grandeur ; la valorisation détaillée figure au-dessus.</p></div>`;}
 
 /* ---- Bascule du BP sur une autre zone (nouvelle version datée) ---- */
 function bpZoneDup(newKey){const mod='bp',p=prjCur(mod),v=verCur(mod),old=geoAgg(S.bp.scope||'K:France').lab,nl=geoAgg(newKey).lab;
   if(prjDirty(mod))v.data=prjSnap(mod);
   S.bp.scope=newKey;const n={id:uid('v'),label:nextLabel(p,mod)+' · '+nl,date:new Date().toISOString(),note:'Bascule de '+old+' vers '+nl,data:prjSnap(mod)};n.dd=n.date.slice(0,10);
   p.versions.push(n);p.cur=n.id;ui.zoneDup=false;save();renderAll();toast('Nouvelle version sur '+nl+' : comparez-la dans « Gérer et comparer »');}
+
+/* ============ v7.1 (audit) : valorisation du projet, scénarios et sensibilités ============ */
+const bpDisc=()=>1-clamp(+S.bp.privDisc||0,0,90)/100;
+/* Recalcule le modèle sur une copie modifiée de S.bp, sans toucher à l'état courant */
+function bpWith(mod){const keep=S.bp;S.bp=clone(keep);try{mod(S.bp);return bpCalc();}finally{S.bp=keep;}}
+/* DCF (flux disponibles d'exploitation) + méthode VC + dilution */
+function bpVal(r){const b=S.bp,SF=DAMO[b.sector]||DAMO.saas,H=r.H,Y=r.Y,Hy=Y[H-1],k=bpDisc(),rt=(+b.dcfRate||30)/100,t=(+b.tax||25)/100;
+  const F=Y.map(y=>{const taxN=Math.max(0,y.ebit)*t,fcf=y.ebitda-taxN-y.capex-y.dBFR,df=1/(1+rt)**y.t;return{t:y.t,ebitda:y.ebitda,taxN,capex:y.capex,dBFR:y.dBFR,fcf,df,pv:fcf*df};});
+  const tvBasis=Hy.ebitda>0?['VE/EBITDA',SF.eve*k,Hy.ebitda]:['VE/CA',SF.evs*k,Hy.rev],tv=tvBasis[1]*tvBasis[2],pvTv=tv/(1+rt)**H;
+  const ev=sum(F.map(f=>f.pv))+pvTv,pre=ev;
+  const raise=+b.raise||0,dil=clamp(+b.futDil||0,0,90)/100,postVC=tv*(1-dil)/(1+rt)**H,preVC=postVC-raise;
+  const post=(+b.preMoney||0)+raise,inv=post>0?raise/post:NaN;
+  return{F,tv,tvBasis,pvTv,ev,pre,preVC,postVC,rt,dil,post,inv,k,share:ev?pvTv/ev:NaN};}
+function bpValCard(r){const b=S.bp,V=bpVal(r),H=r.H,pm=+b.preMoney||0,ct=b.capTable||[],gap=pm&&isFinite(V.pre)?pm/V.pre-1:NaN,gapVC=pm&&isFinite(V.preVC)?pm/V.preVC-1:NaN;
+  const row=(l,a,c='')=>`<tr class="${c}"><td>${l}</td>${a.map(v=>`<td class="n${v<-0.5?' down':''}">${typeof v==='string'?v:kk(v)}</td>`).join('')}</tr>`;
+  return`<div class="card s12"><h2><span>Valorisation du projet <span class="meta">DCF des flux disponibles et méthode VC, rapprochées du pre-money visé</span></span></h2>
+    <div class="stats">
+      <div class="stat"><div class="k">Valeur DCF (pre-money)</div><div class="x">${big(V.pre)}</div><div class="d">dont valeur terminale ${pct(V.share*100,0)}</div></div>
+      <div class="stat"><div class="k">Pre-money méthode VC</div><div class="x">${big(V.preVC)}</div><div class="d">post-money ${big(V.postVC)} − levée ${big(+b.raise)}</div></div>
+      <div class="stat"><div class="k">Pre-money visé</div><div class="x ${gap>0.5?'amb':''}">${big(pm)}</div><div class="d">${isFinite(gap)?sgn(gap*100,0)+' vs DCF · '+sgn(gapVC*100,0)+' vs VC':'—'}</div></div>
+      <div class="stat"><div class="k">Part de l'investisseur</div><div class="x">${pct(V.inv*100,1)}</div><div class="d">levée ÷ post-money visé ${big(V.post)}</div></div></div>
+    <div class="grid" style="margin-top:6px"><div class="s7" style="min-width:0">${ftable(r.Y.map(y=>'A'+y.t),[
+      ['EBITDA',V.F.map(f=>f.ebitda)],['IS normatif sur le résultat d\'exploitation',V.F.map(f=>f.taxN?-f.taxN:0)],['Investissements',V.F.map(f=>-f.capex)],['Variation du BFR',V.F.map(f=>-f.dBFR)],
+      ['Flux disponible',V.F.map(f=>f.fcf),'tot',1],['Facteur d\'actualisation',V.F.map(f=>nf(f.df,3))],['Flux actualisé',V.F.map(f=>f.pv),'',1]])}
+      <p class="note">Valeur terminale fin A${H} : ${V.tvBasis[0]} du secteur après décote (${nf(V.tvBasis[1],2)}×) × ${big(V.tvBasis[2])} = ${big(V.tv)}, actualisée ${big(V.pvTv)}. Trésorerie de départ et dettes non incluses : valeur des capitaux propres avant levée.</p></div>
+      <div class="s5" style="min-width:0"><div class="fields">${F('Taux d\'actualisation (rendement exigé)','bp.dcfRate','n',{u:'%'})}${F('Dilution des tours futurs','bp.futDil','n',{u:'%'})}</div>
+        <p class="note">Repères de rendement exigé par le capital-risque : 40 à 60 % en amorçage, 30 à 40 % en série A, 20 à 30 % pour une société rentable (fourchettes usuelles de la littérature, à adapter au stade et au risque).</p>
+        ${ct.length?`<h3 class="h3">Table de capitalisation après la levée</h3><div class="tw"><table class="tbl"><thead><tr><th>Associé</th><th class="n">Avant</th><th class="n">Après</th></tr></thead><tbody>${ct.map(c=>`<tr><td>${esc(c.n)}</td><td class="n">${pct(+c.pct,1)}</td><td class="n">${pct((+c.pct)*(1-(isFinite(V.inv)?V.inv:0)),1)}</td></tr>`).join('')}<tr class="tot"><td>Nouvel investisseur</td><td class="n">—</td><td class="n">${pct(V.inv*100,1)}</td></tr></tbody></table></div>`:''}</div></div></div>`;}
+/* Scénarios défavorable / central / favorable */
+function bpScenMod(sc){return B=>{B.arpu=(+B.arpu)*(1+sc.arpu/100);B.churn=(+B.churn)*(1+sc.churn/100);(B.channels||[]).forEach(c=>c.cac=(+c.cac)*(1+sc.cac/100));B.g=(B.g||[]).map(g=>(+g)*(1+sc.g/100));B.clients1=(+B.clients1)*(1+sc.g/100);};}
+function bpScen(){const b=S.bp,sc=b.scen||DEF.bp.scen;return[['Défavorable',sc.bear,'bear'],['Central',null,'base'],['Favorable',sc.bull,'bull']].map(([l,m,k])=>{const r=m?bpWith(bpScenMod(m)):bpCalc(),Hy=r.Y[r.H-1];
+  return{l,k,m,r,rev:Hy.rev,eb:Hy.ebitda,em:Hy.em,min:r.min.cash,be:r.be?r.be.t:null,ltv:r.ratio,val:bpVal(r).pre};});}
+function bpScenCard(r){const L=bpScen(),H=r.H,P=(k,f,lab)=>`${fld(`bp.scen.${k}.${f}`,'n',{al:lab})}`;
+  return`<div class="card s7"><h2><span>Scénarios <span class="meta">chocs combinés sur le prix, la rétention, l'acquisition et la croissance</span></span></h2>
+    <div class="tw"><table class="tbl"><thead><tr><th></th>${L.map(x=>`<th class="n">${x.l}</th>`).join('')}</tr></thead><tbody>
+      <tr><td>Prix moyen (ARPU)</td><td class="n">${P('bear','arpu','ARPU défavorable')} %</td><td class="n">—</td><td class="n">${P('bull','arpu','ARPU favorable')} %</td></tr>
+      <tr><td>Churn</td><td class="n">${P('bear','churn','Churn défavorable')} %</td><td class="n">—</td><td class="n">${P('bull','churn','Churn favorable')} %</td></tr>
+      <tr><td>CAC</td><td class="n">${P('bear','cac','CAC défavorable')} %</td><td class="n">—</td><td class="n">${P('bull','cac','CAC favorable')} %</td></tr>
+      <tr><td>Clients A1 et croissance du parc</td><td class="n">${P('bear','g','Croissance défavorable')} %</td><td class="n">—</td><td class="n">${P('bull','g','Croissance favorable')} %</td></tr>
+      <tr class="sec"><td colspan="4">Résultats</td></tr>
+      <tr><td>CA A${H}</td>${L.map(x=>`<td class="n">${big(x.rev)}</td>`).join('')}</tr>
+      <tr><td>EBITDA A${H}</td>${L.map(x=>`<td class="n ${x.eb<0?'down':''}">${big(x.eb)} <span class="meta">${pct(x.em,0)}</span></td>`).join('')}</tr>
+      <tr><td>Point mort EBITDA</td>${L.map(x=>`<td class="n ${x.be?'':'down'}">${x.be?'A'+x.be:'non atteint'}</td>`).join('')}</tr>
+      <tr><td>Point bas de trésorerie</td>${L.map(x=>`<td class="n ${x.min<0?'down':''}">${big(x.min)}</td>`).join('')}</tr>
+      <tr><td>LTV / CAC</td>${L.map(x=>`<td class="n ${x.ltv<3?'amb':''}">${nf(x.ltv,1)}×</td>`).join('')}</tr>
+      <tr><td>Valeur DCF</td>${L.map(x=>`<td class="n">${big(x.val)}</td>`).join('')}</tr></tbody></table></div>
+    <p class="note">${L[0].min<0?`<b class="down">En scénario défavorable, il manque ${big(-L[0].min)} de financement</b> : prévoir une marge de sécurité dans la levée ou un plan de réduction des coûts déclenchable.`:'Le plan reste financé en scénario défavorable.'}</p></div>`;}
+/* Sensibilités univariées (tornade) */
+const BP_SENS=[['Prix moyen (ARPU)',(B,d)=>B.arpu*=1+d*.2,'± 20 %'],['Churn mensuel',(B,d)=>B.churn*=1+d*.5,'± 50 %'],['CAC',(B,d)=>(B.channels||[]).forEach(c=>c.cac*=1+d*.25),'± 25 %'],
+  ['Croissance du parc',(B,d)=>B.g=(B.g||[]).map(g=>g*(1+d*.25)),'± 25 %'],['Clients en année 1',(B,d)=>B.clients1*=1+d*.25,'± 25 %'],['Marge brute',(B,d)=>B.gm=clamp(+B.gm+d*10,0,100),'± 10 pts'],['Salaire chargé',(B,d)=>B.salary*=1+d*.1,'± 10 %'],['Délai clients (DSO)',(B,d)=>B.dso=Math.max(0,+B.dso*(1+d*.5)),'± 50 %']];
+const BP_OUT={cash:['Point bas de trésorerie',r=>r.min.cash],eb:['EBITDA de la dernière année',r=>r.Y[r.H-1].ebitda],val:['Valeur DCF',r=>bpVal(r).pre]};
+function bpTornCard(r){const k=BP_OUT[ui.tornK]?ui.tornK:'cash',[lab,f]=BP_OUT[k],base=f(r);
+  const T=BP_SENS.map(([l,m,rg])=>{const lo=f(bpWith(B=>m(B,-1))),hi=f(bpWith(B=>m(B,1)));return{l,rg,lo,hi,sw:Math.abs(hi-lo)};}).sort((a,c)=>c.sw-a.sw);
+  const mx=Math.max(1,...T.map(x=>Math.max(Math.abs(x.lo-base),Math.abs(x.hi-base))));
+  const bar=(v)=>{const d=v-base,w=Math.abs(d)/mx*50;return d<0?`left:${50-w}%;width:${w}%`:`left:50%;width:${w}%`;};
+  return`<div class="card s5"><h2><span>Sensibilités <span class="meta">une variable à la fois</span></span><span class="seg noprint" role="tablist">${Object.entries(BP_OUT).map(([x,[l]])=>`<button role="tab" data-act="tornk" data-id="${x}" aria-selected="${x===k}">${l.split(' ')[0]==='Point'?'Trésorerie':l.split(' ')[0]}</button>`).join('')}</span></h2>
+    <p class="note" style="margin:0 0 8px">${lab} en central : <b class="num">${big(base)}</b>. Barre gauche : variable dégradée ou réduite ; droite : augmentée.</p>
+    <div class="torn">${T.map(x=>`<div class="torn-r"><span class="torn-l">${x.l} <em>${x.rg}</em></span><div class="torn-t"><i class="mid"></i><b class="${x.lo<base?'neg':'pos'}" style="${bar(x.lo)}"></b><b class="${x.hi<base?'neg':'pos'}" style="${bar(x.hi)}"></b></div><span class="torn-v num">${big(x.lo)} · ${big(x.hi)}</span></div>`).join('')}</div>
+    <p class="note">Classées par amplitude d'impact : les premières lignes sont les hypothèses à documenter en priorité.</p></div>`;}

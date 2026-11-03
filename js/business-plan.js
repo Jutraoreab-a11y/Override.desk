@@ -84,7 +84,9 @@ function bpCalc(){
       const recE=rev*b.dso/30,payE=(cogs+other)*b.dpo/30,coll=rev-(recE-rec),paySup=cogs+other-(payE-pay);rec=recE;pay=payE;
       y.ebt+=rev-cogs-mkt-pers-other-da-intr;
       let tax=0;
-      if(k===12){if(y.ebt<0)lossCF+=-y.ebt;else{const used=Math.min(lossCF,y.ebt);lossCF-=used;tax=(y.ebt-used)*b.tax/100;}}
+      if(k===12){if(y.ebt<0)lossCF+=-y.ebt;else{const used=Math.min(lossCF,y.ebt);lossCF-=used;const base=y.ebt-used;
+        /* Taux réduit PME (art. 219-I-b CGI) : 15 % jusqu'à 42 500 € de bénéfice si CA < 10 M€ HT, capital libéré et détenu à 75 % au moins par des personnes physiques */
+        const pme=String(b.isPme)==='true'&&(y.rev+rev)<10e6;tax=pme?Math.min(base,42500)*0.15+Math.max(0,base-42500)*b.tax/100:base*b.tax/100;}}
       const inTot=coll+inEq+inGrant+inDebt,outTot=paySup+mkt+pers+capex+intr+tax+principal;
       cash+=inTot-outTot;loanOut-=principal;capCum+=capex;daCum+=da;
       M.push({m,t,k,rev,ebitda:rev-cogs-mkt-pers-other,coll,inEq,inFin:inGrant+inDebt,inTot,paySup,mkt,pers,capex,intr,tax,principal,outTot,flow:inTot-outTot,cash});
@@ -138,7 +140,7 @@ function bpAlerts(r){
   const SF=DAMO[b.sector]||DAMO.saas,PO=b.porter.length?sum(b.porter.map(f=>+f.s||0))/b.porter.length:NaN;
   if(PO>=4)add('am',`Intensité concurrentielle forte (5 forces de Porter : ${nf(PO,1)}/5).`);
   if(Hy.em>SF.ebm+20)add('am',`Marge EBITDA de l'année ${r.H} (${pct(Hy.em,0)}) supérieure de plus de 20 points à la moyenne du secteur (${pct(SF.ebm,0)}).`);
-  if(+b.preMoney>2*SF.evs*b.clients1*b.arpu*12)add('am',`Pre-money visé (${big(+b.preMoney)}) supérieur à 2 fois la valeur implicite au multiple VE/CA du secteur (${big(SF.evs*b.clients1*b.arpu*12)}).`);
+  {const dk=1-clamp(+b.privDisc||0,0,90)/100,vi=SF.evs*dk*b.clients1*b.arpu*12;if(+b.preMoney>2*vi)add('am',`Pre-money visé (${big(+b.preMoney)}) supérieur à 2 fois la valeur implicite au multiple VE/CA du secteur après décote de taille et d'illiquidité (${big(vi)}).`);}
 
   REG.forEach(([lab,,k,ps])=>{const j=(b.just[k]||'').trim();
     if(!j)add('ko',`Hypothèse « ${lab} » sans justification.`);
@@ -423,7 +425,7 @@ function renderBP(){
       <div class="tw"><table class="tbl reg"><thead><tr><th>Hypothèse</th><th>Valeur</th><th>Justification et source</th><th>Statut</th></tr></thead><tbody>${regRows}</tbody></table></div></div>
     <div class="card s12"><h2>Paramètres de structure</h2><div class="pgrid">
       <div><h3>Charges et investissements</h3><div class="fields">${F('Charges externes A1','bp.other1','n',{u:'€'})}${F('Hausse annuelle','bp.otherG','n',{u:'%'})}${F('Durée d\'amortissement','bp.amortY','n',{u:'ans'})}</div><div class="lb" style="margin-top:8px">Investissements par année (€)</div><div class="fv" style="flex-wrap:wrap">${yrsFld('bp.capex',H)}</div></div>
-      <div><h3>Calendrier et fiscalité</h3><div class="fields">${F('Année de démarrage','bp.startY','n',{raw:1})}${F('Impôt sur les sociétés','bp.tax','n',{u:'%'})}</div><p class="note">Déficits reportables imputés sur les bénéfices futurs ; impôt décaissé en fin d'exercice.</p></div>
+      <div><h3>Calendrier et fiscalité</h3><div class="fields">${F('Année de démarrage','bp.startY','n',{raw:1})}${F('Impôt sur les sociétés (taux normal)','bp.tax','n',{u:'%'})}${F('Taux réduit PME (15 % jusqu\'à 42 500 €)','bp.isPme','s',{opts:{'false':'Non','true':'Oui, conditions remplies'}})}${F('Décote taille et illiquidité','bp.privDisc','n',{u:'% multiples'})}</div><p class="note">Déficits reportables imputés sur les bénéfices futurs ; impôt décaissé en fin d'exercice. Taux réduit (art. 219 CGI, inchangé par la loi de finances 2026) : CA inférieur à 10 M€ HT, capital entièrement libéré et détenu à 75 % au moins par des personnes physiques ; à revérifier après chaque levée auprès d'un fonds. Décote appliquée aux multiples de sociétés cotées (Damodaran) pour valoriser une société non cotée et de petite taille : ordre de grandeur usuel 20 à 35 %, à justifier.</p></div>
       <div><h3>Financement</h3><div class="fields">${F('Apport des fondateurs','bp.equity','n',{u:'€'})}${F('Subventions et aides','bp.grant','n',{u:'€'})}${F('Levée de fonds','bp.raise','n',{u:'€'})}${F('Valorisation pre-money','bp.preMoney','n',{u:'€'})}${F('Mois d\'encaissement','bp.raiseM','n',{u:'mois'})}${F('Emprunt bancaire','bp.loan','n',{u:'€'})}${F('Taux','bp.rate','n',{u:'%'})}${F('Durée','bp.loanY','n',{u:'ans'})}${F('Différé','bp.defer','n',{u:'mois'})}</div><p class="note">Dilution de la levée : ${pct(+b.raise/((+b.preMoney)+(+b.raise))*100,1)} (post-money ${big((+b.preMoney)+(+b.raise))}).</p></div>
     </div></div>
     ${bpTamCard(r)}
@@ -481,7 +483,10 @@ function renderBP(){
       <tr class="tot"><td>LTV</td><td class="n">${big(r.ltv)}</td></tr><tr><td>LTV / CAC</td><td class="n ${r.ratio>=3?'up':'down'}">${nf(r.ratio,1)}×</td></tr><tr><td>Remboursement du CAC</td><td class="n ${r.payback<=18?'up':'down'}">${nf(r.payback,1)} mois</td></tr></table></div></div>
     <div class="card s4"><h2>Besoin en fonds de roulement</h2>${ftable(head,[['Créances clients',Yr.map(y=>y.bal.rec)],['Dettes fournisseurs',Yr.map(y=>-y.bal.pay)],['BFR',Yr.map(y=>y.bal.bfr),'tot'],['Variation du BFR',Yr.map((y,i)=>y.bal.bfr-(i?Yr[i-1].bal.bfr:0))],['BFR en jours de CA',Yr.map(y=>nf(y.bal.bfr/y.rev*365,0)+' j')]])}${cmt('bfr',`BFR = créances clients (${b.dso} jours) − dettes fournisseurs (${b.dpo} jours) ; il atteint ${big(Hy.bal.bfr)} en A${H}, soit ${nf(Hy.bal.bfr/Hy.rev*365,0)} jours de CA à financer.`)}</div>
     <div class="card s4"><h2>Tableau de cohérence</h2>${ftable(head,[['CA par ETP',Yr.map(y=>y.hc?y.rev/y.hc:NaN)],['Personnel / CA',Yr.map(y=>pct(y.pers/y.rev*100,0))],['Acquisition / CA',Yr.map(y=>pct(y.mkt/y.rev*100,0))],['Croissance du CA',Yr.map((y,i)=>i?pct((y.rev/Yr[i-1].rev-1)*100,0):'—')],['Dette fin. / fonds propres',Yr.map(y=>{const e=y.bal.capital+y.bal.grant+y.bal.retained;return e>0?nf(y.bal.debt/e,2)+'×':'n.s.';})]])}</div>`)}
-  ${sec(11,'Diagnostic financier et verdict d\'arbitrage (Go / No-Go)',`
+  ${sec(11,'Valorisation, scénarios et verdict d\'arbitrage (Go / No-Go)',`
+    ${bpValCard(r)}
+    ${bpScenCard(r)}
+    ${bpTornCard(r)}
     ${bpGoCard(r,AL,SF)}`)}
   ${sec(10,'Annexes et conseils d\'exécution',`
     <div class="card s7"><h2>Lignes directrices issues du modèle</h2><ol class="adv">${advice.map(a=>`<li>${a}</li>`).join('')}</ol></div>
