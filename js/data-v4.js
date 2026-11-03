@@ -95,3 +95,5 @@ DEF.liveCfg={base:''};
 
 /* v7.1 : audit financier */
 DEF.bp.isPme=false;DEF.bp.privDisc=30;DEF.bp.dcfRate=30;DEF.bp.futDil=20;DEF.bp.scen={bear:{arpu:-15,churn:50,cac:25,g:-30},bull:{arpu:10,churn:-25,cac:-15,g:20}};
+/* v7.2 : TVA, réalisé */
+DEF.bp.vatOn=true;DEF.bp.vat=20;DEF.bp.vatExp=0;DEF.bp.actuals={};

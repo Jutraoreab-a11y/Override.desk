@@ -8,8 +8,13 @@ function anBase(a){
 }
 function anCalc(id){
   const A=S.an.assets,a=A[id],c=S.an.crit,B=anBase(a),L=B.L;
-  const peers=Object.keys(A).filter(k=>k!==id&&A[k].sec===a.sec),PB=peers.map(k=>anBase(A[k]));
-  const medEvE=median(PB.map(p=>p.evE).filter(v=>v>0)),medPE=median(PB.map(p=>p.per).filter(v=>v>0)),medEm=median(PB.map(p=>p.em[p.L]));
+  /* v7.2 : comparables par sous-secteur (et non par grand secteur), complétés des pairs saisis ; à défaut de deux pairs,
+     multiple de l'industrie Damodaran (janvier 2026). */
+  const sub=anSub(id),peers=Object.keys(A).filter(k=>k!==id&&anSub(k).key===sub.key),PB=peers.map(k=>anBase(A[k]));
+  const UP=(a.peers||[]).filter(p=>p&&String(p.n||'').trim()),pE=PB.map(p=>p.evE).filter(v=>v>0).concat(UP.map(p=>+p.evE).filter(v=>v>0)),pP=PB.map(p=>p.per).filter(v=>v>0).concat(UP.map(p=>+p.pe).filter(v=>v>0));
+  const DI=AN_DAMO[sub.damo]||null,fbE=pE.length<2&&DI,fbP=pP.length<2&&DI;
+  const medEvE=fbE?median(pE.concat([DI.eve])):median(pE),medPE=fbP?median(pP.concat([DI.pe])):median(pP),medEm=median(PB.map(p=>p.em[p.L]));
+  const peerSrc={sub,n:pE.length,user:UP.length,fbE:!!fbE,fbP:!!fbP,DI};
   /* DCF sur FCF normalisé (moyenne 3 ans) */
   const base=avg(a.fcf.slice(-3)),w=a.wacc/100,g=a.g/100,tg=a.tg/100;let pv=0,f=base;
   for(let t=1;t<=5;t++){f*=1+g;pv+=f/(1+w)**t;}
@@ -56,7 +61,7 @@ function anCalc(id){
   else if(!checks[1][1])concl=`S'abstenir : le titre ne franchit pas le tamis (${filt.filter(f=>f[1]<c.fmin).map(f=>f[0].toLowerCase()).join(', ')}).`;
   else if(!checks[2][1])concl=`S'abstenir : valorisation intrinsèque non calculable avec les données publiées.`;
   else concl=`S'abstenir au cours actuel : qualité validée mais prix au-dessus de la cible. Placer un ordre limite à ${nf(buy,2)} ${a.cur} (${sgn((buy/a.price-1)*100)}).`;
-  return{a,B,peers,medEvE,medPE,medEm,base,iv,impEv,impPe,meth,ref,buy,sl,tp,up,tvw:pvtv/ev,rows,score,filt,fPass,checks,positive,concl};
+  return{a,B,peers,peerSrc,medEvE,medPE,medEm,base,iv,impEv,impPe,meth,ref,buy,sl,tp,up,tvw:pvtv/ev,rows,score,filt,fPass,checks,positive,concl};
 }
 function renderAN(){
   const A=S.an.assets;let id=ui.tk;if(!A[id]){id=ui.tk=Object.keys(A)[0];}
@@ -118,7 +123,7 @@ function renderAN(){
     <div class="card s7"><h2>5. Valorisation intrinsèque et relative</h2>
       <div class="fields">${F('Croissance FCF 5 ans',P('g'),'n',{u:'%'})}${F('Croissance terminale',P('tg'),'n',{u:'%'})}${F('WACC',P('wacc'),'n',{u:'%'})}</div>
       <p class="note" style="margin-top:6px">FCF normalisé (moyenne des 3 derniers exercices) : ${mm(R.base,rc)}${R.base<=0?' : négatif, DCF non applicable.':'.'} Poids de la valeur terminale : ${isFinite(R.tvw)?pct(R.tvw*100,0):'—'}.</p>
-      <div class="tw" style="margin-top:8px"><table class="tbl"><thead><tr><th>Multiple</th><th class="n">${esc(a.t)}</th><th class="n">Médiane des pairs</th><th class="n">Écart</th></tr></thead><tbody>
+      <div class="tw" style="margin-top:8px"><table class="tbl"><thead><tr><th>Multiple</th><th class="n">${esc(a.t)}</th><th class="n">Référence des comparables</th><th class="n">Écart</th></tr></thead><tbody>
         <tr><td>VE / EBITDA N-1</td><td class="n">${isFinite(B.evE)?nf(B.evE,1)+'×':'—'}</td><td class="n">${isFinite(R.medEvE)?nf(R.medEvE,1)+'×':'—'}</td><td class="n ${cls(R.medEvE-B.evE)}">${isFinite(B.evE)&&isFinite(R.medEvE)?sgn((B.evE/R.medEvE-1)*100,0):'—'}</td></tr>
         <tr><td>PER N-1</td><td class="n">${isFinite(B.per)?nf(B.per,1)+'×':'n.s.'}</td><td class="n">${isFinite(R.medPE)?nf(R.medPE,1)+'×':'—'}</td><td class="n ${cls(R.medPE-B.per)}">${isFinite(B.per)&&isFinite(R.medPE)?sgn((B.per/R.medPE-1)*100,0):'—'}</td></tr>
         <tr><td>PER sur BPA consensus N</td><td class="n">${isFinite(B.perF)?nf(B.perF,1)+'×':'n.s.'}</td><td class="n">—</td><td class="n">—</td></tr>
@@ -140,7 +145,10 @@ function renderAN(){
         <div class="stat"><div class="k">Cours</div><div class="x">${nf(+a.price,2)}</div><div class="d">${isFinite(R.buy)?sgn((a.price/R.buy-1)*100)+' vs achat cible':'—'}</div></div>
       </div></div>
 
-    <div class="card s12"><h2>7. Comparables sectoriels <span class="meta">${esc(a.sec)}</span></h2>
+    <div class="card s12"><h2>7. Comparables <span class="meta">sous-secteur : ${esc(R.peerSrc.sub.l)}</span></h2>
+      <p class="note" style="margin-top:0">${R.peers.length?`Comparables de l'univers couvert : ${R.peers.map(k=>esc(A[k].n)).join(', ')}. `:'Aucun autre titre de l\'univers couvert dans ce sous-secteur. '}${R.peerSrc.user?`${R.peerSrc.user} comparable(s) saisi(s). `:''}${R.peerSrc.fbE||R.peerSrc.fbP?`Moins de deux comparables disponibles : la référence intègre le multiple de l'industrie <b>${esc(R.peerSrc.sub.damo)}</b> (Damodaran, sociétés américaines, janvier 2026 : VE/EBITDA ${nf(R.peerSrc.DI.eve,1)}×, PER ${nf(R.peerSrc.DI.pe,1)}×)${R.peerSrc.sub.note?' ; '+esc(R.peerSrc.sub.note):''}.`:'Référence : médiane des comparables.'}</p>
+      <h3 class="h3">Comparables saisis <span class="meta">nom, VE/EBITDA et PER avec leur source et leur date</span></h3>${(a.peers||[]).length||ui.edit?etable(P('peers'),[['n','Société','t'],['evE','VE / EBITDA','n','width:110px'],['pe','PER','n','width:90px'],['src','Source et date','t']]):'<p class="note" style="margin:0">Aucun comparable saisi.</p>'}${ui.edit?'':`<button class="btn sm noprint" data-act="addrow" data-list="${P('peers')}" style="margin-top:6px">Ajouter un comparable</button>`}
+      <h3 class="h3">Comparables de l'univers couvert</h3>
       <div class="tw"><table class="tbl"><thead><tr><th>Titre</th><th class="n">Cours</th><th class="n">Capitalisation (€)</th><th class="n">Croiss. CA</th><th class="n">Marge EBITDA</th><th class="n">ND / EBITDA</th><th class="n">VE / EBITDA</th><th class="n">PER</th><th class="n">Potentiel</th><th>Décision</th></tr></thead><tbody>
       ${[id,...R.peers].map(k=>{const x=A[k],b=anBase(x),r=k===id?R:anCalc(k);return`<tr class="click${k===id?' hl':''}" data-act="tk" data-id="${k}"><td><b>${esc(x.t)}</b> <span class="meta">${esc(x.n)}</span></td><td class="n">${nf(+x.price,2)} ${esc(x.cur)}</td><td class="n">${mm(b.capEUR)}</td><td class="n ${cls(b.revG[b.L])}">${sgn(b.revG[b.L])}</td><td class="n">${pct(b.em[b.L],1)}</td><td class="n">${isFinite(b.ndE[b.L])?nf(b.ndE[b.L],2)+'×':'—'}</td><td class="n">${isFinite(b.evE)?nf(b.evE,1)+'×':'—'}</td><td class="n">${isFinite(b.per)?nf(b.per,1)+'×':'n.s.'}</td><td class="n ${cls(r.up)}">${isFinite(r.up)?sgn(r.up*100,0):'—'}</td><td><span class="tag ${r.positive?'ok':'ko'}">${r.positive?'Positive':'Négative'}</span></td></tr>`;}).join('')}
       </tbody></table></div></div>
@@ -148,7 +156,7 @@ function renderAN(){
     <div class="card s12"><h2>8. Sources et traçabilité</h2>
       <div class="tw"><table class="tbl"><tbody>
         <tr><td>États financiers ${esc(a.y[0])} à ${esc(a.y[L])}, dette nette, ROE, BPA consensus</td><td><a href="${esc(a.src)}" target="_blank" rel="noopener">MarketScreener</a>, consultation du 21/10/2026</td><td><span class="tag ok">Publié</span></td></tr>
-        <tr><td>Cours</td><td>${nf(+a.price,2)} ${esc(cur)} au ${esc(a.pxDate)} (même source)</td><td><span class="tag ${JSON.stringify(a.price)===JSON.stringify(getP(DEF,P('price')))?'ok':'am'}">${JSON.stringify(a.price)===JSON.stringify(getP(DEF,P('price')))?'Publié':'Forcé'}</span></td></tr>
+        <tr><td>Cours</td><td>${nf(+a.price,2)} ${esc(cur)} au ${esc(a.pxDate)} (${a.pxSrc?esc(a.pxSrc):'même source'})</td><td><span class="tag ${JSON.stringify(a.price)===JSON.stringify(getP(DEF,P('price')))?'ok':'am'}">${JSON.stringify(a.price)===JSON.stringify(getP(DEF,P('price')))?'Publié':'Forcé'}</span></td></tr>
         ${rc!==cur?`<tr><td>Conversion des comptes (${rc}) en devise de cotation (${cur})</td><td>EUR/USD ${nf(FX_EURUSD,4)} au ${FX_DATE}, ${FX_SRC}</td><td><span class="tag ok">Publié</span></td></tr>`:''}
         <tr><td>ROIC</td><td>Non publié par la source</td><td><span class="tag ${a.roic===null||a.roic===''?'am':'ok'}">${a.roic===null||a.roic===''?'À renseigner':'Saisi'}</span></td></tr>
         <tr><td>Croissance FCF, WACC, croissance terminale, notes de catalyseur et de taille de marché</td><td>Hypothèses de l'analyste, modifiables en Override</td><td><span class="tag am">Hypothèse</span></td></tr>

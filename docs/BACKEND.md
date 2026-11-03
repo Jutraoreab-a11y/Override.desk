@@ -6,7 +6,7 @@ Architecture : fonctions serveur Vercel (Node 20, TypeScript) dans `api/v1/`, ba
 
 ## 1. Mise en service
 
-1. **Supabase** : créer un projet, puis exécuter dans l'ordre les scripts de `supabase/migrations/` (éditeur SQL ou `supabase db push`) : `20261103000000_override_desk.sql`, puis `20261103180000_instruments_universe.sql` (instruments du sélecteur universel). Les scripts sont rejouables.
+1. **Supabase** : créer un projet, puis exécuter dans l'ordre les scripts de `supabase/migrations/` (éditeur SQL ou `supabase db push`) : `20261103000000_override_desk.sql`, puis `20261103180000_instruments_universe.sql` (instruments du sélecteur universel), puis `20261103200000_team_versions_nav.sql` (espaces partagés, rôles, versions signées, journal d'audit, valorisations quotidiennes). Les scripts sont rejouables.
 2. **Auth** : Supabase > Authentication > Providers > Email activé (connexion par lien magique). Ajouter l'URL du site dans *Redirect URLs*.
 3. **Vercel** : importer le dépôt GitHub, framework « Other », aucune commande de build. Renseigner les variables d'environnement ci-dessous, puis déployer.
 4. **Front** : ouvrir le site déployé, cliquer sur le badge en haut à droite, saisir son e-mail, suivre le lien reçu. Si le front est hébergé ailleurs que le backend, renseigner « Adresse du backend » dans ce même panneau et définir `ALLOWED_ORIGIN` côté Vercel.
@@ -21,6 +21,7 @@ En local : `npm install`, `npm run typecheck`, `npm test`.
 | `SUPABASE_SERVICE_ROLE_KEY` | Écritures des connecteurs. **Secrète**, uniquement sur Vercel | oui |
 | `ENCRYPTION_KEY` | Chiffrement AES-256-GCM des identifiants courtiers (32 octets en base64 : `openssl rand -base64 32`). Ne jamais la changer sans rechiffrer | oui |
 | `CRON_SECRET` | Authentifie les tâches planifiées Vercel | oui |
+| `SIGNING_KEY` | Signature HMAC-SHA256 des versions validées (32 caractères minimum). La changer invalide la vérification des signatures existantes | pour la validation |
 | `EIA_API_KEY` | Brent, WTI spot et futures WTI M1 à M3 (EIA v2) | pour la macro |
 | `ANTHROPIC_API_KEY`, `ANTHROPIC_MODEL` | Parseur IA de pages de marché | pour l'IA |
 | `STT_API_BASE`, `STT_API_TOKEN` | API SocialTraderTools (mode « pull ») | optionnel |
@@ -43,6 +44,10 @@ Authentification : jeton Supabase de l'utilisateur (`Authorization: Bearer <acce
 | `GET /api/v1/portfolio/pnl?start_date=AAAA-MM-JJ&end_date=AAAA-MM-JJ` | PnL latent et réalisé en EUR par portefeuille et par classe, risque (SL, TP, RR) |
 | `GET /api/v1/macro/commodities?from=…&to=…&series=…` | Séries alignées : prix, spread Brent-WTI, base, Z-score 60 j, corrélation CNH-Brent 20 j, ratio or/argent |
 | `POST /api/v1/macro/commodities` | Ajout de cotations pour tout instrument du sélecteur universel : `BRENT`, `WTI`, `GOLD`, `SILVER`, `COPPER`, `NATGAS`, `EURUSD`, `GBPUSD`, `USDJPY`, `USDCNH`, `AUDUSD`, `USDCAD`, `SPX`, `NDX`, `DJI`, `DAX`, `CAC`, `NKX`, et les actions sous la forme `STK:<ticker>` (ex. `STK:AAPL`). Elles remontent automatiquement dans le graphique du volet 5 |
+| `GET/POST /api/v1/team/workspaces` | Espaces partagés : création, invitation par e-mail (rattachée à la connexion de la personne), rôles admin / analyste / valideur / lecteur, au moins un administrateur |
+| `GET/POST /api/v1/team/versions` | Versions partagées : création (empreinte SHA-256 du JSON canonique), soumission, validation signée (HMAC serveur) ou rejet, vérification d'intégrité. Règle des quatre yeux : l'auteur ne valide jamais sa version ; une version validée est figée en base |
+| `GET/POST /api/v1/team/audit` | Journal d'audit serveur en ajout seul (forçages, changements de statut, membres) |
+| `GET/POST /api/v1/portfolio/nav` | Valorisations quotidiennes et apports / retraits, base du TWR et du MWR |
 | `POST /api/v1/ai/market-parser` | Lecture d'une page par l'IA. Chaque valeur est stockée dans `ai_sources` avec `source_url`, `source_name`, `timestamp_retrieved`, `confidence_score` |
 
 Tâches planifiées (`vercel.json`, en-tête `Authorization: Bearer $CRON_SECRET`) : ingestion macro du lundi au vendredi à 21 h 30 UTC (EIA, plus EUR/USD, GBP/USD, USD/JPY, AUD/USD et USD/CAD déduits des taux de référence BCE), resynchronisation de tous les courtiers chaque jour à 6 h UTC.
@@ -85,7 +90,8 @@ Le crayon ✏️ force une valeur partout dans l'interface. Quand le flux live r
 
 ## 7. Tests
 
-- `npm test` : 14 tests unitaires (chiffrement, signatures Binance et Kraken comparées aux exemples officiels de leur documentation, signatures OKX et Coinbase, adaptateurs Binance, Kraken et IBKR, séries macro, validation du webhook MetaTrader, correspondance SocialTraderTools, score de confiance IA, risque RR, paires de devises déduites de la BCE).
+- `npm test` : 15 tests unitaires (chiffrement, signatures Binance et Kraken comparées aux exemples officiels de leur documentation, signatures OKX et Coinbase, adaptateurs Binance, Kraken et IBKR, séries macro, validation du webhook MetaTrader, correspondance SocialTraderTools, score de confiance IA, risque RR, paires de devises déduites de la BCE).
+- Test d'intégration des espaces partagés (21 contrôles) : invitation, rôles, quatre yeux, signature et vérification, version validée figée même pour la clé de service, écriture directe refusée au navigateur, journal en ajout seul, valorisations isolées par utilisateur, dernier administrateur protégé.
 - Test d'intégration effectué contre Postgres 16 et PostgREST 12 : isolation RLS entre utilisateurs, identifiants non lisibles, clé d'EA invalide refusée (403), conversions EUR, plage de dates invalide refusée (400), appels sans session refusés (401).
 
 Non testé en conditions réelles : compilation des EA dans MetaTrader, API SocialTraderTools, comptes Saxo, IBKR, Coinbase et OKX réels.

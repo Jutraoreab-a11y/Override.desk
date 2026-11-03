@@ -18,7 +18,7 @@ function renderAB(){
 const MODS=[['bp','Business plan','bp'],['an','Analyse financière','an'],['sc','Sélecteur & mapping','sc'],['lbo','Dossier LBO','lbo'],['pf','Suivi & placements','pf'],['cm','Commodities & flows','cm'],['pc','Calculateur de position','pc'],['jr','Journal de trading','jr']];
 const PANELS=['bp','an','sc','lbo','pf','cm','pc','jr','ab'];
 const RAILG=[["Finance <br>d'entreprise",5],['Finance <br>de marché',3]];
-const BPSEC=['Fiche de renseignements','Executive summary et offre','Étude de marché : secteur','La demande','L\'offre et la concurrence','Marketing, offre et prix','Stratégie et lancement','Porteur et structure','Paramètres et marché adressable','Prévisionnel financier','Valorisation et verdict Go / No-Go','Annexes'];
+const BPSEC=['Fiche de renseignements','Executive summary et offre','Étude de marché : secteur','La demande','L\'offre et la concurrence','Marketing, offre et prix','Stratégie et lancement','Porteur et structure','Paramètres et marché adressable','Prévisionnel financier','Suivi du réalisé et écarts','Valorisation et verdict Go / No-Go','Annexes'];
 let lastCalc=new Date();
 function bpState(){const r=bpCalc(),AL=bpAlerts(r),ko=AL.filter(a=>a.l==='ko').length;return{r,AL,ko,res:AL.length-ko,st:ko?['ko',"Modèle non viable en l'état"]:AL.length?['am','Cohérent sous réserves']:['ok','Modèle cohérent']};}
 function ctxHTML(){
@@ -169,7 +169,7 @@ document.addEventListener('click',e=>{
     case 'pickSec':ui.secTarget=id;renderAll();save();break;
     case 'pfsel':ui.pfSel=+id;renderAll();save();break;
     case 'goto':{const el=document.getElementById(id);if(el)el.scrollIntoView({block:'start'});break;}
-    case 'addrow':{const l=b.dataset.list;getP(S,l).push(clone(ROWTPL[l]));pending.add(l);renderAll();break;}
+    case 'addrow':{const l=b.dataset.list;if(!getP(S,l))setP(S,l,[]);getP(S,l).push(clone(ROWTPL[l]||(/\.peers$/.test(l)?{n:'',evE:null,pe:null,src:''}:{})));pending.add(l);renderAll();break;}
     case 'delrow':{const l=b.dataset.list;getP(S,l).splice(+b.dataset.i,1);pending.add(l);renderAll();break;}
     case 'addco':{const nid='c'+Date.now();S.sc.list.push(co(nid,'Nouveau dossier',ui.secTarget,5,5,5,5,5,5,0,0,1,10,8,{ebm:0,fund:'Capital-risque',serial:0,tier:'',tgt:0},['','','','','','','','','','']));ui.sel=nid;pending.add('co');renderAll();break;}
     case 'bp2sc':bpToSelector();ui.tab='sc';renderAll();save();$('#main').scrollTop=0;toast('Projet envoyé au Sélecteur et positionné sur le mapping de son secteur');break;
@@ -195,6 +195,7 @@ document.addEventListener('click',e=>{
     case 'cmfile':$('#cmFile').click();break;
     case 'fluxopen':ui.fluxOpen=!ui.fluxOpen;renderFlux();break;
     case 'fluxclose':ui.fluxOpen=false;renderFlux();break;
+    case 'raimp':$('#raFile').click();break;
     case 'tornk':ui.tornK=id;renderAll();break;
     case 'tamlv':ui.tamLv=+id;renderAll();break;
     case 'zonedup':ui.zoneDup=!ui.zoneDup;renderAll();break;
@@ -249,3 +250,5 @@ document.addEventListener('focusout',e=>{const el=e.target;if(!el.dataset||!ui.p
 
 $('#holdFile').addEventListener('change',e=>{const f=e.target.files[0];if(!f)return;const rd=new FileReader();rd.onload=()=>{const n=holdImport(String(rd.result),ui.holdBr||'Non affecté');e.target.value='';save();renderAll();toast(n?`${n} position${n>1?'s':''} importée${n>1?'s':''} pour ${ui.holdBr}`:'Fichier non reconnu : colonnes symbole et quantité attendues');};rd.readAsText(f);});
 document.addEventListener('input',e=>{if(e.target.id==='brq'){ui.brQ=e.target.value;const q=ui.brQ.toLowerCase(),el=document.getElementById('brk');if(el)el.innerHTML=brList(BROKERS.filter(b=>!q||b.n.toLowerCase().includes(q)||b.t.toLowerCase().includes(q)),q);}});
+
+$('#raFile').addEventListener('change',e=>{const f=e.target.files[0];if(!f)return;const rd=new FileReader();rd.onload=()=>{const n=raImport(String(rd.result));e.target.value='';save();renderAll();toast(n?`${n} mois de réalisé importés`:'Aucun mois reconnu : colonnes attendues mois;ca;clients;ebitda;tresorerie');};rd.readAsText(f);});

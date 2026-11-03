@@ -67,9 +67,9 @@ function bpCalc(){
   const c=[0,+b.clients1];for(let t=2;t<=H;t++)c[t]=c[t-1]*(1+(+b.g[t-2]||0)/100);
   const W=S.bp.mkt&&String(S.bp.mkt.seasApply)==='true'?seasW():Array(12).fill(1/12),FC=[0];W.forEach((w,i)=>FC.push(FC[i]+w));FC[12]=1;
   const M=[],Y=[],capexL=[];
-  let cash=0,loanOut=0,rec=0,pay=0,capital=0,grantEq=0,retained=0,lossCF=0,capCum=0,daCum=0,prevBFR=0;
+  let vatPos=0,cash=0,loanOut=0,rec=0,pay=0,capital=0,grantEq=0,retained=0,lossCF=0,capCum=0,daCum=0,prevBFR=0;
   for(let t=1;t<=H;t++){
-    const y={t,clients:c[t],rev:0,cogs:0,mkt:0,pers:0,other:0,da:0,int:0,tax:0,capex:0,coll:0,paySup:0,inEq:0,inGrant:0,inDebt:0,repay:0,newC:0,ebt:0};
+    const y={t,clients:c[t],rev:0,cogs:0,mkt:0,pers:0,other:0,da:0,int:0,tax:0,capex:0,coll:0,paySup:0,mktC:0,capC:0,vatP:0,inEq:0,inGrant:0,inDebt:0,repay:0,newC:0,ebt:0};
     for(let k=1;k<=12;k++){
       const m=(t-1)*12+k,c0=c[t-1]+(c[t]-c[t-1])*FC[k-1],c1=c[t-1]+(c[t]-c[t-1])*FC[k],avg=(c0+c1)/2;
       const rev=avg*b.arpu,cogs=rev*(1-gm),nw=Math.max(0,c1-c0+avg*churn),mkt=nw*cac;
@@ -81,21 +81,26 @@ function bpCalc(){
       const capex=k===1?(+b.capex[t-1]||0):0;if(capex)capexL.push({m,a:capex});
       const da=capexL.reduce((a,x)=>a+(m>=x.m&&m<x.m+amortM?x.a/amortM:0),0);
       const intr=loanOut*b.rate/100/12,principal=m>b.defer?Math.min(loanOut,princ):0;
-      const recE=rev*b.dso/30,payE=(cogs+other)*b.dpo/30,coll=rev-(recE-rec),paySup=cogs+other-(payE-pay);rec=recE;pay=payE;
+      /* TVA (v7.2) : collectée sur les ventes soumises, déductible sur achats, charges externes, acquisition et investissements ;
+         la TVA nette d'un mois est reversée le mois suivant (régime réel normal) ; un crédit est reporté sur les mois suivants. */
+      const vR=String(b.vatOn)==='true'?(+b.vat||0)/100:0,vS=vR*(1-clamp(+b.vatExp||0,0,100)/100);
+      const revT=rev*(1+vS),buyT=(cogs+other)*(1+vR),mktC=mkt*(1+vR),capC=capex*(1+vR);
+      const vatP=Math.max(0,vatPos);vatPos+=rev*vS-(cogs+other+mkt+capex)*vR-vatP;
+      const recE=revT*b.dso/30,payE=buyT*b.dpo/30,coll=revT-(recE-rec),paySup=buyT-(payE-pay);rec=recE;pay=payE;
       y.ebt+=rev-cogs-mkt-pers-other-da-intr;
       let tax=0;
       if(k===12){if(y.ebt<0)lossCF+=-y.ebt;else{const used=Math.min(lossCF,y.ebt);lossCF-=used;const base=y.ebt-used;
         /* Taux réduit PME (art. 219-I-b CGI) : 15 % jusqu'à 42 500 € de bénéfice si CA < 10 M€ HT, capital libéré et détenu à 75 % au moins par des personnes physiques */
         const pme=String(b.isPme)==='true'&&(y.rev+rev)<10e6;tax=pme?Math.min(base,42500)*0.15+Math.max(0,base-42500)*b.tax/100:base*b.tax/100;}}
-      const inTot=coll+inEq+inGrant+inDebt,outTot=paySup+mkt+pers+capex+intr+tax+principal;
+      const inTot=coll+inEq+inGrant+inDebt,outTot=paySup+mktC+pers+capC+intr+tax+principal+vatP;
       cash+=inTot-outTot;loanOut-=principal;capCum+=capex;daCum+=da;
-      M.push({m,t,k,rev,ebitda:rev-cogs-mkt-pers-other,coll,inEq,inFin:inGrant+inDebt,inTot,paySup,mkt,pers,capex,intr,tax,principal,outTot,flow:inTot-outTot,cash});
-      Object.entries({rev,cogs,mkt,pers,other,da,int:intr,tax,capex,coll,paySup,inEq,inGrant,inDebt,repay:principal,newC:nw}).forEach(([q,v])=>y[q]+=v);
+      M.push({m,t,k,rev,cl:avg,nw,mktE:mkt,ebitda:rev-cogs-mkt-pers-other,coll,inEq,inFin:inGrant+inDebt,inTot,paySup,mkt:mktC,pers,capex:capC,vat:vatP,intr,tax,principal,outTot,flow:inTot-outTot,cash});
+      Object.entries({rev,cogs,mkt,pers,other,da,int:intr,tax,capex,coll,paySup,mktC,capC,vatP,inEq,inGrant,inDebt,repay:principal,newC:nw}).forEach(([q,v])=>y[q]+=v);
     }
     y.gp=y.rev-y.cogs;y.ebitda=y.gp-y.mkt-y.pers-y.other;y.ebit=y.ebitda-y.da;y.net=y.ebit-y.int-y.tax;retained+=y.net;
-    y.caf=y.net+y.da;const bfr=rec-pay;y.dBFR=bfr-prevBFR;prevBFR=bfr;
-    y.bal={fixed:capCum-daCum,rec,cash,capital,grant:grantEq,retained,debt:loanOut,pay,bfr};
-    y.bal.assets=y.bal.fixed+rec+cash;y.bal.liab=capital+grantEq+retained+loanOut+pay;y.gap=y.bal.assets-y.bal.liab;
+    y.caf=y.net+y.da;const vatC=Math.max(0,-vatPos),vatD=Math.max(0,vatPos),bfr=rec-pay+vatC-vatD;y.dBFR=bfr-prevBFR;prevBFR=bfr;
+    y.bal={fixed:capCum-daCum,rec,cash,capital,grant:grantEq,retained,debt:loanOut,pay,bfr,vatC,vatD};
+    y.bal.assets=y.bal.fixed+rec+cash+vatC;y.bal.liab=capital+grantEq+retained+loanOut+pay+vatD;y.gap=y.bal.assets-y.bal.liab;
     y.R={caf:Math.max(0,y.caf),eq:y.inEq,grant:y.inGrant,debt:y.inDebt,bfr:Math.max(0,-y.dBFR)};
     y.E={caf:Math.max(0,-y.caf),capex:y.capex,bfr:Math.max(0,y.dBFR),repay:y.repay};
     y.Rt=Object.values(y.R).reduce((a,v)=>a+v,0);y.Et=Object.values(y.E).reduce((a,v)=>a+v,0);
@@ -425,7 +430,7 @@ function renderBP(){
       <div class="tw"><table class="tbl reg"><thead><tr><th>Hypothèse</th><th>Valeur</th><th>Justification et source</th><th>Statut</th></tr></thead><tbody>${regRows}</tbody></table></div></div>
     <div class="card s12"><h2>Paramètres de structure</h2><div class="pgrid">
       <div><h3>Charges et investissements</h3><div class="fields">${F('Charges externes A1','bp.other1','n',{u:'€'})}${F('Hausse annuelle','bp.otherG','n',{u:'%'})}${F('Durée d\'amortissement','bp.amortY','n',{u:'ans'})}</div><div class="lb" style="margin-top:8px">Investissements par année (€)</div><div class="fv" style="flex-wrap:wrap">${yrsFld('bp.capex',H)}</div></div>
-      <div><h3>Calendrier et fiscalité</h3><div class="fields">${F('Année de démarrage','bp.startY','n',{raw:1})}${F('Impôt sur les sociétés (taux normal)','bp.tax','n',{u:'%'})}${F('Taux réduit PME (15 % jusqu\'à 42 500 €)','bp.isPme','s',{opts:{'false':'Non','true':'Oui, conditions remplies'}})}${F('Décote taille et illiquidité','bp.privDisc','n',{u:'% multiples'})}</div><p class="note">Déficits reportables imputés sur les bénéfices futurs ; impôt décaissé en fin d'exercice. Taux réduit (art. 219 CGI, inchangé par la loi de finances 2026) : CA inférieur à 10 M€ HT, capital entièrement libéré et détenu à 75 % au moins par des personnes physiques ; à revérifier après chaque levée auprès d'un fonds. Décote appliquée aux multiples de sociétés cotées (Damodaran) pour valoriser une société non cotée et de petite taille : ordre de grandeur usuel 20 à 35 %, à justifier.</p></div>
+      <div><h3>Calendrier et fiscalité</h3><div class="fields">${F('Année de démarrage','bp.startY','n',{raw:1})}${F('Impôt sur les sociétés (taux normal)','bp.tax','n',{u:'%'})}${F('Taux réduit PME (15 % jusqu\'à 42 500 €)','bp.isPme','s',{opts:{'false':'Non','true':'Oui, conditions remplies'}})}${F('Décote taille et illiquidité','bp.privDisc','n',{u:'% multiples'})}${F('TVA dans la trésorerie','bp.vatOn','s',{opts:{'true':'Oui','false':'Non'}})}${F('Taux de TVA','bp.vat','n',{u:'%'})}${F('Ventes hors TVA (export, autoliquidation)','bp.vatExp','n',{u:'% du CA'})}</div><p class="note">Déficits reportables imputés sur les bénéfices futurs ; impôt décaissé en fin d'exercice. Taux réduit (art. 219 CGI, inchangé par la loi de finances 2026) : CA inférieur à 10 M€ HT, capital entièrement libéré et détenu à 75 % au moins par des personnes physiques ; à revérifier après chaque levée auprès d'un fonds. TVA : collectée sur les ventes soumises, déductible sur achats, charges externes, acquisition et investissements, reversée le mois suivant (régime réel normal mensuel) ; un crédit de TVA est reporté (son remboursement anticipé n'est pas modélisé). Décote appliquée aux multiples de sociétés cotées (Damodaran) pour valoriser une société non cotée et de petite taille : ordre de grandeur usuel 20 à 35 %, à justifier.</p></div>
       <div><h3>Financement</h3><div class="fields">${F('Apport des fondateurs','bp.equity','n',{u:'€'})}${F('Subventions et aides','bp.grant','n',{u:'€'})}${F('Levée de fonds','bp.raise','n',{u:'€'})}${F('Valorisation pre-money','bp.preMoney','n',{u:'€'})}${F('Mois d\'encaissement','bp.raiseM','n',{u:'mois'})}${F('Emprunt bancaire','bp.loan','n',{u:'€'})}${F('Taux','bp.rate','n',{u:'%'})}${F('Durée','bp.loanY','n',{u:'ans'})}${F('Différé','bp.defer','n',{u:'mois'})}</div><p class="note">Dilution de la levée : ${pct(+b.raise/((+b.preMoney)+(+b.raise))*100,1)} (post-money ${big((+b.preMoney)+(+b.raise))}).</p></div>
     </div></div>
     ${bpTamCard(r)}
@@ -453,8 +458,8 @@ function renderBP(){
       ['EBITDA',Yr.map(y=>y.ebitda),'tot',1],['Marge EBITDA',Yr.map(y=>pct(y.em,0))],['Dotations aux amortissements',Yr.map(y=>-y.da)],
       ['EBIT',Yr.map(y=>y.ebit),'tot',1],['Charges financières',Yr.map(y=>-y.int)],['Impôt sur les sociétés',Yr.map(y=>-y.tax)],['Résultat net',Yr.map(y=>y.net),'tot',1]])}${cmt('cr',`CA multiplié par ${nf(Hy.rev/Yr[0].rev,1)} entre A1 et A${H} ; marge brute ${pct(Hy.gp/Hy.rev*100,0)} ; ${r.be?`EBITDA positif dès l'année ${r.be.t}, marge de ${pct(Hy.em,0)} en A${H}.`:'EBITDA négatif sur tout l\'horizon.'} Résultat net cumulé ${big(sum(Yr.map(y=>y.net)))}.`)}</div>
     <div class="card s6"><h2>Bilan prévisionnel <span class="meta">fin d'exercice</span></h2>${ftable(head,[
-      ['§','Actif'],['Immobilisations nettes',Yr.map(y=>y.bal.fixed)],['Créances clients',Yr.map(y=>y.bal.rec)],['Trésorerie',Yr.map(y=>y.bal.cash),'',1],['Total actif',Yr.map(y=>y.bal.assets),'tot'],
-      ['§','Passif'],['Capital et primes',Yr.map(y=>y.bal.capital)],['Subventions',Yr.map(y=>y.bal.grant)],['Résultats cumulés',Yr.map(y=>y.bal.retained),'',1],['Dettes financières',Yr.map(y=>y.bal.debt)],['Dettes fournisseurs',Yr.map(y=>y.bal.pay)],['Total passif',Yr.map(y=>y.bal.liab),'tot'],
+      ['§','Actif'],['Immobilisations nettes',Yr.map(y=>y.bal.fixed)],['Créances clients (TTC)',Yr.map(y=>y.bal.rec)],['Crédit de TVA',Yr.map(y=>y.bal.vatC||0)],['Trésorerie',Yr.map(y=>y.bal.cash),'',1],['Total actif',Yr.map(y=>y.bal.assets),'tot'],
+      ['§','Passif'],['Capital et primes',Yr.map(y=>y.bal.capital)],['Subventions',Yr.map(y=>y.bal.grant)],['Résultats cumulés',Yr.map(y=>y.bal.retained),'',1],['Dettes financières',Yr.map(y=>y.bal.debt)],['Dettes fournisseurs (TTC)',Yr.map(y=>y.bal.pay)],['TVA à reverser',Yr.map(y=>y.bal.vatD||0)],['Total passif',Yr.map(y=>y.bal.liab),'tot'],
       ['Contrôle actif − passif',Yr.map(y=>Math.abs(y.gap)<1?'0':kk(y.gap))]])}
       ${cmt('bilan',`Trésorerie fin A${H} ${big(Hy.bal.cash)} ; dettes financières ${big(Hy.bal.debt)} ; BFR ${big(Hy.bal.bfr)}. Le bilan est équilibré chaque année (contrôle actif − passif).`)}<p class="note">Capitaux propres fin A${H} : <b class="num">${big(Hy.bal.capital+Hy.bal.grant+Hy.bal.retained)}</b>${Hy.bal.capital+Hy.bal.grant+Hy.bal.retained<0?' <span class="down">(négatifs : reconstitution obligatoire)</span>':''}.</p></div>
     <div class="card s6"><h2>Plan de financement</h2>${ftable(head,[
@@ -463,13 +468,13 @@ function renderBP(){
       ['Variation de trésorerie',Yr.map(y=>y.Rt-y.Et),'tot',1],['Trésorerie fin d\'exercice',Yr.map(y=>y.cash),'',1]])}${cmt('fin',`Ressources mobilisées ${big(r.funding)} (apports, levée, emprunt, aides) ; ${Yr.every(y=>y.cash>=0)?'la trésorerie reste positive en fin de chaque exercice.':'la trésorerie devient négative en fin d\'exercice : financement complémentaire nécessaire.'}`)}</div>
     <div class="card s6"><h2>Budget de trésorerie annuel</h2>${ftable(head,[
       ['§','Encaissements'],['Clients',Yr.map(y=>y.coll)],['Apports et levées',Yr.map(y=>y.inEq)],['Emprunts et subventions',Yr.map(y=>y.inDebt+y.inGrant)],['Total encaissements',Yr.map(y=>y.coll+y.inEq+y.inDebt+y.inGrant),'tot'],
-      ['§','Décaissements'],['Fournisseurs et charges externes',Yr.map(y=>y.paySup)],['Acquisition clients',Yr.map(y=>y.mkt)],['Salaires chargés',Yr.map(y=>y.pers)],['Investissements',Yr.map(y=>y.capex)],['Intérêts',Yr.map(y=>y.int)],['Impôt sur les sociétés',Yr.map(y=>y.tax)],['Remboursements d\'emprunt',Yr.map(y=>y.repay)],
-      ['Total décaissements',Yr.map(y=>y.paySup+y.mkt+y.pers+y.capex+y.int+y.tax+y.repay),'tot'],['Trésorerie fin d\'exercice',Yr.map(y=>y.cash),'tot',1]])}</div>
+      ['§','Décaissements'],['Fournisseurs et charges externes',Yr.map(y=>y.paySup)],['Acquisition clients',Yr.map(y=>y.mktC)],['Salaires chargés',Yr.map(y=>y.pers)],['Investissements',Yr.map(y=>y.capC)],['TVA reversée',Yr.map(y=>y.vatP)],['Intérêts',Yr.map(y=>y.int)],['Impôt sur les sociétés',Yr.map(y=>y.tax)],['Remboursements d\'emprunt',Yr.map(y=>y.repay)],
+      ['Total décaissements',Yr.map(y=>y.paySup+y.mktC+y.pers+y.capC+y.vatP+y.int+y.tax+y.repay),'tot'],['Trésorerie fin d\'exercice',Yr.map(y=>y.cash),'tot',1]])}</div>
     <div class="card s12"><h2>Budget de trésorerie mensuel
       <select class="f noprint" data-ui="ty" aria-label="Année affichée" style="width:auto;padding:4px 24px 4px 8px">${Yr.map(y=>`<option value="${y.t}"${y.t===ty?' selected':''}>Année ${y.t}</option>`).join('')}</select></h2>
       ${ftable(MY.map(x=>'M'+x.k),[
         ['Encaissements clients',MY.map(x=>x.coll)],['Apports et levées',MY.map(x=>x.inEq)],['Emprunts et subventions',MY.map(x=>x.inFin)],['Total encaissements',MY.map(x=>x.inTot),'tot'],
-        ['Fournisseurs et charges externes',MY.map(x=>x.paySup)],['Acquisition clients',MY.map(x=>x.mkt)],['Salaires chargés',MY.map(x=>x.pers)],['Investissements',MY.map(x=>x.capex)],['Intérêts et impôt',MY.map(x=>x.intr+x.tax)],['Remboursements',MY.map(x=>x.principal)],['Total décaissements',MY.map(x=>x.outTot),'tot'],
+        ['Fournisseurs et charges externes',MY.map(x=>x.paySup)],['Acquisition clients',MY.map(x=>x.mkt)],['Salaires chargés',MY.map(x=>x.pers)],['Investissements',MY.map(x=>x.capex)],['TVA reversée',MY.map(x=>x.vat)],['Intérêts et impôt',MY.map(x=>x.intr+x.tax)],['Remboursements',MY.map(x=>x.principal)],['Total décaissements',MY.map(x=>x.outTot),'tot'],
         ['Solde du mois',MY.map(x=>x.flow),'',1],['Trésorerie fin de mois',MY.map(x=>x.cash),'tot',1]])}${cmt('treso',`Point bas de trésorerie ${big(r.min.cash)} au mois ${r.min.k} de l'année ${r.min.t}${r.min.cash<0?' : découvert à couvrir avant cette date.':' : aucun découvert sur l\'horizon.'}`)}</div>
     ${(()=>{const S_=Yr.map(y=>{const cf=y.pers+y.other+y.da+y.int,cv=y.cogs+y.mkt,tm=(y.rev-cv)/y.rev,s=tm>0?cf/tm:NaN;return{cf,cv,tm,s,ms:y.rev-s,pm:isFinite(s)&&y.rev>0?s/y.rev*12:NaN};});
       const fb=S_.findIndex(x=>x.ms>=0);let gross=0;const inv=Yr.map(y=>{gross+=y.capex;return{gross};});
@@ -481,8 +486,10 @@ function renderBP(){
       <tr><td>ARPU mensuel</td><td class="n">${big(+b.arpu)}</td></tr><tr><td>Marge de contribution mensuelle</td><td class="n">${big(r.mc)}</td></tr>
       <tr><td>CAC pondéré</td><td class="n">${big(r.cac)}</td></tr><tr><td>Durée de vie client (plafonnée à 60 mois)</td><td class="n">${nf(r.life,0)} mois</td></tr>
       <tr class="tot"><td>LTV</td><td class="n">${big(r.ltv)}</td></tr><tr><td>LTV / CAC</td><td class="n ${r.ratio>=3?'up':'down'}">${nf(r.ratio,1)}×</td></tr><tr><td>Remboursement du CAC</td><td class="n ${r.payback<=18?'up':'down'}">${nf(r.payback,1)} mois</td></tr></table></div></div>
-    <div class="card s4"><h2>Besoin en fonds de roulement</h2>${ftable(head,[['Créances clients',Yr.map(y=>y.bal.rec)],['Dettes fournisseurs',Yr.map(y=>-y.bal.pay)],['BFR',Yr.map(y=>y.bal.bfr),'tot'],['Variation du BFR',Yr.map((y,i)=>y.bal.bfr-(i?Yr[i-1].bal.bfr:0))],['BFR en jours de CA',Yr.map(y=>nf(y.bal.bfr/y.rev*365,0)+' j')]])}${cmt('bfr',`BFR = créances clients (${b.dso} jours) − dettes fournisseurs (${b.dpo} jours) ; il atteint ${big(Hy.bal.bfr)} en A${H}, soit ${nf(Hy.bal.bfr/Hy.rev*365,0)} jours de CA à financer.`)}</div>
+    <div class="card s4"><h2>Besoin en fonds de roulement</h2>${ftable(head,[['Créances clients',Yr.map(y=>y.bal.rec)],['Dettes fournisseurs',Yr.map(y=>-y.bal.pay)],['TVA (crédit − dette)',Yr.map(y=>(y.bal.vatC||0)-(y.bal.vatD||0))],['BFR',Yr.map(y=>y.bal.bfr),'tot'],['Variation du BFR',Yr.map((y,i)=>y.bal.bfr-(i?Yr[i-1].bal.bfr:0))],['BFR en jours de CA',Yr.map(y=>nf(y.bal.bfr/y.rev*365,0)+' j')]])}${cmt('bfr',`BFR = créances clients (${b.dso} jours) − dettes fournisseurs (${b.dpo} jours)${String(b.vatOn)==='true'?' ± position de TVA (créances et dettes toutes taxes comprises)':''} ; il atteint ${big(Hy.bal.bfr)} en A${H}, soit ${nf(Hy.bal.bfr/Hy.rev*365,0)} jours de CA à financer.`)}</div>
     <div class="card s4"><h2>Tableau de cohérence</h2>${ftable(head,[['CA par ETP',Yr.map(y=>y.hc?y.rev/y.hc:NaN)],['Personnel / CA',Yr.map(y=>pct(y.pers/y.rev*100,0))],['Acquisition / CA',Yr.map(y=>pct(y.mkt/y.rev*100,0))],['Croissance du CA',Yr.map((y,i)=>i?pct((y.rev/Yr[i-1].rev-1)*100,0):'—')],['Dette fin. / fonds propres',Yr.map(y=>{const e=y.bal.capital+y.bal.grant+y.bal.retained;return e>0?nf(y.bal.debt/e,2)+'×':'n.s.';})]])}</div>`)}
+  ${sec(12,'Suivi du réalisé et analyse des écarts',`
+    ${raCard(r)}`)}
   ${sec(11,'Valorisation, scénarios et verdict d\'arbitrage (Go / No-Go)',`
     ${bpValCard(r)}
     ${bpScenCard(r)}
@@ -495,7 +502,7 @@ function renderBP(){
   {const part=(n,t,goal)=>`<div class="bpart"><span>Partie ${n}</span><h2>${t}</h2><p>${goal}</p></div>`;let n=0;const S_=k=>{n++;return secH(n,k,SEC[k].t,SEC[k].body);};
    const ord=part(1,'Le projet, le marché et la stratégie',"Ce que vous proposez, le marché que vous attaquez et la manière dont vous allez lancer le projet.")+S_(1)+S_(3)+S_(5)+S_(6)+S_(4)+S_(7)
      +part(2,'Le porteur de projet et la structure',"Votre capacité à gérer le projet, vos motivations, l'équipe et le cadre juridique.")+S_(2)
-     +part(3,'Le prévisionnel',"Rentabilité, solidité et cohérence financière du projet, tableaux commentés.")+S_(8)+S_(9)+S_(11)+S_(10);
+     +part(3,'Le prévisionnel',"Rentabilité, solidité et cohérence financière du projet, tableaux commentés.")+S_(8)+S_(9)+S_(12)+S_(11)+S_(10);
    __h=__h.replace(/@@S1@@[\s\S]*@@S10@@/,ord);}
   $('#p-bp').innerHTML=__h;
 

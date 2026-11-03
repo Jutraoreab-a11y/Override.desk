@@ -41,8 +41,8 @@ function prjBar(mod){
       <div class="s5" style="min-width:0"><h3 class="h3" style="margin-top:0">Projet</h3><div class="fields">${LF('Nom du projet',`prj.${mod}.${pi}.name`,'t')}${LF('Dossier',`prj.${mod}.${pi}.folder`,'t',{ph:'ex. Industrie, Luxe'})}</div>
         <p class="note">Créé le ${fdate(p.created)} · ${p.versions.length} version${p.versions.length>1?'s':''}</p>
         <div class="row"><button class="btn sm" data-act="prjdup" data-id="${mod}">Dupliquer le projet</button><button class="btn sm" data-act="prjdel" data-id="${mod}"${P.length<2?' disabled':''}>Supprimer le projet</button></div></div>
-      <div class="s7" style="min-width:0"><h3 class="h3" style="margin-top:0">Versions</h3><div class="tw"><table class="tbl"><thead><tr><th>Nom de la version</th><th>Date</th><th>Note</th><th></th></tr></thead><tbody>
-        ${p.versions.map((x,i)=>`<tr${x.id===v.id?' class="on"':''}><td>${lin(`prj.${mod}.${pi}.versions.${i}.label`,'t',{al:'Nom de la version'})}</td><td style="width:150px">${lin(`prj.${mod}.${pi}.versions.${i}.dd`,'d',{al:'Date de la version'})}</td><td>${lin(`prj.${mod}.${pi}.versions.${i}.note`,'t',{al:'Note'})}</td><td style="white-space:nowrap"><button class="btn sm" data-act="verload" data-id="${mod}" data-v="${x.id}">Ouvrir</button> <button class="btn sm" data-act="verdel" data-id="${mod}" data-v="${x.id}"${p.versions.length<2?' disabled':''}>Supprimer</button></td></tr>`).join('')}
+      <div class="s7" style="min-width:0"><h3 class="h3" style="margin-top:0">Versions</h3><div class="tw"><table class="tbl"><thead><tr><th>Nom de la version</th><th>Date</th><th>Note</th><th>Statut</th><th></th></tr></thead><tbody>
+        ${p.versions.map((x,i)=>`<tr${x.id===v.id?' class="on"':''}><td>${lin(`prj.${mod}.${pi}.versions.${i}.label`,'t',{al:'Nom de la version'})}</td><td style="width:150px">${lin(`prj.${mod}.${pi}.versions.${i}.dd`,'d',{al:'Date de la version'})}</td><td>${lin(`prj.${mod}.${pi}.versions.${i}.note`,'t',{al:'Note'})}</td><td style="white-space:nowrap">${typeof verTag==='function'?verTag(x)+(x.valBy?`<div class="meta">${esc(x.valBy)}, ${new Date(x.valAt).toLocaleDateString('fr-FR')}${x.hash?' · '+x.hash.slice(0,10)+'…':''}</div>`:''):''}</td><td style="white-space:nowrap">${typeof verActs==='function'?verActs(mod,x):''}<button class="btn sm" data-act="verload" data-id="${mod}" data-v="${x.id}">Ouvrir</button> <button class="btn sm" data-act="verdel" data-id="${mod}" data-v="${x.id}"${p.versions.length<2?' disabled':''}>Supprimer</button></td></tr>`).join('')}
       </tbody></table></div></div>
       <div class="s12" style="min-width:0"><h3 class="h3">Comparaison des versions</h3><div class="tw"><table class="tbl fin"><thead><tr><th>Indicateur</th>${cmp.map(c=>`<th class="n">${esc(c.x.label)}<br><span class="meta">${fdate(c.x.dd||c.x.date.slice(0,10))}</span></th>`).join('')}</tr></thead><tbody>
         ${(cmp[0]?cmp[0].s.rows:[]).map((r,ri)=>`<tr><td>${r[0]}</td>${cmp.map(c=>`<td class="n">${(c.s.rows[ri]||['',''])[1]}</td>`).join('')}</tr>`).join('')}
@@ -51,7 +51,7 @@ function prjBar(mod){
   }
   return`<div class="card s12 prj noprint"><div class="prj-h">
     <span class="prj-l">${ic('fold')}<b>Dossier projet</b></span>${sel}<span class="prj-l">Version</span>${vsel}
-    ${!sameTk(mod)?`<span class="tag am">${esc((S.an.assets[ui.tk]||{}).t||ui.tk)} : analyse non enregistrée dans ce projet</span>`:dirty?'<span class="tag am">Modifications non enregistrées</span>':'<span class="tag ok">Enregistré</span>'}
+    ${!sameTk(mod)?`<span class="tag am">${esc((S.an.assets[ui.tk]||{}).t||ui.tk)} : analyse non enregistrée dans ce projet</span>`:dirty?'<span class="tag am">Modifications non enregistrées</span>':'<span class="tag ok">Enregistré</span>'}${v&&typeof verTag==='function'&&v.status&&v.status!=='brouillon'?verTag(v):''}
     <span class="row" style="margin-left:auto">
       <button class="btn sm${dirty?' pri':''}" data-act="versave" data-id="${mod}">Enregistrer</button>
       <button class="btn sm" data-act="vernew" data-id="${mod}">Nouvelle version</button>
@@ -63,7 +63,7 @@ function prjBar(mod){
 function prjAct(act,mod,b){
   const p=prjCur(mod),v=verCur(mod);
   switch(act){
-    case 'versave':if(!sameTk(mod)){prjAct('vernew',mod,b);return;}v.data=prjSnap(mod);v.date=new Date().toISOString();v.dd=v.date.slice(0,10);if(mod==='bp')p.name=p.name||S.bp.name;toast('Version « '+v.label+' » enregistrée');break;
+    case 'versave':if(!sameTk(mod)){prjAct('vernew',mod,b);return;}if(v&&v.status==='validee'){toast('Version validée : les modifications sont enregistrées dans une nouvelle version');prjAct('vernew',mod,b);return;}if(v&&v.status==='soumise'){v.status='brouillon';toast('Version modifiée pendant la validation : elle repasse en brouillon');}v.data=prjSnap(mod);v.date=new Date().toISOString();v.dd=v.date.slice(0,10);if(mod==='bp')p.name=p.name||S.bp.name;toast('Version « '+v.label+' » enregistrée');break;
     case 'vernew':{const n={id:uid('v'),label:nextLabel(p,mod),date:new Date().toISOString(),note:'',data:prjSnap(mod)};n.dd=n.date.slice(0,10);
       if(prjDirty(mod)===false&&mod==='bp')n.note='Copie de '+v.label;p.versions.push(n);p.cur=n.id;toast('Nouvelle version créée : '+n.label);break;}
     case 'verrevert':prjApply(mod,v.data);toast('Version « '+v.label+' » rechargée');break;

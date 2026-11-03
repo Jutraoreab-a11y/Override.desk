@@ -215,3 +215,43 @@ function bpTornCard(r){const k=BP_OUT[ui.tornK]?ui.tornK:'cash',[lab,f]=BP_OUT[k
     <p class="note" style="margin:0 0 8px">${lab} en central : <b class="num">${big(base)}</b>. Barre gauche : variable dégradée ou réduite ; droite : augmentée.</p>
     <div class="torn">${T.map(x=>`<div class="torn-r"><span class="torn-l">${x.l} <em>${x.rg}</em></span><div class="torn-t"><i class="mid"></i><b class="${x.lo<base?'neg':'pos'}" style="${bar(x.lo)}"></b><b class="${x.hi<base?'neg':'pos'}" style="${bar(x.hi)}"></b></div><span class="torn-v num">${big(x.lo)} · ${big(x.hi)}</span></div>`).join('')}</div>
     <p class="note">Classées par amplitude d'impact : les premières lignes sont les hypothèses à documenter en priorité.</p></div>`;}
+
+/* ============ v7.2 : suivi du réalisé et analyse des écarts ============ */
+const RA_F=[['rev','CA réalisé (€ HT)'],['cl','Clients actifs (fin de mois)'],['ebitda','EBITDA réalisé (€)'],['cash','Trésorerie fin de mois (€)']];
+function raKey(r,m){const y0=+S.bp.startY||2027,d=new Date(y0,m-1,1);return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');}
+function raRows(r){const A=S.bp.actuals||(S.bp.actuals={});return r.M.map(x=>{const k=raKey(r,x.m),a=A[k]||{},has=f=>a[f]!==null&&a[f]!==''&&a[f]!==undefined&&isFinite(+a[f]);
+  const o={m:x.m,t:x.t,k,plan:x,a,has:has('rev')||has('ebitda')||has('cash')||has('cl')};
+  if(has('rev')){o.dRev=+a.rev-x.rev;o.pRev=x.rev?o.dRev/x.rev*100:NaN;}
+  if(has('rev')&&has('cl')&&+a.cl>0&&x.cl>0){const ap=S.bp.arpu,ar=+a.rev/+a.cl;o.vol=(+a.cl-x.cl)*ap;o.price=(ar-ap)*(+a.cl);o.arpuR=ar;}
+  if(has('ebitda'))o.dEb=+a.ebitda-x.ebitda;if(has('cash'))o.dCash=+a.cash-x.cash;return o;});}
+function raCard(r){const R=raRows(r),done=R.filter(x=>x.has),H=r.H,y0=+S.bp.startY||2027,ty=Math.min(H,Math.max(1,+ui.raY||(done.length?done[done.length-1].t:1))),RY=R.filter(x=>x.t===ty),A=S.bp.actuals;
+  RY.forEach(x=>{if(!A[x.k])A[x.k]={};});
+  const cum=done.filter(x=>x.dRev!==undefined),cP=sum(cum.map(x=>x.plan.rev)),cR=sum(cum.map(x=>+x.a.rev)),cE=done.filter(x=>x.dEb!==undefined),eP=sum(cE.map(x=>x.plan.ebitda)),eR=sum(cE.map(x=>+x.a.ebitda));
+  const lastC=[...done].reverse().find(x=>x.dCash!==undefined),vol=sum(done.map(x=>x.vol||0)),prc=sum(done.map(x=>x.price||0));
+  const al=[];if(cum.length&&cR<cP*0.9)al.push(['ko',`CA cumulé inférieur de ${pct((1-cR/cP)*100,0)} au plan sur ${cum.length} mois : reprévoir le plan et la trésorerie.`]);
+  else if(cum.length&&cR<cP*0.97)al.push(['am',`CA cumulé en retard de ${pct((1-cR/cP)*100,1)} sur le plan.`]);
+  if(lastC&&lastC.dCash<0)al.push([lastC.a.cash<0?'ko':'am',`Trésorerie réelle de ${big(+lastC.a.cash)} fin ${lastC.k}, ${big(lastC.dCash)} sous le plan.`]);
+  const neg3=[...cum].slice(-3);if(neg3.length===3&&neg3.every(x=>x.dRev<0))al.push(['am','Trois mois consécutifs sous le plan de CA : écart structurel probable plutôt que décalage ponctuel.']);
+  const cell=(x,f)=>fld(`bp.actuals.${x.k}.${f}`,'nn',{empty:'—',al:RA_F.find(z=>z[0]===f)[1]+' '+x.k});
+  return`<div class="card s12"><h2><span>Suivi du réalisé <span class="meta">saisie mensuelle et écarts avec le prévisionnel</span></span><span class="row noprint"><select class="f" data-ui="raY" aria-label="Année suivie" style="width:auto">${r.Y.map(y=>`<option value="${y.t}"${y.t===ty?' selected':''}>Année ${y.t} (${y0+y.t-1})</option>`).join('')}</select><button class="btn sm" data-act="raimp">Importer un CSV</button></span></h2>
+    <div class="stats">
+      <div class="stat"><div class="k">Mois renseignés</div><div class="x">${done.length}</div><div class="d">sur ${r.M.length} mois du plan</div></div>
+      <div class="stat"><div class="k">CA cumulé réel / plan</div><div class="x ${cP&&cR<cP*0.9?'down':cP&&cR>=cP?'up':''}">${cum.length?pct(cR/cP*100,1):'—'}</div><div class="d">${cum.length?big(cR)+' pour '+big(cP)+' prévus':'aucun CA saisi'}</div></div>
+      <div class="stat"><div class="k">Écart de CA : effet volume</div><div class="x ${vol<0?'down':vol>0?'up':''}">${done.some(x=>x.vol!==undefined)?big(vol):'—'}</div><div class="d">clients réels − prévus, au prix du plan</div></div>
+      <div class="stat"><div class="k">Écart de CA : effet prix</div><div class="x ${prc<0?'down':prc>0?'up':''}">${done.some(x=>x.price!==undefined)?big(prc):'—'}</div><div class="d">ARPU réel − ARPU du plan, sur les clients réels</div></div>
+      <div class="stat"><div class="k">EBITDA cumulé : écart</div><div class="x ${eR-eP<0?'down':eR-eP>0?'up':''}">${cE.length?big(eR-eP):'—'}</div><div class="d">${cE.length?big(eR)+' réalisé':''}</div></div>
+      <div class="stat"><div class="k">Trésorerie : écart</div><div class="x ${lastC&&lastC.dCash<0?'down':''}">${lastC?big(lastC.dCash):'—'}</div><div class="d">${lastC?'fin '+lastC.k:''}</div></div></div>
+    ${al.length?`<div class="dec" style="grid-template-columns:1fr;margin-top:6px">${al.map(([l,t])=>`<div class="dc"><span class="dot ${l}"></span><div><b>${l==='ko'?'Écart critique':'Écart à surveiller'}</b><span>${t}</span></div></div>`).join('')}</div>`:''}
+    <div class="tw" style="margin-top:8px"><table class="tbl fin"><thead><tr><th>Mois</th><th class="n">CA prévu</th><th class="n">CA réel</th><th class="n">Écart</th><th class="n">Clients prévus</th><th class="n">Clients réels</th><th class="n">Effet volume</th><th class="n">Effet prix</th><th class="n">EBITDA prévu</th><th class="n">EBITDA réel</th><th class="n">Trésorerie prévue</th><th class="n">Trésorerie réelle</th></tr></thead><tbody>
+      ${RY.map(x=>`<tr><td>${x.k}</td><td class="n">${nf(x.plan.rev,0)}</td><td class="n">${cell(x,'rev')}</td><td class="n ${x.dRev<0?'down':x.dRev>0?'up':''}">${x.dRev!==undefined?nf(x.dRev,0)+' <span class="meta">'+sgn(x.pRev,0)+'</span>':'—'}</td>
+        <td class="n">${nf(x.plan.cl,0)}</td><td class="n">${cell(x,'cl')}</td><td class="n">${x.vol!==undefined?nf(x.vol,0):'—'}</td><td class="n">${x.price!==undefined?nf(x.price,0):'—'}</td>
+        <td class="n">${nf(x.plan.ebitda,0)}</td><td class="n">${cell(x,'ebitda')}</td><td class="n">${nf(x.plan.cash,0)}</td><td class="n">${cell(x,'cash')}</td></tr>`).join('')}</tbody></table></div>
+    <div class="grid" style="margin-top:6px"><div class="s7" style="min-width:0">${colChart(RY.map(x=>x.k.slice(5)),RY.map(x=>x.plan.rev/1e3),{h:180,fmt:v=>nf(v,0)+' k€',title:'CA prévu et réalisé',vlab:v=>nf(v,0),line:{same:true,vals:RY.map(x=>x.dRev!==undefined?+x.a.rev/1e3:NaN),fmt:v=>nf(v,0)}})}
+      <div class="legend"><span><i style="background:var(--c-bar)"></i>CA prévu (k€)</span><span><i style="background:var(--hi)"></i>CA réalisé (k€)</span></div></div>
+      <div class="s5" style="min-width:0"><p class="note">Tableau en euros (graphique en k€) ; saisie au crayon ou import CSV (colonnes <code>mois;ca;clients;ebitda;tresorerie</code>, mois au format AAAA-MM). L'écart de CA se décompose en effet volume (clients réels − prévus, au prix du plan) et effet prix (ARPU réel − ARPU du plan, sur les clients réels) ; la somme des deux égale l'écart total quand les clients sont saisis.</p>
+        <p class="note">Les réalisés sont enregistrés avec la version du business plan : une nouvelle version figée avant chaque comité garde la trace du plan sur lequel les écarts ont été mesurés.</p></div></div></div>`;}
+function raImport(txt){const L=txt.replace(/\r/g,'').split('\n').filter(x=>x.trim());if(L.length<2)return 0;const sep=L[0].includes(';')?';':',',h=L[0].split(sep).map(x=>x.trim().toLowerCase());
+  const ix=(...k)=>h.findIndex(x=>k.some(y=>x.startsWith(y))),I={m:ix('mois','month','date'),rev:ix('ca','chiffre','revenue','rev'),cl:ix('client'),ebitda:ix('ebitda','ebe'),cash:ix('treso','trésorerie','cash')};
+  const num=v=>{v=String(v||'').replace(/\s/g,'').replace(/€/g,'');if(/\d,\d/.test(v)&&v.includes('.'))v=v.replace(/\./g,'');return parseFloat(v.replace(',','.'));};
+  let n=0;S.bp.actuals=S.bp.actuals||{};L.slice(1).forEach(l=>{const c=l.split(sep),m=String(c[I.m]||'').trim().match(/^(\d{4})-(\d{1,2})/)||String(c[I.m]||'').trim().match(/^(\d{1,2})\/(\d{4})$/);if(!m)return;
+    const k=m[0].includes('/')?`${m[2]}-${m[1].padStart(2,'0')}`:`${m[1]}-${m[2].padStart(2,'0')}`,o=S.bp.actuals[k]||{};['rev','cl','ebitda','cash'].forEach(f=>{if(I[f]>=0){const v=num(c[I[f]]);if(isFinite(v))o[f]=v;}});S.bp.actuals[k]=o;n++;});return n;}

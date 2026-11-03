@@ -17,6 +17,7 @@ const mktStore=k=>{const a=mktAll()[k];return a&&a.loc?a.loc:k;};
 /* Points {time,value} triés : classeur + imports CSV + navigateur + flux live */
 function mktPts(k){const st=mktStore(k),m=new Map();
   if(typeof CMD==='object'&&CMD[st+'C'])CMD.d.forEach((d,i)=>{const v=CMD[st+'C'][i];if(v!==null&&isFinite(v))m.set(d,v);});
+  if(typeof MKT_HIST==='object'&&MKT_HIST[st])Object.entries(MKT_HIST[st]).forEach(([d,v])=>m.set(d,+v));
   Object.entries((S.cm.add||{})[st]||{}).forEach(([d,r])=>{const v=Array.isArray(r)?r[0]:r;if(isFinite(+v))m.set(d,+v);});
   return[...m.entries()].sort((a,b)=>a[0]<b[0]?-1:1).map(([time,value])=>({time,value}));}
 function mktX(){if(!ui.cmX)ui.cmX={main:ui.cmA||'brent',cmp:[],b100:false};if(!Array.isArray(ui.cmX.cmp))ui.cmX.cmp=[];return ui.cmX;}

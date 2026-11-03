@@ -1,6 +1,6 @@
 # OVERRIDE.DESK
 
-Station d'analyse institutionnelle en 8 volets, en une seule page HTML autonome (`index.html`). Version 7.1.
+Station d'analyse institutionnelle en 8 volets, en une seule page HTML autonome (`index.html`). Version 7.2.
 
 Depuis la v7, un backend optionnel (Vercel + Supabase) branche les flux live : comptes MetaTrader 4 et 5 par EA, SocialTraderTools, courtiers par API chiffrée, PnL consolidé, séries macro EIA et BCE, parseur IA sourcé. Sans backend, la page fonctionne en mode simulation. Mise en service et liste des points d'accès : [docs/BACKEND.md](docs/BACKEND.md).
 
@@ -139,3 +139,11 @@ js/app.js                     navigation, panneau latéral, événements, abonne
 `GET` avec `Authorization: Bearer <jeton>`, réponse JSON :
 `{"positions":[{"sym","name","cls","qty","pru","px","ccy","sl","tp"}],"cash":nombre,"realized":[{"d":"AAAA-MM-JJ","sym","pnl","ccy"}]}`.
 Les clés API des courtiers restent sur le serveur. La page déployée (Vercel ou fichier local) appelle les passerelles et MetaApi ; dans l'aperçu Claude, les appels réseau directs peuvent être bloqués.
+
+
+Version 7.2 :
+- **Données actualisées au 3 novembre 2026** : cours de 10 titres, EUR/USD (BCE), Brent, WTI, or et argent jusqu'au 26-27 octobre, historiques de 50 séances (Apple, Nvidia, Coca-Cola, CAC 40) et de 20 séances (Microsoft, Intel, ASML). Chaque valeur est datée et sourcée ; une valeur forcée au crayon n'est jamais écrasée. Restent à compléter : Intel (cours du 19/10), USD/CNH et S&P 500 (17/06), séances de commodities du 18/06 au 25/09.
+- **Business plan** : TVA dans la trésorerie et le BFR (collectée, déductible, reversée le mois suivant, crédit reporté, part du CA hors TVA) ; suivi du réalisé mois par mois avec écarts, effet volume et effet prix, alertes et import CSV.
+- **Portefeuille** : rétro-calcul à composition constante (rendement, volatilité, Sharpe, Sortino, drawdown, VaR et CVaR historiques et paramétriques, bêta, corrélation, tracking error contre l'indice choisi) ; TWR et MWR réels à partir des valorisations quotidiennes et des apports / retraits.
+- **Analyse financière** : comparables par sous-secteur, comparables saisis avec source, repli sur le multiple d'industrie Damodaran (janvier 2026) quand moins de deux pairs sont disponibles.
+- **Équipe** : rôles (administrateur, analyste, valideur, lecteur), circuit brouillon → soumise → validée ou rejetée, règle des quatre yeux, empreinte SHA-256 et signature serveur, journal d'audit partagé en ajout seul. En local, les rôles sont déclaratifs ; ils sont garantis par le serveur en flux live.

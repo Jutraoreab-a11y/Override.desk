@@ -93,3 +93,15 @@ test('BCE : paires du sélecteur universel déduites des taux de référence', a
   assert.equal(v('EURUSD'), 1.16); assert.equal(v('GBPUSD'), +(1.16 / 0.87).toFixed(6)); assert.equal(v('USDJPY'), +(174 / 1.16).toFixed(6));
   assert.equal(v('AUDUSD'), undefined);
 });
+
+test('versions : empreinte canonique indépendante de l\'ordre des clés, signature HMAC', async () => {
+  const { canon, contentHash, sign } = await import('../lib/team.ts');
+  assert.equal(canon({ b: 1, a: { d: [1, { y: 2, x: 1 }], c: null } }), '{"a":{"c":null,"d":[1,{"x":1,"y":2}]},"b":1}');
+  assert.equal(contentHash({ a: 1, b: 2 }), contentHash({ b: 2, a: 1 }));
+  assert.notEqual(contentHash({ a: 1 }), contentHash({ a: 2 }));
+  process.env.SIGNING_KEY = 's'.repeat(32);
+  const s1 = sign('h', 'u', '2026-11-03T00:00:00.000Z');
+  assert.match(s1, /^[0-9a-f]{64}$/); assert.notEqual(s1, sign('h', 'u2', '2026-11-03T00:00:00.000Z'));
+  process.env.SIGNING_KEY = 'court';
+  assert.throws(() => sign('h', 'u', 'x'));
+});

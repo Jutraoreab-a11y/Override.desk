@@ -104,7 +104,7 @@ function bars(yrs,labels){
 /* Barres mensuelles / annuelles génériques (valeurs positives ou négatives), ligne optionnelle sur axe secondaire */
 function colChart(labels,vals,o={}){
   const W=o.w||560,H=o.h||190,L=46,R=o.line?46:10,T=14,B=24,iw=W-L-R,ih=H-T-B,n=vals.length;
-  const mx=Math.max(0,...vals.filter(isFinite)),mn=Math.min(0,...vals.filter(isFinite)),rng=(mx-mn)||1;
+  const all=vals.concat(o.line&&o.line.same?o.line.vals.filter(v=>v!==null&&v!==undefined):[]),mx=Math.max(0,...all.filter(isFinite)),mn=Math.min(0,...all.filter(isFinite)),rng=(mx-mn)||1;
   const Y=v=>T+(mx-v)/rng*ih,gw=iw/n,bw=Math.max(3,gw*.62);
   let s=`<svg class="sc" viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(o.title||'Graphique')}">`;
   const st=niceStep(rng/4);for(let v=Math.ceil(mn/st)*st;v<=mx+1e-9;v+=st)s+=`<line x1="${L}" x2="${L+iw}" y1="${Y(v)}" y2="${Y(v)}" class="mid"/><text x="${L-6}" y="${Y(v)+3}" class="ax" text-anchor="end">${o.fmt?o.fmt(v):nf(v,0)}</text>`;
@@ -112,10 +112,10 @@ function colChart(labels,vals,o={}){
     s+=`<rect x="${x}" y="${Math.min(Y(v),Y(0))}" width="${bw}" height="${Math.max(1,Math.abs(Y(v)-Y(0)))}" fill="${col}"><title>${esc(labels[i])} : ${o.fmt?o.fmt(v):nf(v,0)}</title></rect>`;
     if(o.vlab)s+=`<text x="${x+bw/2}" y="${(v>=0?Y(v)-4:Y(v)+11)}" class="ax" text-anchor="middle">${o.vlab(v,i)}</text>`;
     s+=`<text x="${L+gw*i+gw/2}" y="${H-7}" class="ax" text-anchor="middle">${esc(labels[i])}</text>`;});
-  if(o.line){const lv=o.line.vals,lmx=Math.max(...lv.filter(isFinite)),lmn=Math.min(0,...lv.filter(isFinite)),Yl=v=>T+(lmx-v)/((lmx-lmn)||1)*ih;
+  if(o.line){const lv=o.line.vals.map(v=>v===null||v===undefined?NaN:v),lmx=Math.max(...lv.filter(isFinite)),lmn=Math.min(0,...lv.filter(isFinite)),Yl=o.line.same?Y:v=>T+(lmx-v)/((lmx-lmn)||1)*ih;
     s+=`<polyline points="${lv.map((v,i)=>isFinite(v)?`${L+gw*i+gw/2},${Yl(v)}`:'').filter(Boolean).join(' ')}" fill="none" stroke="${o.line.c||'var(--hi)'}" stroke-width="1.6"/>`;
     lv.forEach((v,i)=>{if(isFinite(v))s+=`<circle cx="${L+gw*i+gw/2}" cy="${Yl(v)}" r="2.6" fill="${o.line.c||'var(--hi)'}"/>`;});
-    [lmx,lmn].forEach(v=>{s+=`<text x="${L+iw+6}" y="${Yl(v)+3}" class="ax">${o.line.fmt?o.line.fmt(v):nf(v,0)}</text>`;});}
+    if(!o.line.same)[lmx,lmn].forEach(v=>{s+=`<text x="${L+iw+6}" y="${Yl(v)+3}" class="ax">${o.line.fmt?o.line.fmt(v):nf(v,0)}</text>`;});}
   s+=`<line x1="${L}" x2="${L+iw}" y1="${Y(0)}" y2="${Y(0)}" stroke="var(--line2)"/>`;
   return s+'</svg>';
 }

@@ -18,6 +18,15 @@ export async function requireUser(req: Req): Promise<string> {
   if (error || !data.user) throw new HttpError(401, 'Session invalide');
   return data.user.id;
 }
+/** Identifiant et e-mail de l'utilisateur (pour rattacher les invitations). */
+export async function requireUserInfo(req: Req): Promise<{ id: string; email: string }> {
+  const auth = header(req, 'authorization');
+  const jwt = auth.startsWith('Bearer ') ? auth.slice(7) : '';
+  if (!jwt) throw new HttpError(401, 'Session requise');
+  const { data, error } = await db().auth.getUser(jwt);
+  if (error || !data.user) throw new HttpError(401, 'Session invalide');
+  return { id: data.user.id, email: String(data.user.email || '').toLowerCase() };
+}
 /** Tâches planifiées Vercel : Authorization: Bearer <CRON_SECRET>. */
 export function isCron(req: Req): boolean { const s = process.env.CRON_SECRET; return !!s && header(req, 'authorization') === `Bearer ${s}`; }
 export function check<T>(r: { data: T | null; error: { message: string } | null }): T {
