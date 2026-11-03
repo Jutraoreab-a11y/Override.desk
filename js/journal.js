@@ -70,20 +70,26 @@ function renderJR(){
 function mtNum(v){v=String(v||'').replace(/ |\s/g,'');if(/^-?[\d.]+,\d+$/.test(v))v=v.replace(/\./g,'').replace(',','.');return parseFloat(v);}
 function mtDate(v){const m=String(v).match(/(\d{4})[.\-\/](\d{2})[.\-\/](\d{2})(?:\s+(\d{2}:\d{2}))?/);return m?{d:`${m[1]}-${m[2]}-${m[3]}`,t:m[4]||''}:null;}
 function mt5Parse(txt){
-  const out={trades:[],info:{}};
+  const out={trades:[],open:[],info:{},fmt:''};
   if(/<table/i.test(txt)){
     const doc=new DOMParser().parseFromString(txt,'text/html'),body=doc.body.textContent||'';
     const grab=re=>{const m=body.match(re);return m?mtNum(m[1]):null;};
-    out.info={balance:grab(/(?:Balance|Solde)\s*:\s*(-?[\d\s .,]+)/i),equity:grab(/(?:Equity|Fonds propres|Capitaux propres)\s*:\s*(-?[\d\s .,]+)/i),net:grab(/(?:Total Net Profit|Profit net total|Bénéfice net total)\s*:\s*(-?[\d\s .,]+)/i)};
-    const acc=body.match(/(?:Account|Compte)\s*:\s*(\d+)\s*\(([A-Z]{3}),\s*([^,)]+)/i);if(acc){out.info.login=acc[1];out.info.ccy=acc[2];out.info.server=acc[3].trim();}
+    out.info={balance:grab(/(?:Balance|Solde)\s*:\s*(-?[\d\s .,]+)/i),equity:grab(/(?:Equity|Fonds propres|Capitaux propres)\s*:\s*(-?[\d\s .,]+)/i),net:grab(/(?:Total Net Profit|Profit net total|Bénéfice net total)\s*:\s*(-?[\d\s .,]+)/i),
+      freeMargin:grab(/(?:Free Margin|Marge libre)\s*:\s*(-?[\d\s .,]+)/i),margin:grab(/(?<!Free\s)(?<![A-Za-z])(?:Margin|Marge)\s*:\s*(-?[\d\s .,]+)/i),ddMax:grab(/(?:Maximal drawdown|Drawdown maximal)\s*:\s*(-?[\d\s .,]+)/i)};
+    const acc=body.match(/(?:Account|Compte)\s*:\s*(\d+)\s*\(([A-Z]{3}),\s*([^,)]+)/i);if(acc){out.info.login=acc[1];out.info.ccy=acc[2];out.info.server=acc[3].trim();out.fmt='MT5';}
+    const acc4=body.match(/Account\s*:\s*(\d+)[\s\S]{0,120}?Currency\s*:\s*([A-Z]{3})/i);if(!acc&&acc4){out.info.login=acc4[1];out.info.ccy=acc4[2];out.fmt='MT4';}
+    const side=x=>/^\s*(buy|achat)/i.test(x)?'Achat':/^\s*(sell|vente)/i.test(x)?'Vente':null;
     let sec='';doc.querySelectorAll('tr').forEach(tr=>{
       const cells=[...tr.children].filter(td=>!/hidden/.test(td.className)).map(td=>td.textContent.trim());if(!cells.length)return;
-      const j=cells.join(' ').trim();
-      if(cells.length<=2&&/^(Positions|Orders|Ordres|Deals|Transactions|Results|Résultats|Open Positions|Positions ouvertes|Working Orders)$/i.test(j)){sec=j.toLowerCase();return;}
-      if(sec!=='positions'||cells.length<13||/symbol|symbole/i.test(j))return;
-      const o=mtDate(cells[0]),c=mtDate(cells[8]),side=/buy|achat/i.test(cells[3])?'Achat':/sell|vente/i.test(cells[3])?'Vente':null;if(!o||!side)return;
-      const fees=(mtNum(cells[10])||0)+(mtNum(cells[11])||0),pr=mtNum(cells[12]);
-      out.trades.push({id:'mt5-'+cells[1],pos:cells[1],d:(c||o).d,t:(c||o).t,sym:cells[2].toUpperCase(),side,vol:mtNum(String(cells[4]).split('/')[0]),entry:mtNum(cells[5]),sl:mtNum(cells[6])||null,tp:mtNum(cells[7])||null,exit:mtNum(cells[9]),fees:-fees,pnl:isFinite(pr)?pr+fees:null,setup:'',emo:'',plan:'oui',note:'',src:'MT5'});
+      const j=cells.join(' ').trim(),jl=j.toLowerCase();
+      if(cells.length<=2&&j.length<40){if(/^(positions)$/i.test(j))sec='pos';else if(/open positions|positions ouvertes/i.test(j))sec='open';else if(/closed transactions|transactions fermées/i.test(j)){sec='mt4c';out.fmt='MT4';}else if(/open trades|transactions ouvertes/i.test(j)){sec='mt4o';out.fmt='MT4';}else sec='';return;}
+      if(/symbol|symbole|ticket|item/i.test(jl)&&!/\d{4}[.\-\/]\d{2}/.test(j))return;
+      if(sec==='pos'&&cells.length>=13){const o=mtDate(cells[0]),c=mtDate(cells[8]),sd=side(cells[3]);if(!o||!sd)return;const fees=(mtNum(cells[10])||0)+(mtNum(cells[11])||0),pr=mtNum(cells[12]);
+        out.trades.push({id:'mt5-'+cells[1],pos:cells[1],d:(c||o).d,t:(c||o).t,sym:cells[2].toUpperCase(),side:sd,vol:mtNum(String(cells[4]).split('/')[0]),entry:mtNum(cells[5]),sl:mtNum(cells[6])||null,tp:mtNum(cells[7])||null,exit:mtNum(cells[9]),fees:-fees,pnl:isFinite(pr)?pr+fees:null,setup:'',emo:'',plan:'oui',note:'',src:'MT5'});}
+      else if(sec==='open'&&cells.length>=9){const sd=side(cells[3]);if(!sd||!mtDate(cells[0]))return;out.open.push({sym:cells[2].toUpperCase(),side:sd,vol:mtNum(String(cells[4]).split('/')[0]),price:mtNum(cells[5]),mkt:mtNum(cells[8]),pl:mtNum(cells[cells.length-1])});}
+      else if(sec==='mt4c'&&cells.length>=14){const o=mtDate(cells[1]),c=mtDate(cells[8]),sd=side(cells[2]);if(!o||!sd)return;const fees=(mtNum(cells[10])||0)+(mtNum(cells[11])||0)+(mtNum(cells[12])||0),pr=mtNum(cells[13]);
+        out.trades.push({id:'mt4-'+cells[0],pos:cells[0],d:(c||o).d,t:(c||o).t,sym:cells[4].toUpperCase(),side:sd,vol:mtNum(cells[3]),entry:mtNum(cells[5]),sl:mtNum(cells[6])||null,tp:mtNum(cells[7])||null,exit:mtNum(cells[9]),fees:-fees,pnl:isFinite(pr)?pr+fees:null,setup:'',emo:'',plan:'oui',note:'',src:'MT4'});}
+      else if(sec==='mt4o'&&cells.length>=10){const sd=side(cells[2]);if(!sd||!mtDate(cells[1]))return;out.open.push({sym:cells[4].toUpperCase(),side:sd,vol:mtNum(cells[3]),price:mtNum(cells[5]),mkt:mtNum(cells[9]),pl:mtNum(cells[cells.length-1])});}
     });
   }else{
     const L=txt.replace(/\r/g,'').split('\n').filter(x=>x.trim());if(L.length<2)return out;
@@ -97,7 +103,7 @@ function mt5Parse(txt){
 function mt5Ingest(txt,name){
   const r=mt5Parse(txt),have=new Set(S.jr.trades.map(t=>t.id));let n=0;
   r.trades.forEach(t=>{if(!have.has(t.id)){S.jr.trades.push(t);n++;}});
-  const M=S.mt5;M.file=name;M.lastSync=new Date().toISOString();M.info=Object.assign({},M.info||{},Object.fromEntries(Object.entries(r.info).filter(([k,v])=>v!==null&&v!==undefined)));
+  const M=S.mt5;M.file=name;M.lastSync=new Date().toISOString();M.open=r.open||[];if(r.fmt&&!M.platform)M.platform=r.fmt;M.info=Object.assign({},M.info||{},Object.fromEntries(Object.entries(r.info).filter(([k,v])=>v!==null&&v!==undefined)));
   if(r.info.login&&!M.login)M.login=r.info.login;if(r.info.server&&!M.server)M.server=r.info.server;if(r.info.ccy)M.ccy=r.info.ccy;
   if(r.trades.length||r.info.balance!=null)M.linked=true;
   return{n,tot:r.trades.length,info:r.info};

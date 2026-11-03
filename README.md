@@ -1,6 +1,6 @@
 # OVERRIDE.DESK
 
-Station d'analyse institutionnelle en 8 volets, en une seule page HTML autonome (`index.html`). Version 5.0.
+Station d'analyse institutionnelle en 8 volets, en une seule page HTML autonome (`index.html`). Version 6.0.
 
 Le menu sépare deux familles :
 - **Finance d'entreprise** : Business plan, Analyse financière, Sélecteur & mapping, Dossier LBO, Suivi & placements ;
@@ -80,6 +80,7 @@ js/journal.js                 volet 7 et lecture des rapports MT5
 js/mt5.js                     liaison MetaTrader 5 (import, MetaApi)
 js/lbo.js                     dossier d'acquisition LBO
 js/collecte.js                collecte IA connectée et traçabilité
+js/patrimoine.js              comptes de trading, courtiers, dashboard patrimonial
 js/app.js                     navigation, panneau latéral, événements, abonnement
 ```
 
@@ -89,3 +90,15 @@ js/app.js                     navigation, panneau latéral, événements, abonne
 - **Dette senior** : 55 % des emplois par défaut (fourchette demandée 50 à 60 %), modifiable.
 - **Commodities** : les seuils de backwardation, contango et basis sont modifiables.
 - **Collecte IA** (bouton en haut) : Claude ouvre les sources validées dans le navigateur intégré de l'application Claude, extrait la donnée et vérifie que l'extrait cité figure dans la page. Sources : Euribor (euribor-rates.eu), EUR/USD (BCE), cours Brent, WTI, Or, Argent (Investing.com), cours des titres (Google Finance). Chaque valeur conserve son URL et sa date de consultation, reprises dans les exports PDF. Ne fonctionne que dans l'application Claude sur ordinateur.
+
+## Version 6.0
+- **Suivi & placements**, en trois sous-onglets :
+  - **Comptes de trading** : MetaTrader 4, MetaTrader 5 et SocialTraderTools. Liaison du compte (numéro, serveur, courtier, type, devise), import des rapports MT4 et MT5 (positions clôturées et ouvertes) ou synchronisation MetaApi. Indicateurs : solde, fonds propres, marge libre, drawdown maximal, profit net et exposition globale. Les webhooks SocialTraderTools demandent une fonction serveur ; en attendant, l'export CSV est accepté.
+  - **Placements & courtiers** : recherche universelle de plateformes (XTB, Saxo, Trade Republic, Interactive Brokers, DEGIRO, Boursorama, Coinbase, Binance, Kraken, OKX, Ledger…) et plateformes personnalisées. Import CSV des positions (quantité, PRU, cours), saisie manuelle et modification au crayon. La lecture par API se branche côté serveur avec des clés en lecture seule.
+  - **Dashboard patrimonial** : rentabilité par classe d'actifs, répartition et liquidité par plateforme (risque de contrepartie), latent et réalisé, écart aux hypothèses, alerte de divergence psychologique.
+- **Commodities** :
+  - puces de superposition en un clic : spread, basis, Z-score, corrélation USD/CNH, ratio Or/Argent ;
+  - écran partagé ;
+  - seuils modifiables au crayon directement sur la vue ;
+  - matrice cross-asset Sain / Tendu / Critique ;
+  - bouton « Run Diagnostics » : note IA en 3 puces, rédigée à partir des seuls indicateurs affichés.

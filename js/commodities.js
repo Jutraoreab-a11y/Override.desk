@@ -63,7 +63,7 @@ function cmCalc(){
     r.sigGold=!(nn(Gd)&&nn(D)&&nn(Gp)&&nn(Dp))?'NO DATA':D<Dp&&Gd>Gp?"ACHAT FONDAMENTAL : le Yuan se renforce, l'or monte. Demande réelle solide.":D>=Dp&&Gd>Gp?"RÉSILIENCE : l'or monte malgré un Yuan faible. Forte pression acheteuse hors Chine.":D>Dp&&Gd<Gp?"VENTE MACRO : le Yuan s'affaiblit, l'or capitule. Perte de pouvoir d'achat.":D<=Dp&&Gd<Gp?"ALERTE ROUGE : le Yuan est fort mais l'or baisse. Faiblesse interne critique ou arbitrage de taux.":'NEUTRE';
     const H=r.zG,J=r.perf;
     r.sigGoldSt=!(nn(H)&&nn(J))?'NO DATA':H>1.5?(J<0?'DISTRIBUTION (vente institutionnelle)':'SURCHAUFFE (euphorie)'):H<-1.5?(J>0?'ACCUMULATION (achat institutionnel)':'CAPITULATION (panique)'):Math.abs(H)<.75?'PIVOT / NEUTRE':J>0?'HAUSSE SAINE':'BAISSE SAINE';
-    r.zS=zAt(s.silver,i,20);r.sDist=silDist[i];const sdp=p>=0?silDist[p]:null;
+    r.cCS=corr(s.silver,s.cnh,i,+P.cS);r.zS=zAt(s.silver,i,20);r.sDist=silDist[i];const sdp=p>=0?silDist[p]:null;
     r.sigSilver=!(nn(r.zS)&&nn(r.sDist))?'NO DATA':r.zS>1.7?(r.sDist<0?'SELL NOW DISTRIBUTION ARGENT':'BUY NOW EUPHORIE ARGENT'):r.zS<-1.7?(nn(sdp)&&sdp>0?'ATTENTION BUY : ACCUMULATION ARGENT si USD faible':'SELL : CAPITULATION ARGENT si USD fort'):Math.abs(r.zS)<.75?'NEUTRE ARGENT':r.sDist>0?'BUY NOW : HAUSSE SAINE ARGENT':'SELL NOW : BAISSE SAINE ARGENT';
     R.push(r);}
   return{s,R,N};
@@ -129,7 +129,9 @@ function renderCM(){
       <div><div class="sh-px"><span class="v">${nf(px,2)}</span><em class="u">USD</em></div><div class="sh-d ${nn(pv)?cls(pv):''}">${nn(pv)?sgn(pv*100,2):''} sur la séance</div></div>
       <div class="sh-kv">${oil?`<div><span>WTI (complément)</span><b>${nf(s.wti[li],2)}</b></div><div><span>Spread Brent − WTI</span><b>${nf(r.spread,2)} · ${esc(r.spSt)}</b></div><div><span>Basis Brent</span><b>${nf(r.bB,2)} · ${esc(r.bBSt)}</b></div>`:`<div><span>${ind[0]}</span><b>${nf(r[ind[1]],2)}</b></div><div><span>État du marché</span><b>${esc(r[ind[2]])}</b></div>`}</div>
       <div class="badge ${cmCls(sigMain)==='ok'?'ok':cmCls(sigMain)==='ko'?'ko':'am'}">${esc(cmStrip(sigMain).split(' : ')[0].toUpperCase())}</div>
-    </div></div>
+    </div>
+    <div class="diag-ia" id="cm-diag"><div class="row"><button class="btn sm noprint${ui.cmDiag&&ui.cmDiag.busy?'':' pri'}" data-act="cmdiag"${ui.cmDiag&&ui.cmDiag.busy?' disabled':''}>${ui.cmDiag&&ui.cmDiag.busy?'Analyse en cours…':'Run Diagnostics'}</button><span class="meta">Note de synthèse macro générée par l'IA à partir des seuls indicateurs affichés</span></div>
+      ${ui.cmDiag&&ui.cmDiag.b?`<ul>${ui.cmDiag.b.map(x=>`<li>${esc(x)}</li>`).join('')}</ul><p class="note" style="margin:0">Données de la séance du ${fd(ui.cmDiag.d)} · générée le ${new Date(ui.cmDiag.at).toLocaleString('fr-FR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})} · à vérifier, ne constitue pas un conseil.</p>`:ui.cmDiag&&ui.cmDiag.err?`<p class="note down" style="margin:4px 0 0">${esc(ui.cmDiag.err)}</p>`:''}</div></div>
     <div class="card s12"><h2>Signaux du jour</h2><div class="dec">
       <div class="dc"><span class="dot ${cmCls(sigMain)}"></span><div><b>Signal principal</b><span>${esc(cmStrip(sigMain))}</span></div></div>
       ${sigStruct?`<div class="dc"><span class="dot ${cmCls(sigStruct)}"></span><div><b>Structure</b><span>${esc(cmStrip(sigStruct))}</span></div></div>`:''}
@@ -137,7 +139,15 @@ function renderCM(){
       ${a!=='silver'?`<div class="dc"><span class="dot ${cmCls(r.spRk)}"></span><div><b>Spread Brent − WTI : ${nf(r.spread,2)}</b><span>${esc(r.spRk)}</span></div></div>`:''}
     </div></div>
     <div class="card s12"><div class="stats">${kpis}</div></div>
-    <div class="card s12"><h2><span>${tab==='t'?(oil?'Brent et WTI, spread et basis':CM_ASSETS[a]+' et '+ind[0]):'Z-score et bandes d\'alerte'}</span><span class="meta">${tab==='t'?(oil?'Brent (blanc) et WTI (bleu) sur la même échelle · spread en barres et basis en pointillé':'cours (ligne) et indicateur de structure (barres)'):`seuils ±${P.zAlert} (alerte) et ±${P.zCrit} (critique)`}</span></h2><div class="lwc" id="${chartId}"></div></div>
+    ${cmHeat(C)}
+    <div class="card s12"><h2><span>Graphique principal <span class="meta">${oil?'Brent (blanc) et WTI (bleu)':CM_ASSETS[a]+' (blanc)'} · cliquer une puce pour superposer un indicateur</span></span>
+      <span class="row noprint"><button class="chip" data-act="cmsplit" aria-pressed="${!!ui.cmSplit}">Écran partagé</button></span></h2>
+      <div class="chips noprint" role="group" aria-label="Indicateurs superposés">${CM_OV.map(o=>{const on=!!cmOv()[o.k];return`<button class="chip ovc" data-act="cmov" data-id="${o.k}" aria-pressed="${on}" style="--c:${o.c}"><i></i>${o.l(a)}</button>`;}).join('')}</div>
+      <div class="thw noprint"><span class="lb">Seuils sur la vue</span>
+        <span>Z-score alerte ±${fld('cm.p.zAlert','n',{al:'Z-score alerte'})}</span><span>critique ±${fld('cm.p.zCrit','n',{al:'Z-score critique'})}</span>
+        ${a==='gold'?`<span>Basis or : tension ≤ ${fld('cm.p.th.bG.2','n',{al:'Seuil tension or'})}</span>`:a==='silver'?`<span>Basis argent : tension ≤ ${fld('cm.p.th.bS.2','n',{al:'Seuil tension argent'})}</span>`:`<span>Backwardation forte &gt; ${fld('cm.p.th.bB.2','n',{al:'Seuil backwardation forte'})}</span><span>Spread critique &gt; ${fld('cm.p.th.sp.3','n',{al:'Seuil spread critique'})}</span>`}</div>
+      <div class="lwc${ui.cmSplit?' sm':''}" id="cm-ch"></div>${ui.cmSplit?'<div class="lwc sm" id="cm-ch2" style="margin-top:6px"></div>':''}
+      <div class="legend">${(oil?[['#E4E4E7','Brent'],['#6B8AB8','WTI']]:[['#E4E4E7',CM_ASSETS[a]]]).concat(CM_OV.filter(o=>cmOv()[o.k]).map(o=>[o.c,o.l(a)])).map(([c,l])=>`<span><i style="background:${c}"></i>${esc(l)}</span>`).join('')}${ui.cmSplit?'<span>Haut : cours · bas : indicateurs</span>':'<span>Indicateurs dans la bande basse, chacun sur sa propre échelle</span>'}</div></div>
     <div class="card s12"><h2><span>${tab==='t'?'Tableau chronologique':'Tableau de confirmation'} <span class="meta">${nRows} séances sur ${N}</span></span><span class="row noprint"><button class="btn sm" data-act="cmall">${ui.cmAll?'60 dernières séances':'Toutes les séances'}</button><button class="btn sm" data-act="cmimp">Importer un export (CSV)</button>${ui.cmImp?`<select class="f" style="width:auto" data-ui="cmInst" aria-label="Instrument à mettre à jour">${Object.entries(CM_INST).map(([k,l])=>`<option value="${k}"${k===(ui.cmInst||'brent')?' selected':''}>${l}</option>`).join('')}</select><button class="btn pri sm" data-act="cmfile">Choisir le fichier</button>`:''}</span></h2><div class="tw" style="max-height:620px;overflow:auto">${table}</div></div>
     <div class="card s8"><h2>Paramètres des signaux <span class="meta">repris du classeur</span></h2>
       <div class="fields">${F('Fenêtre Z-score','cm.p.zWin','n',{u:'j'})}${F('Fenêtre percentile','cm.p.pctWin','n',{u:'j'})}${F('Corrélation court terme','cm.p.cS','n',{u:'j'})}${F('Corrélation moyen terme','cm.p.cM','n',{u:'j'})}${F('Corrélation forte au-delà de','cm.p.cStrong')}${F('Corrélation modérée au-delà de','cm.p.cMod')}${F('Z-score alerte','cm.p.zAlert')}${F('Z-score critique','cm.p.zCrit')}${F('Ratio Or/Argent refuge','cm.p.gsRef')}${F('Ratio Or/Brent déséquilibre','cm.p.gbDis')}</div></div>
@@ -156,8 +166,54 @@ function renderCM(){
       ${Object.keys(S.cm.add||{}).filter(k=>Object.keys(S.cm.add[k]).length).map(k=>`<tr><td>${CM_INST[k]}</td><td>${Object.keys(S.cm.add[k]).length} séances importées par CSV</td></tr>`).join('')}
     </tbody></table></div></div>
   </div>`;
-  queueChart(chartId,chartMake,()=>'<p class="note">Graphique indisponible hors connexion.</p>');mountCharts();
+  queueChart('cm-ch',el=>cmMain(el,C,a,oil,!!ui.cmSplit),()=>'<p class="note">Graphique indisponible hors connexion.</p>');
+  if(ui.cmSplit)queueChart('cm-ch2',el=>cmLower(el,C,a),()=>'');
+  mountCharts();
+  if(ui.cmSplit&&CH['cm-ch']&&CH['cm-ch2']){const A1=CH['cm-ch'].timeScale(),A2=CH['cm-ch2'].timeScale();let lock=false;
+    A1.subscribeVisibleLogicalRangeChange(r=>{if(lock||!r)return;lock=true;A2.setVisibleLogicalRange(r);lock=false;});A2.subscribeVisibleLogicalRangeChange(r=>{if(lock||!r)return;lock=true;A1.setVisibleLogicalRange(r);lock=false;});}
 }
+/* ---- Superpositions en un clic, écran partagé, matrice cross-asset, diagnostic IA ---- */
+const CM_OV=[
+  {k:'spread',c:'#C08A3E',l:()=>'Spread Brent − WTI',v:(x)=>x.spread},
+  {k:'basis',c:'#8B9DC3',l:a=>'Basis '+(a==='gold'?'Or':a==='silver'?'Argent':'Brent'),v:(x,a)=>a==='gold'?x.bG:a==='silver'?x.bS:x.bB},
+  {k:'z',c:'#D4D4D8',l:a=>a==='gold'?'Z-score Or 60 j':a==='silver'?'Z-score Argent 20 j':'Z-score spread 60 j',v:(x,a)=>a==='gold'?x.zG:a==='silver'?x.zS:x.zSp,z:true},
+  {k:'corr',c:'#6FA8A0',l:a=>'Corrélation USD/CNH '+(a==='gold'?'/ Or':a==='silver'?'/ Argent':'/ Brent')+' 20 j',v:(x,a)=>a==='gold'?x.cCG:a==='silver'?x.cCS:x.cC20},
+  {k:'gs',c:'#B07A8C',l:()=>'Ratio Or / Argent',v:x=>x.gs}];
+function cmOv(){if(!ui.cmOv)ui.cmOv={spread:true};return ui.cmOv;}
+function cmAddOv(ch,C,a,band){const{R}=C,P=cmP();CM_OV.filter(o=>cmOv()[o.k]).forEach((o,j)=>{
+  const id='ov_'+o.k,sr=ch.addLineSeries({priceScaleId:id,color:o.c,lineWidth:o.z?2:1.5,priceLineVisible:false,lastValueVisible:true,title:o.l(a)});
+  ch.priceScale(id).applyOptions({scaleMargins:band?{top:.68,bottom:.02}:{top:.08,bottom:.08},visible:false});
+  sr.setData(R.map(x=>{const v=o.v(x,a);return nn(v)?{time:x.d,value:+(+v).toFixed(4)}:null;}).filter(Boolean));
+  if(o.z)[[+P.zCrit,TVC.down],[+P.zAlert,TVC.amber],[-P.zAlert,TVC.amber],[-P.zCrit,TVC.down]].forEach(([v,c])=>sr.createPriceLine({price:v,color:c,lineWidth:1,lineStyle:2,axisLabelVisible:false,title:''}));});}
+function cmMain(el,C,a,oil,split){const{s}=C,ch=lwBase(el,p=>nf(p,2)),pts=k=>s.d.map((d,i)=>s[k][i]!==null?{time:d,value:s[k][i]}:null).filter(Boolean);
+  ch.addLineSeries({color:'#E4E4E7',lineWidth:2,priceLineVisible:false,title:oil?'Brent':CM_ASSETS[a]}).setData(pts(a));
+  if(oil)ch.addLineSeries({color:'#6B8AB8',lineWidth:1,priceLineVisible:false,title:'WTI'}).setData(pts('wti'));
+  const any=CM_OV.some(o=>cmOv()[o.k]);ch.priceScale('right').applyOptions({scaleMargins:{top:.06,bottom:!split&&any?.36:.06}});
+  if(!split)cmAddOv(ch,C,a,true);ch.timeScale().fitContent();return ch;}
+function cmLower(el,C,a){const ch=lwBase(el,p=>nf(p,2));if(!CM_OV.some(o=>cmOv()[o.k])){el.innerHTML='<p class="note" style="padding:10px">Activez au moins une puce pour afficher un indicateur ici.</p>';return ch;}cmAddOv(ch,C,a,false);ch.timeScale().fitContent();return ch;}
+function cmCell(st){const c=cmCls(st);return c==='ok'?['ok','Sain']:c==='ko'?['ko','Critique']:c==='am'?['am','Tendu']:['','—'];}
+function cmHeat(C){const{R,N,s}=C,P=cmP(),last=k=>{for(let i=N-1;i>=0;i--)if(nn(R[i][k]))return R[i];return R[N-1];};
+  const zc=z=>!nn(z)?['','—']:Math.abs(z)>+P.zCrit?['ko','Critique']:Math.abs(z)>+P.zAlert?['am','Tendu']:['ok','Sain'];
+  const cc=v=>!nn(v)?['','—']:Math.abs(v)>+P.cStrong?['ok','Forte']:Math.abs(v)>+P.cMod?['am','Modérée']:['','Faible'];
+  const rB=last('bB'),rG=last('bG'),rS=last('bS'),rZ=last('zSp'),rZG=last('zG'),rZS=last('zS');
+  const rows=[['Brent / WTI',[cmCell(rB.spRk),nf(rB.spread,2)],[cmCell(rB.bBRk),nf(rB.bB,2)],[zc(rZ.zSp),nf(rZ.zSp,2)],[cc(rZ.cC20),nf(rZ.cC20,2)],[cmCell(rB.sigChine),cmStrip(rB.sigChine).split(' : ')[0]]],
+    ['Or',[['','—'],'—'],[cmCell(rG.bGRk),nf(rG.bG,2)],[zc(rZG.zG),nf(rZG.zG,2)],[cc(rZG.cCG),nf(rZG.cCG,2)],[cmCell(rZG.sigGold),cmStrip(rZG.sigGold).split(' : ')[0]]],
+    ['Argent',[['','—'],'—'],[cmCell(rS.bSRk),nf(rS.bS,3)],[zc(rZS.zS),nf(rZS.zS,2)],[cc(rZS.cCS),nf(rZS.cCS,2)],[cmCell(rZS.sigSilver),cmStrip(rZS.sigSilver).split(' : ')[0]]]];
+  return`<div class="card s12"><h2><span>Matrice cross-asset <span class="meta">état instantané, dernière séance disponible</span></span><span class="legend" style="margin:0"><span><i style="background:var(--up)"></i>Sain</span><span><i style="background:var(--amber)"></i>Tendu</span><span><i style="background:var(--down)"></i>Critique</span></span></h2>
+    <div class="tw"><table class="tbl heat"><thead><tr><th>Actif</th><th>Spread</th><th>Basis</th><th>Z-score</th><th>Corrélation USD/CNH</th><th>Signal</th></tr></thead><tbody>
+    ${rows.map(r=>`<tr><td><b>${r[0]}</b></td>${r.slice(1).map(([c,v])=>`<td class="hc ${c[0]}"><span>${esc(c[1])}</span><b>${esc(String(v))}</b></td>`).join('')}</tr>`).join('')}</tbody></table></div></div>`;}
+let CM_DIAG=null;
+async function cmDiag(){
+  const out=document.getElementById('cm-diag');let sample=null;try{sample=await claude.use('sample');}catch(e){}
+  if(!sample){ui.cmDiag={err:"Diagnostic IA indisponible ici : il fonctionne quand la page est ouverte dans Claude."};renderCM();return;}
+  const C=cmCalc(),{R,N,s}=C,r=R[N-1],d=s.d[N-1],f=v=>nn(v)?(+v).toFixed(3):'n.d.';
+  const data=`Séance du ${d}. Brent ${f(s.brent[N-1])}, WTI ${f(s.wti[N-1])}, spread ${f(r.spread)} (${r.spSt}), basis Brent ${f(r.bB)} (${r.bBSt}), Z-score spread 60 j ${f(r.zSp)}, corrélation USD/CNH-Brent 20 j ${f(r.cC20)}, signal Chine : ${cmStrip(r.sigChine)}. Or ${f(s.gold[N-1])}, basis or ${f(r.bG)} (${r.bGSt}), Z-score or ${f(r.zG)}, signal or : ${cmStrip(r.sigGold)}, structure : ${r.sigGoldSt}. Argent ${f(s.silver[N-1])}, Z-score 20 j ${f(r.zS)}, signal : ${r.sigSilver}. Ratio Or/Argent ${f(r.gs)}, ratio Or/Brent ${f(r.gb)}. USD/CNH ${f(s.cnh[N-1])}.`;
+  ui.cmDiag={busy:true};renderCM();
+  try{const j=await sample.json(`Tu es analyste matières premières. À partir UNIQUEMENT des indicateurs ci-dessous (aucune autre donnée, aucune actualité inventée), rédige une note de synthèse macro en exactement 3 puces courtes en français : 1) pression d'approvisionnement pétrole, 2) métaux précieux, 3) conclusion opérationnelle prudente. Cite les chiffres utilisés. Réponds uniquement en JSON : {"bullets":["...","...","..."]}.\n\n${data}`,{modelTier:'quick',cache:{gcTime:3600000}});
+    const b=(j&&Array.isArray(j.bullets)?j.bullets:[]).slice(0,3).map(String);if(b.length!==3)throw{code:'invalid_json'};
+    ui.cmDiag={b,d,at:new Date().toISOString()};}
+  catch(e){ui.cmDiag={err:e&&e.code==='not_granted'?'Claude non autorisé pour cette page.':e&&e.code==='rate_limited'?'Trop de demandes : réessayez plus tard.':'Diagnostic impossible ('+((e&&e.code)||'erreur')+').'};}
+  renderCM();}
 function zChart(el,data,title){const P=cmP(),ch=lwBase(el,p=>nf(p,2)),l=ch.addBaselineSeries({baseValue:{type:'price',price:0},topLineColor:'#E4E4E7',bottomLineColor:'#E4E4E7',topFillColor1:'rgba(255,255,255,.06)',topFillColor2:'rgba(255,255,255,0)',bottomFillColor1:'rgba(255,255,255,0)',bottomFillColor2:'rgba(255,255,255,.06)',lineWidth:2,priceLineVisible:false,title});
   l.setData(data.filter(x=>nn(x.value)).map(x=>({time:x.time,value:+x.value.toFixed(3)})));
   [[+P.zCrit,TVC.down],[+P.zAlert,TVC.amber],[-P.zAlert,TVC.amber],[-P.zCrit,TVC.up]].forEach(([v,c])=>l.createPriceLine({price:v,color:c,lineWidth:1,lineStyle:2,axisLabelVisible:true,title:''}));

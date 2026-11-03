@@ -36,7 +36,7 @@ const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 const sum=a=>a.reduce((x,y)=>x+(+y||0),0);
 
 function fld(p,t='n',o={}){
-  const v=getP(S,p),d=getP(DEF,p),ov=JSON.stringify(v)!==JSON.stringify(d)?' ovr':'';
+  const v=getP(S,p),d=getP(DEF,p),ov=d!==undefined&&JSON.stringify(v)!==JSON.stringify(d)?' ovr':'';
   const isN=t==='n'||t==='nn';
   const pen=ui.penK===p,pb=o.nopen?'':`<button class="pen noprint" data-act="pen" data-k="${esc(p)}" title="Modifier cette valeur" aria-label="Modifier ${esc(o.al||'la valeur')}">${ic('pen')}</button>`;
   if(!ui.edit&&!pen){

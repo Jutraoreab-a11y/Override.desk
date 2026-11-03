@@ -447,3 +447,26 @@ td .f{min-width:64px}
 .ai-h b{color:var(--hi);font-size:14px}
 .ai a{color:var(--text);text-decoration:underline;text-decoration-color:var(--line2)}
 @media print{.ai{display:none!important}}
+
+/* ===== v6 : commodities interactives ===== */
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 8px}
+.chip.ovc{display:inline-flex;align-items:center;gap:6px}
+.chip.ovc i{width:10px;height:3px;border-radius:2px;background:var(--c)}
+.chip.ovc[aria-pressed="true"]{border-color:var(--c);color:var(--hi)}
+.thw{display:flex;flex-wrap:wrap;align-items:center;gap:6px 16px;padding:6px 10px;margin-bottom:8px;border:1px solid var(--line);border-radius:4px;background:var(--raised);font-size:12px;color:var(--mute)}
+.thw .lb{margin:0}
+.thw .v{color:var(--hi)}
+.tbl.heat td.hc{text-align:left}
+.tbl.heat td.hc span{display:block;font-size:11px;font-weight:600}
+.tbl.heat td.hc b{font:500 12px var(--mono);color:var(--text)}
+.tbl.heat td.hc.ok{background:var(--upbg)}.tbl.heat td.hc.ok span{color:var(--up)}
+.tbl.heat td.hc.am{background:var(--amberbg)}.tbl.heat td.hc.am span{color:var(--amber)}
+.tbl.heat td.hc.ko{background:var(--downbg)}.tbl.heat td.hc.ko span{color:var(--down)}
+.diag-ia{margin-top:10px;padding-top:10px;border-top:1px solid var(--line)}
+.diag-ia ul{margin:8px 0 4px 18px;padding:0;color:var(--text);line-height:1.55}
+/* ===== v6 : courtiers ===== */
+.brk{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:8px;margin-top:10px}
+.brc{display:flex;flex-direction:column;gap:3px;padding:10px;border:1px solid var(--line);border-radius:4px;background:var(--raised)}
+.brc b{color:var(--hi)}.brc span{font-size:12px;color:var(--text)}.brc small{font-size:11px;color:var(--mute);flex:1}
+.brc .btn{align-self:flex-start;margin-top:6px}
+.brc.on{border-color:var(--line2)}

@@ -25,14 +25,13 @@ function pfLine(p,i){
   return{stop,i,p,a,q,pru,price,val,cost,valE:toEur(val),costE:toEur(cost),pnlE:toEur(val-cost),perf,F,ups,fs,trend,R,cons,sig};
 }
 function pfCalc(){const ls=S.pf.positions.map(pfLine).filter(Boolean),V=sum(ls.map(l=>l.valE)),C=sum(ls.map(l=>l.costE));ls.forEach(l=>l.w=V?l.valE/V*100:0);return{ls,V,C,pnl:V-C,pnlP:C?(V/C-1)*100:NaN,div:ls.filter(l=>l.sig[1].startsWith('Divergence')).length,alert:ls.filter(l=>l.sig[0]==='ko').length};}
-function renderPF(){
+function renderPFStocks(){
   const E=ui.edit,K=pfCalc(),ls=K.ls,A=S.an.assets;
   if(ui.pfSel>=ls.length)ui.pfSel=0;
   const l=ls[ui.pfSel],P=k=>`pf.positions.${l?l.i:0}.${k}`;
   const tkOpts=Object.fromEntries(Object.keys(A).map(k=>[k,A[k].t+' ('+A[k].n+')']));
   $('#p-pf').innerHTML=`
   <div class="grid">
-    ${mt5Card()}
     <div class="card s12 msg"><b style="color:var(--hi)">Portefeuille d'exemple.</b> Les quantités et prix de revient sont fictifs ; cours et résultats publiés sont réels (MarketScreener, 19-20/10/2026). Passez en Override pour saisir vos positions.</div>
     <div class="card s12"><div class="stats">
       <div class="stat"><div class="k">Valeur du portefeuille</div><div class="x">${big(K.V)}</div><div class="d">${ls.length} lignes, USD convertis à ${nf(+S.pf.eurusd,4)}</div></div>

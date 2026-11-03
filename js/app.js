@@ -26,7 +26,7 @@ function ctxHTML(){
   if(ui.tab==='an')return`<label class="sym">${ic('search')}<input id="q" placeholder="Ticker ou société : AAPL, LVMH, Intel…" autocomplete="off" spellcheck="false" aria-label="Rechercher un titre"></label><span class="ctx-s">Rapport d'analyse financière</span>`;
   if(ui.tab==='sc'){const D=S.sc.list.filter(c=>!c.lead&&scPer().inP(c)),n=D.filter(passes).length;return`<span class="ctx-t">Sélecteur d'entreprises</span><span class="ctx-s">${n} dossier${n>1?'s':''} retenu${n>1?'s':''} sur ${D.length}</span>`;}
   if(ui.tab==='cm')return`<div class="seg" role="tablist" aria-label="Actif">${Object.entries(CM_ASSETS).map(([k,l])=>`<button role="tab" data-act="cma" data-id="${k}" aria-selected="${(ui.cmA||'brent')===k}">${l}</button>`).join('')}</div><span class="vsep"></span><div class="seg" role="tablist" aria-label="Vue">${[['t','Pression & approvisionnement'],['c','Confirmation & corrélations']].map(([k,l])=>`<button role="tab" data-act="cmt" data-id="${k}" aria-selected="${(ui.cmT||'t')===k}">${l}</button>`).join('')}</div>`;
-  if(ui.tab==='pf')return`<span class="ctx-t">Suivi des actifs et placements</span><span class="ctx-s">${S.pf.positions.length} lignes · MT5 ${S.mt5.linked?'lié':'non lié'}</span>`;
+  if(ui.tab==='pf'){pfInit();return pfSubBar()+`<span class="ctx-s">${S.hold.length+S.pf.positions.length} lignes · compte de trading ${S.mt5.linked?'lié':'non lié'}</span>`;}
   if(ui.tab==='lbo'){const d=lboCur();return`<span class="ctx-t">Dossier d'acquisition LBO</span><span class="ctx-s">${d?esc(d.name):'aucun dossier'} · ${S.lbo.list.length} dossier${S.lbo.list.length>1?'s':''}</span>`;}
   if(ui.tab==='pc'){const c=pcCalc();return`<span class="ctx-t">Calculateur de position</span><span class="ctx-s">${esc(S.pc.sym)} · ${isFinite(c.lots)?nf(c.lots,2)+' lot(s)':'entrée et stop à saisir'} · risque ${pct(+S.pc.risk,2)}</span>`;}
   if(ui.tab==='jr'){jrInit();return`<span class="ctx-t">Journal de trading</span><span class="ctx-s">${S.jr.trades.length} trade${S.jr.trades.length>1?'s':''} enregistré${S.jr.trades.length>1?'s':''}</span>`;}
@@ -192,6 +192,15 @@ document.addEventListener('click',e=>{
     case 'mt5sync':mt5Sync();break;
     case 'mt5unlink':S.mt5=Object.assign(clone(DEF.mt5),{mode:S.mt5.mode});ui.mt5Open=false;renderAll();save();toast('Compte MT5 délié (les trades importés restent dans le journal)');break;
     case 'cmfile':$('#cmFile').click();break;
+    case 'pft':ui.pfT=id;if(ui.tab!=='pf')ui.tab='pf';renderAll();save();$('#main').scrollTop=0;break;
+    case 'bradd':{pfInit();if(!S.brokers.some(x=>x.n===id)){const c=BROKERS.find(x=>x.n===id)||{n:id,t:'Plateforme personnalisée',m:['csv','manuel'],note:''};S.brokers.push({n:c.n,t:c.t,m:c.m,d:today()});S.holdDraft.br=c.n;}renderAll();save();toast('Plateforme associée : '+id);break;}
+    case 'brdel':{const b=S.brokers[+id];if(b){S.brokers.splice(+id,1);toast('Plateforme retirée (ses positions sont conservées)');}renderAll();save();break;}
+    case 'holdimp':ui.holdBr=id;$('#holdFile').click();break;
+    case 'holdadd':{const D=S.holdDraft;if(!D.br||!D.sym||!(+D.qty>0)||!isFinite(+D.pru)||D.pru===null){toast('Renseignez la plateforme, le symbole, la quantité et le PRU');break;}S.hold.push(clone(D));S.holdDraft=Object.assign({},D,{sym:'',name:'',qty:null,pru:null,px:null,tgt:null,real:null});renderAll();save();toast('Position ajoutée');break;}
+    case 'holddel':S.hold.splice(+id,1);renderAll();save();toast('Position supprimée');break;
+    case 'cmov':{const o=cmOv();o[id]=!o[id];renderAll();save();break;}
+    case 'cmsplit':ui.cmSplit=!ui.cmSplit;renderAll();save();break;
+    case 'cmdiag':cmDiag();break;
     case 'aiopen':ui.aiOpen=!ui.aiOpen;renderAI();break;
     case 'aiclose':ui.aiOpen=false;renderAI();break;
     case 'aicol':{const x=aiTargets().find(t=>t.k===id);if(x)aiCollect(x);break;}
@@ -220,3 +229,6 @@ $('#mt5File').addEventListener('change',e=>{const f=e.target.files[0];if(!f)retu
 document.addEventListener('mousedown',e=>{if(e.target.closest('.pv-on .pen,.pen-wrap .pen'))e.preventDefault();});
 document.addEventListener('focusout',e=>{const el=e.target;if(!el.dataset||!ui.penK)return;if(!(el.dataset.pen||el.dataset.lk===ui.penK))return;
   setTimeout(()=>{const a=document.activeElement;if(ui.penK&&!(a&&a.closest&&a.closest('.pv-on,.pen-wrap'))){ui.penK=null;ui.penOld=undefined;renderAll();}},120);});
+
+$('#holdFile').addEventListener('change',e=>{const f=e.target.files[0];if(!f)return;const rd=new FileReader();rd.onload=()=>{const n=holdImport(String(rd.result),ui.holdBr||'Non affecté');e.target.value='';save();renderAll();toast(n?`${n} position${n>1?'s':''} importée${n>1?'s':''} pour ${ui.holdBr}`:'Fichier non reconnu : colonnes symbole et quantité attendues');};rd.readAsText(f);});
+document.addEventListener('input',e=>{if(e.target.id==='brq'){ui.brQ=e.target.value;const q=ui.brQ.toLowerCase(),el=document.getElementById('brk');if(el)el.innerHTML=brList(BROKERS.filter(b=>!q||b.n.toLowerCase().includes(q)||b.t.toLowerCase().includes(q)),q);}});
