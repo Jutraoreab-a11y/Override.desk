@@ -89,3 +89,6 @@ DEF.lbo={list:[],cur:null};
 
 /* v5 : seuils de mise en conditionnelle des matières premières (classeur TRADING_Dashboard) */
 DEF.cm.p.th={sp:[0,3,6,10,15],bB:[0,1,3,6],bBr:[1.5,3.5,6],bS:[-0.15,0,0.08],bG:[-8,0,4]};
+
+/* v7 : backend (vide = même site que la page) */
+DEF.liveCfg={base:''};

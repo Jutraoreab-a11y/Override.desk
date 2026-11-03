@@ -1,6 +1,8 @@
 # OVERRIDE.DESK
 
-Station d'analyse institutionnelle en 8 volets, en une seule page HTML autonome (`index.html`). Version 6.1.
+Station d'analyse institutionnelle en 8 volets, en une seule page HTML autonome (`index.html`). Version 7.0.
+
+Depuis la v7, un backend optionnel (Vercel + Supabase) branche les flux live : comptes MetaTrader 4 et 5 par EA, SocialTraderTools, courtiers par API chiffrée, PnL consolidé, séries macro EIA et BCE, parseur IA sourcé. Sans backend, la page fonctionne en mode simulation. Mise en service et liste des points d'accès : [docs/BACKEND.md](docs/BACKEND.md).
 
 Le menu sépare deux familles :
 - **Finance d'entreprise** : Business plan, Analyse financière, Sélecteur & mapping, Dossier LBO, Suivi & placements ;

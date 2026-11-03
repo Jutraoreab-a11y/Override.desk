@@ -91,6 +91,7 @@ function renderAll(){
   $('#editBtn').innerHTML=`${ic(ui.edit?'lock':'pen')}<span class="lbl">${ui.edit?'Verrouiller':'Override'}</span>`;
   $('#pdfBtn').innerHTML=`${ic('dl')}<span class="lbl">Exporter PDF</span>`;
   $('#aiBtn').innerHTML=`${ic('ai')}<span class="lbl">Collecte IA</span>`;renderAI();
+  $('#liveBtn').innerHTML=liveBadge();renderFlux();
   updBar();
   const t={lbo:'Dossier d\'acquisition LBO',pc:'Calculateur de position',jr:'Journal de trading',bp:'Business plan',an:"Rapport d'analyse financière",sc:"Sélecteur d'entreprises & double mapping",pf:'Suivi des actifs et placements',cm:'Commodities & flows : '+((ui.cmT||'t')==='t'?'pression et approvisionnement':'confirmation et corrélations'),ab:'Abonnement'}[ui.tab],sub=ui.tab==='bp'?S.bp.name:ui.tab==='an'?(S.an.assets[ui.tk]||{}).n:ui.tab==='cm'?CM_ASSETS[ui.cmA||'brent']:ui.tab==='sc'?('zone '+geoAgg(ui.geo).lab+', '+((S.sc.list.find(c=>c.id===ui.sel)||{}).n||'')):'';
   const SRC={bp:["Repères sectoriels : Damodaran (NYU Stern), janvier 2026, consulté le 21/10/2026","PIB et croissance : FMI, World Economic Outlook, consulté le 21/10/2026","Hypothèses du projet : données de démonstration à sourcer ("+esc(S.bp.srcDate||'')+")"],
@@ -126,7 +127,7 @@ document.addEventListener('change',e=>{
   if(el.dataset&&el.dataset.prj){prjSwitch(el.dataset.prj,el.value,false);return;}
   if(el.dataset&&el.dataset.lbo){S.lbo.cur=el.value;renderAll();save();return;}
   if(el.dataset&&el.dataset.lbosc){lboScAct('load',el.value);return;}
-  if(el.dataset&&el.dataset.pen&&el.dataset.k){ui.penK=null;ui.penOld=undefined;recalc('Valeur forcée : modèle recalculé en cascade');return;}
+  if(el.dataset&&el.dataset.pen&&el.dataset.k){liveMarkOverride(el.dataset.k);ui.penK=null;ui.penOld=undefined;recalc('Valeur forcée : modèle recalculé en cascade');return;}
   if(el.dataset&&el.dataset.lbosrc){ui.lboSrc=el.value;save();return;}
   if(el.dataset&&el.dataset.ver){prjSwitch(el.dataset.ver,el.value,true);return;}
   if(!el.dataset||!el.dataset.lk)return;
@@ -155,7 +156,7 @@ document.addEventListener('click',e=>{
   switch(act){
     case 'tab':ui.tab=id;renderAll();save();$('#main').scrollTop=0;window.scrollTo(0,0);break;
     case 'edit':ui.edit=!ui.edit;if(!ui.edit&&pending.size){recalc();}else renderAll();break;
-    case 'recalc':recalc();break;
+    case 'recalc':recalc();if(FLUX.on)liveRefresh(false);break;
     case 'print':{const was=ui.edit;if(pending.size)recalc('Recalculé avant export');ui.edit=false;renderAll();setTimeout(()=>{window.print();if(was){ui.edit=true;renderAll();}},120);break;}
     case 'reset':{const v=ui.tab;if(v==='jr'||v==='lbo'){toast('Le journal n\'est jamais réinitialisé : supprimez les trades un par un');break;}if(S[v]){S[v]=clone(DEF[v]);pending.clear();renderAll();save();toast('Volet réinitialisé aux valeurs de référence');}break;}
     case 'tk':ui.tk=id;ui.qmsg='';renderAll();save();break;
@@ -192,6 +193,14 @@ document.addEventListener('click',e=>{
     case 'mt5sync':mt5Sync();break;
     case 'mt5unlink':S.mt5=Object.assign(clone(DEF.mt5),{mode:S.mt5.mode});ui.mt5Open=false;renderAll();save();toast('Compte MT5 délié (les trades importés restent dans le journal)');break;
     case 'cmfile':$('#cmFile').click();break;
+    case 'fluxopen':ui.fluxOpen=!ui.fluxOpen;renderFlux();break;
+    case 'fluxclose':ui.fluxOpen=false;renderFlux();break;
+    case 'liverefresh':liveRefresh(false);break;
+    case 'liveinit':save();liveInit().then(()=>toast(FLUX.status&&FLUX.status.backend?'Backend joignable':'Backend injoignable : mode simulation conservé'));break;
+    case 'login':{const em=(($('#liveEmail')||{}).value||'').trim();if(!FLUX.sb||!em){toast('Saisissez votre e-mail');break;}FLUX.sb.auth.signInWithOtp({email:em,options:{emailRedirectTo:location.href.split('#')[0]}}).then(r=>toast(r.error?'Envoi impossible : '+r.error.message:'Lien de connexion envoyé à '+em));break;}
+    case 'logout':if(FLUX.sb)FLUX.sb.auth.signOut();FLUX.session=null;FLUX.on=false;renderAll();toast('Déconnecté : retour au mode simulation');break;
+    case 'credsave':liveCredSave(+id);break;
+    case 'eakey':if(!S.mt5.login){toast('Renseignez d\'abord le numéro de compte');break;}liveEaKey();break;
     case 'pft':ui.pfT=id;if(ui.tab!=='pf')ui.tab='pf';renderAll();save();$('#main').scrollTop=0;break;
     case 'bradd':{pfInit();if(!S.brokers.some(x=>x.n===id)){const c=BROKERS.find(x=>x.n===id)||{n:id,t:'Plateforme personnalisée',m:['csv','manuel'],note:''};S.brokers.push({n:c.n,t:c.t,m:c.m,d:today()});S.holdDraft.br=c.n;}renderAll();save();toast('Plateforme associée : '+id);break;}
     case 'bradd2':{const v=(($('#brsel')||{}).value||($('#brq')||{}).value||'').trim();if(!v){toast('Choisissez ou tapez une plateforme');break;}pfInit();if(!S.brokers.some(x=>x.n===v)){const c=BROKERS.find(x=>x.n.toLowerCase()===v.toLowerCase())||{n:v,t:'Plateforme personnalisée',m:['api','csv'],note:''};S.brokers.push({n:c.n,t:c.t,m:c.m,d:today(),cash:null,api:{url:'',tok:''},sync:{}});}ui.brQ='';renderAll();save();toast('Plateforme connectée : '+v+'. Renseignez sa passerelle API pour la remontée automatique.');break;}
