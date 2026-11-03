@@ -194,6 +194,9 @@ document.addEventListener('click',e=>{
     case 'cmfile':$('#cmFile').click();break;
     case 'pft':ui.pfT=id;if(ui.tab!=='pf')ui.tab='pf';renderAll();save();$('#main').scrollTop=0;break;
     case 'bradd':{pfInit();if(!S.brokers.some(x=>x.n===id)){const c=BROKERS.find(x=>x.n===id)||{n:id,t:'Plateforme personnalisée',m:['csv','manuel'],note:''};S.brokers.push({n:c.n,t:c.t,m:c.m,d:today()});S.holdDraft.br=c.n;}renderAll();save();toast('Plateforme associée : '+id);break;}
+    case 'bradd2':{const v=(($('#brsel')||{}).value||($('#brq')||{}).value||'').trim();if(!v){toast('Choisissez ou tapez une plateforme');break;}pfInit();if(!S.brokers.some(x=>x.n===v)){const c=BROKERS.find(x=>x.n.toLowerCase()===v.toLowerCase())||{n:v,t:'Plateforme personnalisée',m:['api','csv'],note:''};S.brokers.push({n:c.n,t:c.t,m:c.m,d:today(),cash:null,api:{url:'',tok:''},sync:{}});}ui.brQ='';renderAll();save();toast('Plateforme connectée : '+v+'. Renseignez sa passerelle API pour la remontée automatique.');break;}
+    case 'brsync':brSyncAll(false);break;
+    case 'brsync1':brSync(+id).then(ok=>{save();renderAll();toast(ok?'Plateforme synchronisée':'Synchronisation impossible : vérifiez l\'adresse de la passerelle');});break;
     case 'brdel':{const b=S.brokers[+id];if(b){S.brokers.splice(+id,1);toast('Plateforme retirée (ses positions sont conservées)');}renderAll();save();break;}
     case 'holdimp':ui.holdBr=id;$('#holdFile').click();break;
     case 'holdadd':{const D=S.holdDraft;if(!D.br||!D.sym||!(+D.qty>0)||!isFinite(+D.pru)||D.pru===null){toast('Renseignez la plateforme, le symbole, la quantité et le PRU');break;}S.hold.push(clone(D));S.holdDraft=Object.assign({},D,{sym:'',name:'',qty:null,pru:null,px:null,tgt:null,real:null});renderAll();save();toast('Position ajoutée');break;}

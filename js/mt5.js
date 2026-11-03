@@ -33,14 +33,14 @@ function mt5Card(){
         <div class="row"><button class="btn pri sm" data-act="mt5imp">Importer le rapport MT5</button>${M.linked?'<button class="btn sm" data-act="mt5unlink">Délier</button>':''}</div>${M.file?`<p class="note">Dernier fichier : ${esc(M.file)}</p>`:''}`}</div>
     </div>`:''}</div>`;
 }
-async function mt5Sync(){
+async function mt5Sync(silent){
   const M=S.mt5;if(!M.token||!M.acctId){toast('Renseignez le jeton et l\'identifiant MetaApi');ui.mt5Open=true;renderAll();return;}
   const base=`https://mt-client-api-v1.${M.region||'new-york'}.agiliumtrade.ai/users/current/accounts/${encodeURIComponent(M.acctId)}`,h={headers:{'auth-token':M.token,'Accept':'application/json'}};
-  toast('Synchronisation MetaApi en cours…');
+  if(!silent)toast('Synchronisation MetaApi en cours…');
   try{
     const ai=await fetch(base+'/account-information',h);if(!ai.ok)throw new Error('HTTP '+ai.status);const a=await ai.json();
     M.info={balance:a.balance,equity:a.equity,margin:a.margin,freeMargin:a.freeMargin,leverage:a.leverage};M.ccy=a.currency||M.ccy;if(a.login)M.login=String(a.login);if(a.server)M.server=a.server;if(a.broker)M.broker=a.broker;
-    try{const po=await fetch(base+'/positions',h);if(po.ok){const P=await po.json();M.open=(Array.isArray(P)?P:[]).map(x=>({sym:String(x.symbol||'').toUpperCase(),side:/BUY/.test(x.type)?'Achat':'Vente',vol:+x.volume,price:+x.openPrice,mkt:+x.currentPrice,pl:+x.profit}));}}catch(_){}
+    try{const po=await fetch(base+'/positions',h);if(po.ok){const P=await po.json();M.open=(Array.isArray(P)?P:[]).map(x=>({sym:String(x.symbol||'').toUpperCase(),side:/BUY/.test(x.type)?'Achat':'Vente',vol:+x.volume,price:+x.openPrice,mkt:+x.currentPrice,pl:+x.profit,sl:+x.stopLoss||null,tp:+x.takeProfit||null}));}}catch(_){}
     const end=new Date().toISOString(),start=new Date(Date.now()-90*864e5).toISOString();
     const hd=await fetch(`${base}/history-deals/time/${start}/${end}`,h);const deals=hd.ok?await hd.json():[];
     const pos={};(Array.isArray(deals)?deals:[]).forEach(d=>{if(!d.positionId)return;(pos[d.positionId]=pos[d.positionId]||[]).push(d);});
@@ -48,10 +48,15 @@ async function mt5Sync(){
     Object.entries(pos).forEach(([id,D])=>{const i=D.find(x=>x.entryType==='DEAL_ENTRY_IN'),o=D.filter(x=>x.entryType==='DEAL_ENTRY_OUT'||x.entryType==='DEAL_ENTRY_OUT_BY');if(!i||!o.length||have.has('mt5-'+id))return;
       const last=o[o.length-1],dt=String(last.time||last.brokerTime||'').replace(' ','T'),net=sum(D.map(x=>(+x.profit||0)+(+x.commission||0)+(+x.swap||0)));
       S.jr.trades.push({id:'mt5-'+id,pos:id,d:dt.slice(0,10),t:dt.slice(11,16),sym:String(i.symbol||'').toUpperCase(),side:/BUY/.test(i.type)?'Achat':'Vente',vol:+i.volume,entry:+i.price,exit:+last.price,sl:i.stopLoss||null,tp:i.takeProfit||null,fees:-sum(D.map(x=>(+x.commission||0)+(+x.swap||0))),pnl:net,setup:'',emo:'',plan:'oui',note:'',src:'MetaApi'});n++;});
-    M.linked=true;M.lastSync=new Date().toISOString();save();renderAll();toast(`MetaApi : compte synchronisé, ${n} nouvelle${n>1?'s':''} position${n>1?'s':''} clôturée${n>1?'s':''}`);
-  }catch(e){toast('Synchronisation impossible ('+e.message+') : vérifier le jeton, l\'identifiant et la région, ou utiliser l\'import du rapport');}
+    M.linked=true;M.lastSync=new Date().toISOString();M.err='';save();renderAll();if(!silent)toast(`MetaApi : compte synchronisé, ${n} nouvelle${n>1?'s':''} position${n>1?'s':''} clôturée${n>1?'s':''}`);
+  }catch(e){M.err=e.message;if(silent){save();renderAll();return;}toast('Synchronisation impossible ('+e.message+') : vérifier le jeton, l\'identifiant et la région, ou utiliser l\'import du rapport');}
 }
 
 function mt5Expo(){const O=S.mt5.open||[],ccy=S.mt5.ccy||'EUR';let notional=0,n=0,unk=0;
   O.forEach(o=>{const sp=PC_SPECS[o.sym]||PC_SPECS[o.sym.replace(/[.\-_].*$/,'')];n++;if(!sp){unk++;return;}const fx=pcFx(sp.q,ccy);const px=+o.mkt||+o.price;if(isFinite(px)&&isFinite(fx))notional+=(+o.vol)*sp.cs*px*fx;});
   return{notional,n,unk};}
+
+/* Remontée automatique : à chaque ouverture de la page, puis toutes les 60 s tant que l'onglet est visible */
+(function(){const ok=()=>S.mt5&&S.mt5.mode==='metaapi'&&S.mt5.token&&S.mt5.acctId;
+  if(ok())setTimeout(()=>mt5Sync(true),800);
+  setInterval(()=>{if(ok()&&document.visibilityState==='visible')mt5Sync(true);},60000);})();

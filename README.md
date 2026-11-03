@@ -1,6 +1,6 @@
 # OVERRIDE.DESK
 
-Station d'analyse institutionnelle en 8 volets, en une seule page HTML autonome (`index.html`). Version 6.0.
+Station d'analyse institutionnelle en 8 volets, en une seule page HTML autonome (`index.html`). Version 6.1.
 
 Le menu sépare deux familles :
 - **Finance d'entreprise** : Business plan, Analyse financière, Sélecteur & mapping, Dossier LBO, Suivi & placements ;
@@ -102,3 +102,21 @@ js/app.js                     navigation, panneau latéral, événements, abonne
   - seuils modifiables au crayon directement sur la vue ;
   - matrice cross-asset Sain / Tendu / Critique ;
   - bouton « Run Diagnostics » : note IA en 3 puces, rédigée à partir des seuls indicateurs affichés.
+
+## Version 6.1 : volet 4 automatisé
+- **Comptes de trading** : remontée automatique des positions ouvertes (avec stop-loss et take-profit) à chaque ouverture de la page, puis toutes les 60 s via MetaApi. L'import des rapports MT4 et MT5 reste disponible.
+- **Placements & courtiers** :
+  - connecteurs en listes dépliantes : catalogue groupé par type, recherche universelle et plateformes personnalisées ;
+  - le bouton « Ajouter une position » est supprimé ;
+  - les positions, liquidités et cessions remontent automatiquement de la passerelle API de chaque plateforme à chaque ouverture, le relevé CSV servant de secours ;
+  - crayon pour forcer une valeur.
+- **Dashboard consolidé** :
+  - répartitions par classe d'actifs, par actif (long terme et trading), du cash (par broker, par portefeuille, par classe de compte) et par contrepartie ;
+  - TP, SL et Risk/Reward par actif et consolidé ;
+  - cash investi contre cash disponible ;
+  - PnL latent et réalisé, distincts et combinés, filtrés par période : jour, semaine, mois, 12 mois, YTD, tout ou dates libres.
+
+### Format de la passerelle courtier (fonction serveur)
+`GET` avec `Authorization: Bearer <jeton>`, réponse JSON :
+`{"positions":[{"sym","name","cls","qty","pru","px","ccy","sl","tp"}],"cash":nombre,"realized":[{"d":"AAAA-MM-JJ","sym","pnl","ccy"}]}`.
+Les clés API des courtiers restent sur le serveur. La page déployée (Vercel ou fichier local) appelle les passerelles et MetaApi ; dans l'aperçu Claude, les appels réseau directs peuvent être bloqués.

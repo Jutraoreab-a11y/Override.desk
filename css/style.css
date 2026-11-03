@@ -470,3 +470,11 @@ td .f{min-width:64px}
 .brc b{color:var(--hi)}.brc span{font-size:12px;color:var(--text)}.brc small{font-size:11px;color:var(--mute);flex:1}
 .brc .btn{align-self:flex-start;margin-top:6px}
 .brc.on{border-color:var(--line2)}
+/* ===== v6.1 : listes dépliantes des courtiers ===== */
+details.dd2>summary{display:flex;align-items:center;gap:12px;flex-wrap:wrap;cursor:pointer;list-style:none;padding:4px 0}
+details.dd2>summary::-webkit-details-marker{display:none}
+details.dd2>summary::before{content:"▸";color:var(--mute);font-size:11px;transition:transform .15s}
+details.dd2[open]>summary::before{transform:rotate(90deg)}
+details.dd2>summary b{color:var(--hi)}
+details.brd{border-top:1px solid var(--line);padding:6px 0}
+details.brd>summary .num{margin-left:auto;color:var(--text)}

@@ -86,10 +86,10 @@ function mt5Parse(txt){
       if(/symbol|symbole|ticket|item/i.test(jl)&&!/\d{4}[.\-\/]\d{2}/.test(j))return;
       if(sec==='pos'&&cells.length>=13){const o=mtDate(cells[0]),c=mtDate(cells[8]),sd=side(cells[3]);if(!o||!sd)return;const fees=(mtNum(cells[10])||0)+(mtNum(cells[11])||0),pr=mtNum(cells[12]);
         out.trades.push({id:'mt5-'+cells[1],pos:cells[1],d:(c||o).d,t:(c||o).t,sym:cells[2].toUpperCase(),side:sd,vol:mtNum(String(cells[4]).split('/')[0]),entry:mtNum(cells[5]),sl:mtNum(cells[6])||null,tp:mtNum(cells[7])||null,exit:mtNum(cells[9]),fees:-fees,pnl:isFinite(pr)?pr+fees:null,setup:'',emo:'',plan:'oui',note:'',src:'MT5'});}
-      else if(sec==='open'&&cells.length>=9){const sd=side(cells[3]);if(!sd||!mtDate(cells[0]))return;out.open.push({sym:cells[2].toUpperCase(),side:sd,vol:mtNum(String(cells[4]).split('/')[0]),price:mtNum(cells[5]),mkt:mtNum(cells[8]),pl:mtNum(cells[cells.length-1])});}
+      else if(sec==='open'&&cells.length>=9){const sd=side(cells[3]);if(!sd||!mtDate(cells[0]))return;out.open.push({sym:cells[2].toUpperCase(),side:sd,vol:mtNum(String(cells[4]).split('/')[0]),price:mtNum(cells[5]),sl:mtNum(cells[6])||null,tp:mtNum(cells[7])||null,mkt:mtNum(cells[8]),pl:mtNum(cells[cells.length-1])});}
       else if(sec==='mt4c'&&cells.length>=14){const o=mtDate(cells[1]),c=mtDate(cells[8]),sd=side(cells[2]);if(!o||!sd)return;const fees=(mtNum(cells[10])||0)+(mtNum(cells[11])||0)+(mtNum(cells[12])||0),pr=mtNum(cells[13]);
         out.trades.push({id:'mt4-'+cells[0],pos:cells[0],d:(c||o).d,t:(c||o).t,sym:cells[4].toUpperCase(),side:sd,vol:mtNum(cells[3]),entry:mtNum(cells[5]),sl:mtNum(cells[6])||null,tp:mtNum(cells[7])||null,exit:mtNum(cells[9]),fees:-fees,pnl:isFinite(pr)?pr+fees:null,setup:'',emo:'',plan:'oui',note:'',src:'MT4'});}
-      else if(sec==='mt4o'&&cells.length>=10){const sd=side(cells[2]);if(!sd||!mtDate(cells[1]))return;out.open.push({sym:cells[4].toUpperCase(),side:sd,vol:mtNum(cells[3]),price:mtNum(cells[5]),mkt:mtNum(cells[9]),pl:mtNum(cells[cells.length-1])});}
+      else if(sec==='mt4o'&&cells.length>=10){const sd=side(cells[2]);if(!sd||!mtDate(cells[1]))return;out.open.push({sym:cells[4].toUpperCase(),side:sd,vol:mtNum(cells[3]),price:mtNum(cells[5]),sl:mtNum(cells[6])||null,tp:mtNum(cells[7])||null,mkt:mtNum(cells[9]),pl:mtNum(cells[cells.length-1])});}
     });
   }else{
     const L=txt.replace(/\r/g,'').split('\n').filter(x=>x.trim());if(L.length<2)return out;
