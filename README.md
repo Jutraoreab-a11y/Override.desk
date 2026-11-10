@@ -153,3 +153,21 @@ Version 7.3 :
   - **Mapping 2 (le secteur cible)** : les sociétés de ce secteur en qualité et en liquidité, avec les anomalies de valorisation.
   - **Validation de l'entrée** sur le titre par cinq contrôles : secteur prioritaire, titre parmi les cibles, valorisation, plafond d'exposition sectorielle du portefeuille (dilution du risque), tamis.
   - **Notes sectorielles** calculées à partir des comptes publiés et des données Damodaran, modifiables au crayon.
+
+## Version 8.0 / 8.1 : mapping multi-actifs, moteur anti-FOMO, cache IA, macro et or / argent
+
+**Mapping multi-actifs** (bouton « Mapping » de l'en-tête, ou « Mapping sectoriel & stock » dans l'analyse financière) : barre `Actions · ETF · Cryptos · Commodities / Macro`.
+- Panneau de filtres : VE/EBITDA, PER, cours / actif net, VE/CA, croissance du CA (1 ou 3 ans ; 5 ans demande six exercices), marges EBITDA et nette, rendement FCF, capitalisation, volume moyen quotidien (saisi au crayon, non publié dans les comptes), bornage 1 / 2 / 5 / 10 / 20 / 30 ans pour les ETF.
+- Quadrant dynamique en unités réelles, axes au choix. Le risque ou la cherté se lit à gauche, de sorte que le quadrant supérieur droit regroupe les surperformeurs ; seuils à la médiane de l'univers filtré ou saisis. Alerte anti-FOMO (⚠) : performance du quartier haut obtenue dans la zone risquée.
+- Clic : une action ouvre son analyse financière, fondamentaux chargés ; un ETF, une crypto ou une commodity ouvre une fiche latérale. Le double mapping (secteur puis titre) reste sous le screener actions.
+- Univers livré : 20 ETF (Tiingo, cours ajustés, fins d'année depuis la création et 26 fins de mois), 11 cryptos par narratif L1 / DeFi / RWA / AI (CoinGecko : capitalisation, FDV, volume, plus haut historique), commodities et macro du volet 5.
+
+**Module 5 (V8.1)** : quatre puces supplémentaires sur le graphique principal, `CPI / PPI YoY`, `Fed Funds Rate` (avec le taux réel 10 ans), `WASDE Stock/Use Ratio`, `Beta XAU/XAG & Lead Impulse`.
+- Moteur or / argent : ratio XAU/XAG et Z-scores 20 / 60 j, bêta glissant de l'argent sur l'or, Silver Lead Indicator (impulsion 20 j au-delà du bêta, en écarts-types), signal lead / lag, drapeau `🔴 Mouvement FOMO / Spéculatif Sans Support Fundamental` quand l'or ou l'argent sort de la borne statistique sans confirmation du cuivre ni du taux réel. Bornes modifiables au crayon.
+- Sensibilité mensuelle de l'or et de l'argent aux surprises CPI / PPI, au Fed Funds et au taux réel (bêtas MCO, R², nombre de mois). Le consensus des économistes n'étant pas public, la surprise est la variation du chiffre publié ; c'est indiqué à l'écran.
+- Cartes Inflation & politique monétaire (CPI, PPI, Fed Funds, taux réel, médianes FOMC de septembre 2026) et WASDE (stocks / emplois US et monde, révisions, rendements).
+- Trou de données de l'été comblé : or et argent au comptant (EODHD) jusqu'au 09/11/2026, Brent daté et WTI Cushing (FRED / EIA) jusqu'au 03/11/2026. Les contrats à terme M1 passent dans leur colonne : les basis sont calculés du 28/09 au 27/10.
+
+**Cache-first IA** : aucun appel à l'API Anthropic au chargement, au F5 ni au changement d'onglet. Chaque volet lit ses données en base à l'ouverture (0 jeton). « Recalculer » ne resynchronise que le volet affiché et n'appelle Claude que si l'extraction stockée est périmée (`POST /api/v1/ai/ingest`, un module par appel, JSON strict par outil forcé). La création d'un dossier déclenche l'ingestion « init ». Voyant `● Collecte IA` dans l'en-tête : vert si une passerelle est active.
+
+Sources des données livrées (collecte du 10/11/2026) : FRED (CPIAUCSL, PPIFIS, FEDFUNDS, DFII10, PCOPPUSDM, DCOILBRENTEU, DCOILWTICO), EODHD (XAUUSD, XAGUSD), Tiingo, CoinGecko, USDA WASDE du 09/10/2026, Federal Reserve SEP du 16/09/2026. Restent à compléter : USD/CNH et S&P 500 après le 17/06, futurs M1 hors du 28/09–27/10, WASDE de novembre (non publié à la date de collecte).

@@ -23,33 +23,48 @@ async function liveInit(){
 }
 function liveBadge(){const on=FLUX.on;return`<span class="dot ${on?'ok':'ko'}"></span><span class="lbl">${on?'Connecté (flux live)':'Déconnecté (mode simulation)'}</span>`;}
 /* Actualisation complète : synchronisation des courtiers, puis lecture des comptes, positions, liquidités et séries macro */
-async function liveRefresh(silent){
-  if(!FLUX.on||FLUX.busy)return;FLUX.busy=true;FLUX.err='';
-  try{
-    await liveApi('/api/v1/integrations/brokers',{method:'POST',body:{action:'sync'}}).catch(()=>null);
-    const [tr,br,cm]=await Promise.all([liveApi('/api/v1/trading/accounts'),liveApi('/api/v1/integrations/brokers'),liveApi('/api/v1/macro/commodities').catch(()=>null)]);
-    const n=liveMerge(tr,br,cm);FLUX.at=new Date().toISOString();save();renderAll();
-    if(!silent||n.ovr)toast(`Flux live actualisés${n.ovr?` : ${n.ovr} valeur${n.ovr>1?'s':''} forcée${n.ovr>1?'s':''} remplacée${n.ovr>1?'s':''} par les données live`:''}`);
+/* v8 : actualisation modulaire. Un appel = un volet ; aucune synchronisation courtier ni appel IA au chargement.
+   Au chargement et au changement d'onglet : lecture des données déjà en base (0 jeton). Sur « Recalculer » : resynchronisation du seul volet affiché. */
+const LIVE_MOD={pf:'pf',jr:'pf',pc:'pf',cm:'cm',bp:'bp',an:'an',lbo:'bp'};
+const liveSubj=mod=>mod==='an'?ui.tk:mod==='cm'?(ui.cmA||'brent'):String(S.bp.name||'dossier');
+const liveSrcKey=mod=>mod+'_'+String(liveSubj(mod)).replace(/[^A-Za-z0-9]/g,'_').slice(0,40);
+async function liveRefresh(silent,mod){
+  mod=mod||LIVE_MOD[ui.tab]||null;if(!FLUX.on||!mod||FLUX.busy)return;FLUX.busy=true;FLUX.err='';FLUX.loaded=FLUX.loaded||{};
+  try{let tr=null,br=null,cm=null,n={ovr:0};
+    if(mod==='pf'){if(!silent)await liveApi('/api/v1/integrations/brokers',{method:'POST',body:{action:'sync'}}).catch(()=>null);
+      [tr,br]=await Promise.all([liveApi('/api/v1/trading/accounts'),liveApi('/api/v1/integrations/brokers')]);}
+    else if(mod==='cm')cm=await liveApi('/api/v1/macro/commodities').catch(()=>null);
+    /* Business plan, analyse : dernière extraction IA stockée en base, lue sans appel au modèle */
+    const sub=liveSubj(mod),c=await liveApi(`/api/v1/ai/ingest?module=${mod==='pf'?'an':mod}&subject=${encodeURIComponent(mod==='pf'?ui.tk:sub)}`).catch(()=>null);
+    if(c){FLUX.ai=FLUX.ai||{};FLUX.ai[mod+':'+sub]=c;}
+    if(tr||br||cm)n=liveMerge(tr,br,cm);FLUX.loaded[mod]=liveSubj(mod);FLUX.at=new Date().toISOString();save();renderAll();
+    if(!silent||n.ovr)toast(`Volet actualisé${n.ovr?` : ${n.ovr} valeur${n.ovr>1?'s':''} forcée${n.ovr>1?'s':''} remplacée${n.ovr>1?'s':''} par les données live`:''}`);
   }catch(e){FLUX.err=e.message;if(!silent)toast('Actualisation impossible : '+e.message);renderAll();}
   finally{FLUX.busy=false;}
 }
+/* Ingestion IA explicite (Recalculer ou initialisation d'un dossier) : le serveur sert le cache s'il est valide, sinon appelle Claude en JSON strict */
+async function liveIngest(mod,trigger){mod=mod||LIVE_MOD[ui.tab];if(!FLUX.on||!['bp','an','cm'].includes(mod))return null;
+  const url=(S.aiSrc||{})[liveSrcKey(mod)];if(!url){if(trigger!=='init')toast('Aucune source IA renseignée pour ce volet : lecture des données en cache uniquement');return null;}
+  try{const r=await liveApi('/api/v1/ai/ingest',{method:'POST',body:{module:mod,subject:liveSubj(mod),trigger:trigger||'recalc',url}});FLUX.ai=FLUX.ai||{};FLUX.ai[mod+':'+liveSubj(mod)]=r;
+    toast(r.cached?'Extraction IA servie depuis la base (0 jeton)':`Extraction IA stockée (${r.tokens} jetons, extraits vérifiés ${r.verified})`);renderAll();return r;}
+  catch(e){toast('Ingestion IA impossible : '+e.message);return null;}}
 /* Fusion dans l'état local. Les données live écrasent les valeurs forcées au crayon (comptées et signalées). */
 function liveMerge(tr,br,cm){let ovr=0;pfInit();
-  const a=(tr.accounts||[])[0];
+  const a=tr?(tr.accounts||[])[0]:null;
   if(a){const M=S.mt5;Object.assign(M,{linked:true,live:true,platform:a.platform,login:a.login,server:a.server||'',broker:a.broker||'',type:a.account_type||M.type,ccy:a.currency,lastSync:a.last_sync_at,mode:'live',
       info:{balance:a.balance,equity:a.equity,margin:a.margin,freeMargin:a.free_margin,leverage:a.leverage},
       open:(tr.positions||[]).filter(p=>p.account_id===a.id).map(p=>({sym:p.symbol,side:p.side==='buy'?'Achat':'Vente',vol:+p.volume,price:+p.open_price,mkt:+p.current_price,pl:+p.profit+(+p.swap||0),sl:p.stop_loss,tp:p.take_profit}))});
     const have=new Set(S.jr.trades.map(t=>t.id));
-    (tr.history||[]).forEach(h=>{const id='live-'+h.account_id+'-'+h.ticket;if(have.has(id))return;const d=String(h.closed_at||'');
+    if(tr)(tr.history||[]).forEach(h=>{const id='live-'+h.account_id+'-'+h.ticket;if(have.has(id))return;const d=String(h.closed_at||'');
       S.jr.trades.push({id,pos:h.ticket,d:d.slice(0,10),t:d.slice(11,16),sym:h.symbol,side:h.side==='buy'?'Achat':'Vente',vol:+h.volume,entry:h.open_price!=null?+h.open_price:null,exit:h.close_price!=null?+h.close_price:null,sl:h.stop_loss,tp:h.take_profit,fees:-((+h.commission||0)+(+h.swap||0)),pnl:(+h.profit)+(+h.commission||0)+(+h.swap||0),setup:'',emo:'',plan:'oui',note:'',src:a.platform});});}
-  const conns=br.connections||[];
+  if(br){const conns=br.connections||[];
   conns.forEach(c=>{let b=S.brokers.find(x=>x.n===c.label);if(!b){const k=BROKERS.find(x=>x.n===c.label)||{t:'Plateforme connectée',m:['api']};b={n:c.label,t:k.t,m:k.m,d:today(),cash:null,api:{url:'',tok:''},sync:{}};S.brokers.push(b);}
     b.live={id:c.id,broker:c.broker,status:c.status,at:c.last_sync_at,err:c.last_error};
     const cash=(br.cash||[]).filter(x=>x.connection_id===c.id);b.cash=cash.length?sum(cash.map(x=>toEUR(+x.amount,x.currency))):b.cash;});
   const old=S.hold.filter(h=>h.src==='live'),key=h=>h.br+'|'+h.sym;
   const fresh=(br.positions||[]).map(p=>{const c=conns.find(x=>x.id===p.connection_id);return{br:c?c.label:'Plateforme',src:'live',cls:p.asset_class,sym:p.symbol,name:p.name||p.symbol,qty:+p.quantity,pru:p.avg_cost!=null?+p.avg_cost:null,px:p.last_price!=null?+p.last_price:null,ccy:p.currency,sl:p.stop_loss,tp:p.take_profit,real:null,realD:null};});
   fresh.forEach(f=>{const o=old.find(x=>key(x)===key(f));if(o&&['qty','pru','px','sl','tp'].some(k=>o.ov&&o.ov[k]))ovr++;});
-  S.hold=S.hold.filter(h=>h.src!=='live').concat(fresh);
+  S.hold=S.hold.filter(h=>h.src!=='live').concat(fresh);}
   if(cm&&Array.isArray(cm.prices)){const MAP={'BRENT:SPOT':'brent','BRENT:M1':'brentF','WTI:SPOT':'wti','GOLD:SPOT':'gold','GOLD:M1':'goldF','SILVER:SPOT':'silver','SILVER:M1':'silverF','USDCNH:SPOT':'cnh','SPX:SPOT':'spx'};
     S.cm.add=S.cm.add||{};cm.prices.forEach(p=>{const k=MAP[p.instrument+':'+p.contract]||(p.contract==='SPOT'?(/^STK:/.test(p.instrument)?'stk_'+p.instrument.slice(4):String(p.instrument).toLowerCase()):null);if(!k)return;if(/^stk_/.test(k)&&typeof mktStocks==='function'&&!mktStocks().includes(k.slice(4)))mktStocks().push(k.slice(4));(S.cm.add[k]=S.cm.add[k]||{})[p.price_date]=[+p.close,p.open!=null?+p.open:null,null];});}
   return{ovr};
@@ -65,7 +80,9 @@ function renderFlux(){
       :!st.backend?'<p class="note">Backend joignable mais Supabase non configuré (SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY) : mode simulation.</p>'
       :FLUX.session?`<p class="note">Session ouverte : ${esc(FLUX.session.user.email||'')}. Dernière actualisation : ${FLUX.at?new Date(FLUX.at).toLocaleTimeString('fr-FR'):'—'}${FLUX.err?` · <span class="down">${esc(FLUX.err)}</span>`:''}</p><div class="row"><button class="btn pri sm" data-act="liverefresh">Actualiser les flux</button><button class="btn sm" data-act="logout">Se déconnecter</button></div>`
       :`<p class="note">Connectez-vous pour activer les flux live (lien de connexion envoyé par e-mail).</p><div class="row"><input class="f" id="liveEmail" type="email" placeholder="votre e-mail" style="max-width:260px"><button class="btn pri sm" data-act="login">Recevoir le lien</button></div>`}
-    <div class="fields" style="margin-top:10px">${LF('Adresse du backend (vide = même site)','liveCfg.base','t',{ph:'https://override-desk.vercel.app'})}</div><div class="row" style="margin-top:6px"><button class="btn sm" data-act="liveinit">Tester la connexion au backend</button></div>
+    <div class="fields" style="margin-top:10px">${LF('Adresse du backend (vide = même site)','liveCfg.base','t',{ph:'https://override-desk.vercel.app'})}</div>${(()=>{const m=LIVE_MOD[ui.tab];if(!['bp','an','cm'].includes(m))return'';if(!S.aiSrc)S.aiSrc={};const c=(FLUX.ai||{})[m+':'+liveSubj(m)],r=c&&c.record;
+      return`<div class="fields" style="margin-top:6px">${LF(`Source de l'ingestion IA : ${{bp:'étude de marché',an:'états financiers',cm:'séries de cours'}[m]} de « ${esc(liveSubj(m))} »`,'aiSrc.'+liveSrcKey(m),'t',{ph:'https://… (page lue par Claude sur Recalculer)'})}</div>
+      <p class="note">${r?`Dernière extraction en base : ${new Date(r.timestamp_retrieved).toLocaleString('fr-FR')} · confiance ${nf(+r.confidence_score,2)} · ${c.stale?'à revalider':'valide'} · lue à 0 jeton.`:'Aucune extraction en base pour ce sujet.'} L'API Anthropic n'est appelée que sur « Recalculer » (ou à l'initialisation d'un dossier), pour ce seul volet, et seulement si l'extraction stockée est périmée.</p>`;})()}<div class="row" style="margin-top:6px"><button class="btn sm" data-act="liveinit">Tester la connexion au backend</button></div>
     <div class="tw" style="margin-top:10px"><table class="tbl"><thead><tr><th>Connecteur</th><th>Statut</th><th>Détail</th></tr></thead><tbody>
       ${row('Base de données (Supabase)',!!(st&&st.backend&&FLUX.session),st&&st.backend?'tables trading, placements, PnL, macro, sources IA':'non configurée')}
       ${row('MetaTrader 4 / 5 (EA → /api/v1/trading/mt-sync)',!!(FLUX.on&&S.mt5.live),S.mt5.live?'dernier envoi '+(S.mt5.lastSync?new Date(S.mt5.lastSync).toLocaleString('fr-FR'):'—'):'installer l\'EA OverrideSync avec la clé du compte')}

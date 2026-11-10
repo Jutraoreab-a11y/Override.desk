@@ -18,7 +18,7 @@ function aiApplyLive(){const L=S.live||{};
   if(L.eurusd&&isFinite(L.eurusd.v)){FX_EURUSD=+L.eurusd.v;FX_DATE=fdate(L.eurusd.d||L.eurusd.at.slice(0,10));FX_SRC='BCE, taux de référence (collecte IA du '+fdate(L.eurusd.at.slice(0,10))+')';S.pf.eurusd=FX_EURUSD;}
   if(L.euribor&&isFinite(L.euribor.v)){LBO_SRC.euribor={v:+L.euribor.v,d:fdate(L.euribor.d||L.euribor.at.slice(0,10)),s:'euribor-rates.eu (collecte IA du '+fdate(L.euribor.at.slice(0,10))+')'};}}
 const AI={mcp:undefined,sample:undefined,busy:{},msg:{}};
-(async()=>{try{AI.mcp=await claude.use('mcp');}catch(e){AI.mcp=null;}try{AI.sample=await claude.use('sample');}catch(e){AI.sample=null;}if(ui.aiOpen)renderAI();})();
+(async()=>{try{AI.mcp=await claude.use('mcp');}catch(e){AI.mcp=null;}try{AI.sample=await claude.use('sample');}catch(e){AI.sample=null;}if(ui.aiOpen)renderAI();if(typeof renderAll==='function')renderAll();})();
 const normTxt=s=>String(s||'').replace(/\s+/g,' ').toLowerCase();
 async function aiPage(url){
   await AI.mcp.callTool(AI_HOST,'navigate',{url},{cache:false});
@@ -71,3 +71,8 @@ function renderAI(){
     <p class="note">La collecte navigue dans l'onglet actif du navigateur intégré. Elle est déclenchée uniquement par un clic, jamais automatiquement, et consomme votre usage Claude.</p></div>`;
 }
 aiApplyLive();
+
+/* Voyant d'état de la collecte IA (en-tête) : vert si une passerelle est active ; les appels restent explicites */
+function aiState(){const srv=!!(typeof FLUX==='object'&&FLUX.on&&FLUX.status&&FLUX.status.connectors&&FLUX.status.connectors.ai),app=!!(AI.mcp&&AI.sample);
+  return srv||app?['ok','Collecte IA active : '+[app?'navigateur intégré de l\'application Claude':'',srv?'passerelle serveur à serveur (API Anthropic)':''].filter(Boolean).join(' et ')+' · appels uniquement sur Recalculer, Collecter ou à l\'initialisation d\'un dossier']
+    :AI.mcp===undefined?['am','Connexion aux passerelles IA…']:['ko','Passerelles IA indisponibles ici : lecture seule des données en cache'];}

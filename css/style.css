@@ -570,3 +570,24 @@ details.brd>summary .num{margin-left:auto;color:var(--text)}
 .ai-box.anm .card{background:var(--panel,var(--pane))}
 .pt.ok rect,.pt.gem rect{fill:var(--up)}.pt.ko rect,.pt.end rect{fill:var(--down)}
 .pt.sel rect{stroke:var(--hi);stroke-width:2}
+/* ---- v8 : mapping multi-actifs, moteur or / argent ---- */
+.ai-box.mm{max-width:1320px;width:100%}
+.ai-box.mm .ai-h{gap:12px;flex-wrap:wrap}.ai-box.mm .mmbar{margin-right:auto}
+.mmgrid{display:grid;grid-template-columns:250px minmax(0,1fr);gap:12px;align-items:start}
+.mmside{position:sticky;top:0;background:var(--pane);border:1px solid var(--line);border-radius:6px;padding:10px;display:flex;flex-direction:column;gap:10px}
+.mmf-g{display:flex;flex-direction:column;gap:5px}.mmf-g>b{font-size:11px;color:var(--hi);font-weight:600}
+.mmf-r{display:flex;align-items:center;justify-content:space-between;gap:6px;font-size:11px;color:var(--mute)}
+.mmf-r>span:last-child{display:flex;gap:4px}.mmf-r input.f{width:62px;height:24px;padding:0 6px;font-size:11px}.mmf-r select.f{max-width:170px;height:24px;font-size:11px}
+.mmside .chips{display:flex;flex-wrap:wrap;gap:4px}.mmside .chip{height:24px;font-size:11px}
+.mmmain{min-width:0}.mmwrap{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:12px;align-items:start}
+svg.sc.mm{max-height:440px}
+.mmpanel{width:300px;max-width:100%;border:1px solid var(--line2);border-radius:6px;padding:10px;background:var(--raised);display:flex;flex-direction:column;gap:6px;font-size:12px}
+.mmpanel .kv{display:flex;justify-content:space-between;gap:8px}.mmpanel .kv span{color:var(--mute)}.mmpanel svg{max-height:120px}
+tr.mute td{opacity:.45}
+button.lnk{background:none;border:0;padding:0;color:var(--hi);font-weight:600;cursor:pointer;text-decoration:underline;text-decoration-color:var(--line2)}
+.mmsub{margin-top:12px}
+svg.gauge{width:100%;max-width:260px;height:auto}svg.gauge .gv{fill:var(--hi);font-size:20px;font-weight:600;font-family:var(--mono,var(--sans))}svg.gauge .ax{fill:var(--mute);font-size:8px;font-family:var(--sans)}
+.tbtn .dot{margin-right:2px}
+@media (max-width:980px){.mmgrid{grid-template-columns:1fr}.mmside{position:static}.mmwrap{grid-template-columns:1fr}.mmpanel{width:auto}}
+.top .ctx{flex:1 1 auto;min-width:0;overflow:hidden}.top .acts{flex:none}
+@media (max-width:1600px){#liveBtn .lbl,#mmBtn .lbl{display:none}}

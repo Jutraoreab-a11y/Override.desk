@@ -105,3 +105,28 @@ test('versions : empreinte canonique indépendante de l\'ordre des clés, signat
   process.env.SIGNING_KEY = 'court';
   assert.throws(() => sign('h', 'u', 'x'));
 });
+const AI8 = await import('../lib/ai-ingest.ts');
+test('ingestion IA v8 : déclenchement explicite, un module par appel, cache servi à 0 jeton', () => {
+  assert.throws(() => AI8.validateIngest({ module: 'all', subject: 'X', trigger: 'recalc' }), /Payload global interdit/);
+  assert.throws(() => AI8.validateIngest({ module: 'bp,an', subject: 'X', trigger: 'recalc' }), /Payload global interdit/);
+  assert.throws(() => AI8.validateIngest({ module: 'an', subject: 'MC', trigger: 'load' }), /Déclenchement explicite/);
+  assert.throws(() => AI8.validateIngest({ module: 'an', subject: 'MC', trigger: 'recalc', url: 'http://x' }), /https/);
+  const v = AI8.validateIngest({ module: 'an', subject: 'mc', trigger: 'recalc', url: 'https://example.com' });
+  assert.equal(AI8.cacheKey(v.module, v.subject), 'an:MC');
+  const now = Date.parse('2026-11-10T12:00:00Z'), rec = { timestamp_retrieved: '2026-11-08T12:00:00Z' };
+  assert.deepEqual(AI8.cacheDecision(null, 'an', 'recalc', false, now).serve, false);
+  assert.equal(AI8.cacheDecision(rec, 'an', 'recalc', false, now).serve, true);   // 48 h < 7 j : servi depuis la base
+  assert.equal(AI8.cacheDecision(rec, 'an', 'recalc', true, now).serve, false);   // force : nouvel appel
+  assert.equal(AI8.cacheDecision(rec, 'cm', 'recalc', false, now).serve, false);  // 48 h > 24 h : périmé
+  assert.equal(AI8.cacheDecision(rec, 'cm', 'init', false, now).serve, true);     // init ne rappelle jamais si une extraction existe
+});
+test('ingestion IA v8 : JSON strict par outil forcé, champs requis, extraits vérifiés', () => {
+  const r = AI8.buildRequest('bp', 'claude-haiku-5-5', 'Dossier A', 'texte', 'https://s.example');
+  assert.equal(r.tool_choice.name, 'market_study'); assert.equal(r.tools.length, 1);
+  assert.throws(() => AI8.parseResponse({ content: [{ type: 'text' }] }, 'bp'), /non conforme/);
+  assert.throws(() => AI8.parseResponse({ content: [{ type: 'tool_use', name: 'market_study', input: { tam: 1 } }] }, 'bp'), /Champs manquants/);
+  const p = AI8.parseResponse({ content: [{ type: 'tool_use', name: 'price_series', input: { instrument: 'BRENT', rows: [{ date: '2026-11-03', close: 107.03 }], confidence: 0.9, sources: [{ url: 'u', quote: 'Brent 107,03 le 03/11' }] } }], usage: { input_tokens: 1200, output_tokens: 80 } }, 'cm');
+  assert.equal(p.tokens.input + p.tokens.output, 1280);
+  assert.equal(AI8.verifyQuotes(p.payload, 'Cours : Brent 107,03 le 03/11/2026', p.confidence).confidence, 0.9);
+  assert.equal(AI8.verifyQuotes(p.payload, 'page sans la valeur', p.confidence).confidence, 0.3);
+});

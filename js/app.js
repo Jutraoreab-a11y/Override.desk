@@ -77,7 +77,7 @@ function statusHTML(){
   const n=document.querySelectorAll('.main .ovr').length;
   if(n)s+=`<span class="sti"><span class="dot am"></span>${n} valeur${n>1?'s':''} forcée${n>1?'s':''}</span>`;
   if(pending.size)s+=`<span class="sti"><span class="dot ac"></span>${pending.size} modification${pending.size>1?'s':''} en attente de recalcul</span>`;
-  s+=`<span class="r"><span>${ui.tab==='lbo'?`Euribor 3 mois ${nf(LBO_SRC.euribor.v,3)} % (${LBO_SRC.euribor.d}) · Damodaran janvier 2026`:ui.tab==='pc'?'Leviers ESMA 2018 · EUR/USD 1,1219 (20/10/2026)':ui.tab==='jr'?'Saisie manuelle et rapports MT5':ui.tab==='an'||ui.tab==='pf'?'Données publiées MarketScreener, cours du 19-20/10/2026':ui.tab==='cm'?'Classeur TRADING_Dashboard (Investing.com)':ui.tab==='sc'?'Zones : FMI WEO':'Données de démonstration à sourcer'}</span><span>Calculé à ${lastCalc.toLocaleTimeString('fr-FR')}</span><span>${ui.edit?'<b style="color:var(--amber)">Override</b>':'Lecture'}</span></span>`;
+  s+=`<span class="r"><span>${ui.tab==='lbo'?`Euribor 3 mois ${nf(LBO_SRC.euribor.v,3)} % (${LBO_SRC.euribor.d}) · Damodaran janvier 2026`:ui.tab==='pc'?'Leviers ESMA 2018 · EUR/USD 1,1219 (20/10/2026)':ui.tab==='jr'?'Saisie manuelle et rapports MT5':ui.tab==='an'||ui.tab==='pf'?'Données publiées MarketScreener, cours du 19-20/10/2026':ui.tab==='cm'?'Classeur Investing.com · EODHD · FRED / EIA · USDA WASDE · Fed (10/11/2026)':ui.tab==='sc'?'Zones : FMI WEO':'Données de démonstration à sourcer'}</span><span>Calculé à ${lastCalc.toLocaleTimeString('fr-FR')}</span><span>${ui.edit?'<b style="color:var(--amber)">Override</b>':'Lecture'}</span></span>`;
   return s;
 }
 function renderAll(){
@@ -90,7 +90,8 @@ function renderAll(){
   $('#editBtn').classList.toggle('on',ui.edit);$('#editBtn').setAttribute('aria-pressed',ui.edit);
   $('#editBtn').innerHTML=`${ic(ui.edit?'lock':'pen')}<span class="lbl">${ui.edit?'Verrouiller':'Override'}</span>`;
   $('#pdfBtn').innerHTML=`${ic('dl')}<span class="lbl">Exporter PDF</span>`;
-  $('#aiBtn').innerHTML=`${ic('ai')}<span class="lbl">Collecte IA</span>`;renderAI();
+  {const st=typeof aiState==='function'?aiState():['ko','Passerelles IA indisponibles'];$('#aiBtn').innerHTML=`<span class="dot ${st[0]}"></span><span class="lbl">Collecte IA</span>`;$('#aiBtn').title=st[1]+' · lecture des données en cache : 0 jeton';}
+  if($('#mmBtn'))$('#mmBtn').innerHTML=`${ic('sc')}<span class="lbl">Mapping</span>`;renderAI();
   $('#liveBtn').innerHTML=liveBadge();renderFlux();
   updBar();
   const t={lbo:'Dossier d\'acquisition LBO',pc:'Calculateur de position',jr:'Journal de trading',bp:'Business plan',an:"Rapport d'analyse financière",sc:"Sélecteur d'entreprises & double mapping",pf:'Suivi des actifs et placements',cm:'Commodities & flows : '+((ui.cmT||'t')==='t'?'pression et approvisionnement':'confirmation et corrélations'),ab:'Abonnement'}[ui.tab],sub=ui.tab==='bp'?S.bp.name:ui.tab==='an'?(S.an.assets[ui.tk]||{}).n:ui.tab==='cm'?CM_ASSETS[ui.cmA||'brent']:ui.tab==='sc'?('zone '+geoAgg(ui.geo).lab+', '+((S.sc.list.find(c=>c.id===ui.sel)||{}).n||'')):'';
@@ -156,7 +157,7 @@ document.addEventListener('click',e=>{
   switch(act){
     case 'tab':ui.tab=id;renderAll();save();$('#main').scrollTop=0;window.scrollTo(0,0);break;
     case 'edit':ui.edit=!ui.edit;if(!ui.edit&&pending.size){recalc();}else renderAll();break;
-    case 'recalc':recalc();if(FLUX.on)liveRefresh(false);break;
+    case 'recalc':recalc();if(FLUX.on){liveRefresh(false);liveIngest(LIVE_MOD[ui.tab],'recalc');}break;
     case 'print':{const was=ui.edit;if(pending.size)recalc('Recalculé avant export');ui.edit=false;renderAll();setTimeout(()=>{window.print();if(was){ui.edit=true;renderAll();}},120);break;}
     case 'reset':{const v=ui.tab;if(v==='jr'||v==='lbo'){toast('Le journal n\'est jamais réinitialisé : supprimez les trades un par un');break;}if(S[v]){S[v]=clone(DEF[v]);pending.clear();renderAll();save();toast('Volet réinitialisé aux valeurs de référence');}break;}
     case 'tk':ui.tk=id;ui.qmsg='';renderAll();save();break;
