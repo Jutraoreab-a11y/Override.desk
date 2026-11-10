@@ -1,4 +1,7 @@
 {
+  "rewrites": [
+    { "source": "/api/v1/ai/ingest", "destination": "/api/v1/ai/market-parser?op=ingest" }
+  ],
   "crons": [
     { "path": "/api/v1/macro/commodities?action=ingest", "schedule": "30 21 * * 1-5" },
     { "path": "/api/v1/integrations/brokers?action=cron", "schedule": "0 6 * * *" }

@@ -1,19 +1,20 @@
-/* Ingestion IA modulaire et cache-first (v8)
+/* Ingestion IA modulaire et cache-first (v8), servie par la fonction api/v1/ai/market-parser
+   (limite de 12 fonctions du plan Vercel Hobby) ; l'URL publique /api/v1/ai/ingest est conservée par réécriture (vercel.json).
    GET  /api/v1/ai/ingest?module=bp|an|cm&subject=…   lecture de la dernière extraction en base : 0 jeton, jamais d'appel à l'API Anthropic
    POST /api/v1/ai/ingest {module, subject, trigger: 'recalc'|'init', url?, force?}
         sert le cache s'il est valide ; sinon lit la source, appelle Claude avec un schéma JSON strict (outil forcé),
         vérifie les extraits cités et stocke le résultat (horodatage, indice de confiance, jetons consommés). */
-import { handler, body, send, q, HttpError, type Req, type Res } from '../../../lib/http.ts';
-import { db, check, requireUser } from '../../../lib/supabase.ts';
-import { htmlToText } from './market-parser.ts';
-import { validateIngest, cacheKey, cacheDecision, buildRequest, parseResponse, verifyQuotes, MODULES, type Module } from '../../../lib/ai-ingest.ts';
+import { body, send, q, HttpError, type Req, type Res } from './http.ts';
+import { db, check, requireUser } from './supabase.ts';
+import { htmlToText } from './html.ts';
+import { validateIngest, cacheKey, cacheDecision, buildRequest, parseResponse, verifyQuotes, MODULES, type Module } from './ai-ingest.ts';
 
 const fail = (e: unknown): never => { const x = e as { code?: number; message?: string }; throw new HttpError(x.code || 500, x.message || 'Erreur'); };
 async function latest(uid: string, key: string) {
   const r = await db().from('ai_sources').select('*').eq('user_id', uid).eq('cache_key', key).order('timestamp_retrieved', { ascending: false }).limit(1);
   return (check(r) as Array<Record<string, unknown>>)[0] ?? null;
 }
-export default handler(async (req: Req, res: Res) => {
+export async function ingestRoute(req: Req, res: Res): Promise<void> {
   const uid = await requireUser(req);
   if (req.method === 'GET') {
     const m = q(req, 'module') as Module, subject = q(req, 'subject');
@@ -41,4 +42,4 @@ export default handler(async (req: Req, res: Res) => {
     model, trigger: v.trigger, input_tokens: p.tokens.input, output_tokens: p.tokens.output };
   check(await db().from('ai_sources').insert(row));
   send(res, 200, { ok: true, cached: false, record: row, verified: `${ver.verified}/${ver.total}`, tokens: p.tokens.input + p.tokens.output });
-});
+}

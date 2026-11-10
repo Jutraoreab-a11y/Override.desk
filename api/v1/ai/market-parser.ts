@@ -4,8 +4,11 @@
 import { handler, body, send, HttpError, num, type Req, type Res } from '../../../lib/http.ts';
 import { db, check, requireUser } from '../../../lib/supabase.ts';
 import type { AiSourceRecord } from '../../../types/models.ts';
+import { q } from '../../../lib/http.ts';
+import { ingestRoute } from '../../../lib/ai-ingest-route.ts';
 
-export const htmlToText = (h: string) => h.replace(/<script[\s\S]*?<\/script>|<style[\s\S]*?<\/style>/gi, ' ').replace(/<[^>]+>/g, ' ').replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&').replace(/\s+/g, ' ').trim();
+export { htmlToText } from '../../../lib/html.ts';
+import { htmlToText } from '../../../lib/html.ts';
 const norm = (s: string) => s.replace(/\s+/g, ' ').toLowerCase();
 /** Score de confiance : confiance déclarée par le modèle, plafonnée selon la vérification de l'extrait et de la valeur dans la page. */
 export function confidence(modelConf: number, quoteFound: boolean, valueInQuote: boolean): number {
@@ -13,6 +16,8 @@ export function confidence(modelConf: number, quoteFound: boolean, valueInQuote:
   return +(quoteFound ? (valueInQuote ? c : Math.min(c, 0.6)) : Math.min(c, 0.2)).toFixed(2);
 }
 export default handler(async (req: Req, res: Res) => {
+  /* /api/v1/ai/ingest est réécrit vers cette fonction avec op=ingest */
+  if (q(req, 'op') === 'ingest') return ingestRoute(req, res);
   const uid = await requireUser(req);
   const b = body<{ url: string; metric: string; question: string }>(req);
   if (!/^https:\/\//.test(b.url ?? '') || !b.metric || !b.question) throw new HttpError(400, 'url (https), metric et question requis');

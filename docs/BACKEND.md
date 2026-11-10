@@ -90,7 +90,11 @@ Format attendu d'une passerelle personnalisée :
 
 Le crayon ✏️ force une valeur partout dans l'interface. Quand le flux live renvoie une valeur pour une ligne forcée, la valeur live la remplace et un message l'indique (« 1 valeur forcée remplacée par les données live »). Pour garder une valeur figée, repasser la ligne en saisie manuelle.
 
-## 7. Tests
+## 7. Limite Vercel Hobby
+
+Le plan Hobby accepte 12 fonctions serveur par déploiement. Le projet en compte 12 : l'ingestion IA (`/api/v1/ai/ingest`) est servie par la fonction `api/v1/ai/market-parser` grâce à une réécriture déclarée dans `vercel.json` (paramètre `op=ingest`), son code est dans `lib/ai-ingest-route.ts`. Tout nouveau point d'accès doit être regroupé de la même façon ou passer au plan Pro.
+
+## 8. Tests
 
 - `npm test` : 17 tests unitaires (ingestion IA v8 : déclenchement explicite, payload global refusé, décisions de cache, JSON strict et vérification des extraits ; chiffrement, signatures Binance et Kraken comparées aux exemples officiels de leur documentation, signatures OKX et Coinbase, adaptateurs Binance, Kraken et IBKR, séries macro, validation du webhook MetaTrader, correspondance SocialTraderTools, score de confiance IA, risque RR, paires de devises déduites de la BCE).
 - Test d'intégration des espaces partagés (21 contrôles) : invitation, rôles, quatre yeux, signature et vérification, version validée figée même pour la clé de service, écriture directe refusée au navigateur, journal en ajout seul, valorisations isolées par utilisateur, dernier administrateur protégé.
