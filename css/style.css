@@ -563,3 +563,10 @@ details.brd>summary .num{margin-left:auto;color:var(--text)}
 .ai-h .seg{margin:0 auto 0 16px}
 .disc{margin:14px 6px 18px;font-size:11px;line-height:1.5;color:var(--mute2,var(--mute));max-width:980px}
 @media print{.disc{display:block!important;margin-top:18px;font-size:9pt}}
+
+/* ===== Double mapping de l'analyse financière ===== */
+.anm-b{display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
+.ai-box.anm{width:min(1280px,100%)}
+.ai-box.anm .card{background:var(--panel,var(--pane))}
+.pt.ok rect,.pt.gem rect{fill:var(--up)}.pt.ko rect,.pt.end rect{fill:var(--down)}
+.pt.sel rect{stroke:var(--hi);stroke-width:2}

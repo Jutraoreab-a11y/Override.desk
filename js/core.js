@@ -69,15 +69,16 @@ const srcTag=(v,lab)=>(v||'').trim()?`<span class="tag ok">Sourcé</span>`:`<spa
 /* ============ Graphiques SVG ============ */
 function scatter(pts,o){
   const W=360,H=272,L=34,R=10,T=10,B=34,iw=W-L-R,ih=H-T-B;
-  const cl=v=>Math.max(0,Math.min(100,v));
-  const X=v=>L+cl(v)/100*iw,Y=v=>T+ih-cl(v)/100*ih;
+  const cl=v=>Math.max(0,Math.min(100,v)),dx=(o.dom&&o.dom.x)||[0,100],dy=(o.dom&&o.dom.y)||[0,100];
+  const nx=v=>(v-dx[0])/(dx[1]-dx[0])*100,ny=v=>(v-dy[0])/(dy[1]-dy[0])*100;
+  const X=v=>L+cl(nx(v))/100*iw,Y=v=>T+ih-cl(ny(v))/100*ih;
   let s=`<svg class="sc" viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(o.title)}">`;
-  if(o.hi!==false)s+=`<rect x="${X(50)}" y="${T}" width="${iw/2}" height="${ih/2}" class="qhi"/>`;
+  if(o.hi!==false)s+=`<rect x="${X(50)}" y="${T}" width="${L+iw-X(50)}" height="${Y(50)-T}" class="qhi"/>`;
   s+=`<rect x="${L}" y="${T}" width="${iw}" height="${ih}" class="frame"/>`;
   s+=`<line x1="${X(50)}" y1="${T}" x2="${X(50)}" y2="${T+ih}" class="mid"/><line x1="${L}" y1="${Y(50)}" x2="${L+iw}" y2="${Y(50)}" class="mid"/>`;
   const q=o.q;
   s+=`<text x="${L+6}" y="${T+14}" class="ql">${q[0]}</text><text x="${L+iw-6}" y="${T+14}" class="ql" text-anchor="end">${q[1]}</text><text x="${L+6}" y="${T+ih-6}" class="ql">${q[2]}</text><text x="${L+iw-6}" y="${T+ih-6}" class="ql" text-anchor="end">${q[3]}</text>`;
-  [0,50,100].forEach(v=>{s+=`<text x="${X(v)}" y="${T+ih+13}" class="ax" text-anchor="middle">${v}</text><text x="${L-5}" y="${Y(v)+3}" class="ax" text-anchor="end">${v}</text>`;});
+  [...new Set([dx[0],50,dx[1]])].forEach(v=>{s+=`<text x="${X(v)}" y="${T+ih+13}" class="ax" text-anchor="middle">${v}</text>`;});[...new Set([dy[0],50,dy[1]])].forEach(v=>{s+=`<text x="${L-5}" y="${Y(v)+3}" class="ax" text-anchor="end">${v}</text>`;});
   s+=`<text x="${L+iw/2}" y="${H-4}" class="at" text-anchor="middle">${o.xl}</text><text transform="translate(10 ${T+ih/2}) rotate(-90)" class="at" text-anchor="middle">${o.yl}</text>`;
   const placed=pts.map(p=>({x0:X(p.x)-6,w:12,ly:Y(p.y)+3}));
   pts.map(p=>({p,cx:X(p.x),cy:Y(p.y)})).sort((a,b)=>a.cy-b.cy).forEach(({p,cx,cy})=>{

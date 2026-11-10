@@ -147,3 +147,9 @@ Version 7.2 :
 - **Portefeuille** : rétro-calcul à composition constante (rendement, volatilité, Sharpe, Sortino, drawdown, VaR et CVaR historiques et paramétriques, bêta, corrélation, tracking error contre l'indice choisi) ; TWR et MWR réels à partir des valorisations quotidiennes et des apports / retraits.
 - **Analyse financière** : comparables par sous-secteur, comparables saisis avec source, repli sur le multiple d'industrie Damodaran (janvier 2026) quand moins de deux pairs sont disponibles.
 - **Équipe** : rôles (administrateur, analyste, valideur, lecteur), circuit brouillon → soumise → validée ou rejetée, règle des quatre yeux, empreinte SHA-256 et signature serveur, journal d'audit partagé en ajout seul. En local, les rôles sont déclaratifs ; ils sont garantis par le serveur en flux live.
+Version 7.3 :
+- **Double mapping dans l'analyse financière** : le bouton « Mapping sectoriel & stock », dans l'en-tête de chaque titre, ouvre deux mappings.
+  - **Mapping 1 (le marché)** : uniquement des secteurs, aucune société, notés en attractivité et en liquidité.
+  - **Mapping 2 (le secteur cible)** : les sociétés de ce secteur en qualité et en liquidité, avec les anomalies de valorisation.
+  - **Validation de l'entrée** sur le titre par cinq contrôles : secteur prioritaire, titre parmi les cibles, valorisation, plafond d'exposition sectorielle du portefeuille (dilution du risque), tamis.
+  - **Notes sectorielles** calculées à partir des comptes publiés et des données Damodaran, modifiables au crayon.

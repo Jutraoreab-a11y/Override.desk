@@ -81,6 +81,7 @@ function renderAN(){
         <div><span>Prix d'achat cible</span><b>${nf(R.buy,2)}</b></div>
         <div><span>Score qualité</span><b>${R.score}/100</b></div>
       </div>
+      <button class="btn sm noprint anm-b" data-act="anmopen" title="Double mapping : secteurs, puis sociétés du secteur"><svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><rect x="1.5" y="1.5" width="13" height="13" rx="1.5" fill="none" stroke="currentColor"/><path d="M8 1.5v13M1.5 8h13" stroke="currentColor"/><circle cx="11.3" cy="4.7" r="1.4" fill="currentColor"/></svg>Mapping sectoriel & stock</button>
       <div class="badge ${R.positive?'ok':'ko'}">${R.positive?'POSITIVE : PRENDRE POSITION':'NÉGATIVE : S\'ABSTENIR'}</div>
     </div>
     ${true?`<div class="fields" style="margin-top:12px;max-width:760px">${F('Nom',P('n'),'t')}${F('Groupe de comparables',P('sec'),'t')}${F('Date du cours',P('pxDate'),'t')}${F('Devise de cotation',P('cur'),'t')}${F('Change comptes → cotation',P('fx'))}</div>`:''}</div>
