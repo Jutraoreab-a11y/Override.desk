@@ -44,7 +44,7 @@ function wealthLines(){pfInit();const L=[];
   S.brokers.forEach(b=>{if(isFinite(+b.cash)&&b.cash!==null&&b.cash!=='')L.push({pf:'Placements',src:'brcash',br:b.n,cls:'Cash',sym:'Liquidités',name:b.n,val:+b.cash,cost:+b.cash,lat:0,cash:+b.cash});});
   return L;}
 function grp(L,k,f){const o={};L.forEach(l=>{const g=f?f(l):l[k];o[g]=o[g]||{val:0,cost:0,lat:0,n:0,cash:0};const x=o[g];x.val+=l.val||0;x.cost+=l.cost||0;x.lat+=l.lat||0;x.n++;x.cash+=l.cash||0;});return Object.entries(o).sort((a,b)=>b[1].val-a[1].val);}
-function pfSubBar(){return`<div class="seg" role="tablist" aria-label="Sous-onglets">${[['tr','Comptes de trading'],['pl','Placements & courtiers'],['dash','Dashboard consolidé']].map(([k,l])=>`<button role="tab" data-act="pft" data-id="${k}" aria-selected="${ui.pfT===k}">${l}</button>`).join('')}</div>`;}
+function pfSubBar(){return`<div class="seg" role="tablist" aria-label="Sous-onglets">${[['tr','Comptes trading directs'],['pl','Placements & courtiers'],['dash','Dashboard consolidé']].map(([k,l])=>`<button role="tab" data-act="pft" data-id="${k}" aria-selected="${ui.pfT===k}">${l}</button>`).join('')}</div>`;}
 function renderPF(){pfInit();
   if(ui.pfT==='pl'){renderPFStocks();const g=$('#p-pf .grid');if(g)g.insertAdjacentHTML('afterbegin',pfBrokers());return;}
   if(ui.pfT==='tr'){const st=jrStats(S.jr.trades.filter(t=>t.src!=='manuel')),M=S.mt5,aut=M.mode==='metaapi'&&M.token&&M.acctId;

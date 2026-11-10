@@ -165,7 +165,7 @@ function renderCM(){
     <div class="card s4"><h2>Sources</h2><div class="tw"><table class="tbl"><tbody>
       <tr><td>Cours quotidiens (spot, futurs M1, USD/CNH, S&P 500)</td><td>Exports Investing.com consolidés dans votre classeur TRADING_Dashboard, du ${fd(s.d[0])} au ${fd(lastD)}</td></tr>
       <tr><td>Règles d'état et de signal</td><td>Formules des onglets Tendance, Confirmation Brent et Confirmation Or-Argent du même classeur</td></tr>
-      <tr><td>DXY</td><td>Non fourni dans le classeur : colonne à alimenter</td></tr>
+      <tr><td>Comptant or / argent, Brent daté, WTI Cushing</td><td>EODHD et FRED / EIA, collecte du 10/11/2026</td></tr>${typeof MKT_SRC==='object'?`<tr><td>Instruments du sélecteur universel</td><td>${Object.entries(MKT_SRC).map(([k,v])=>esc((mktAll()[k]||{l:k}).l+' : '+v)).join(' · ')}</td></tr>`:''}<tr><td>DXY</td><td>Non fourni dans le classeur : colonne à alimenter</td></tr>
       ${Object.keys(S.cm.add||{}).filter(k=>Object.keys(S.cm.add[k]).length).map(k=>{const mk=Object.keys(MA).find(x=>MA[x].k===k||MA[x].loc===k),m=(S.mktMeta||{})[mk];return`<tr><td>${esc(CM_INST[k]||(MA[k]||{l:k}).l)}</td><td>${Object.keys(S.cm.add[k]).length} séances ajoutées${m?' · '+esc(m.src)+', '+fdate(m.at.slice(0,10)):' (import CSV ou flux live)'}</td></tr>`;}).join('')}
     </tbody></table></div></div>
   </div>`;
