@@ -84,7 +84,7 @@ Object.assign(DEF.bp.comp[1],{impl:'National',prix:'Abonnement, remises agressiv
 Object.assign(DEF.bp.comp[2],{impl:'National et européen',prix:'Module inclus dans les projets ERP',polcom:'Vente via la DSI',distrib:'Réseau d\'intégrateurs',cible:'DSI des ETI et groupes'});
 
 /* ============ v4.1 : dossier LBO ============ */
-const LBO_SRC={euribor:{v:2.676,d:'30/10/2026',s:'euribor-rates.eu'},tax:{v:25,s:'Code général des impôts, taux normal de l\'impôt sur les sociétés'}};
+const LBO_SRC={euribor:{v:2.754,d:'11/11/2026',s:'euribor-rates.eu (fixing EMMI du 11/11/2026)'},tax:{v:25,s:'Code général des impôts, taux normal de l\'impôt sur les sociétés'}};
 DEF.lbo={list:[],cur:null};
 
 /* v5 : seuils de mise en conditionnelle des matières premières (classeur TRADING_Dashboard) */

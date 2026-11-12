@@ -219,3 +219,10 @@ Sources des données livrées (collecte du 10/11/2026) : FRED (CPIAUCSL, PPIFIS,
 - **Voyant « Collecte IA »** : vert prêt, orange pulsé pendant une ingestion (avec le volet et le moteur), rouge sans moteur. Le panneau Collecte IA affiche l'ordre des moteurs.
 - Migration `20261112200000_ai_byok_engine.sql` ; la vue `ai_usage_monthly` sépare les jetons `byok` et `infra`.
 
+## Version 8.8 : volet Commodities alimenté jusqu'au 12/11/2026, aucune case vide
+- Appel du 12/11/2026 à 19:33 (heure de Paris), fichier `js/cm-refresh.js` : Brent daté et WTI Cushing (EIA / FRED, publiés jusqu'au 03/11), contrats M1 ICE, NYMEX et COMEX (Yahoo Finance, recoupés avec Investing.com), or et argent comptant (EODHD, séance du jour Twelve Data), USD/CNH et S&P 500 (EODHD), Dollar Index (ICE, Yahoo Finance) depuis janvier 2025.
+- Au-delà de la dernière publication EIA, le Brent et le WTI affichent le contrat M1 en cours provisoire (`p`) et le basis devient l'écart M1 − M2 (`M1−M2`) ; les ouvertures pétrole sont celles du contrat M1 (`f`). Les jours fériés (New York, Londres) sont écrits en clair au lieu d'un tiret.
+- Colonne DXY remplie, matrice cross-asset sans case vide, WASDE de novembre (10/11/2026, rendements des quatre cultures), EUR/USD BCE du 12/11 (1,1081), Euribor 3 mois du 11/11 (2,754 %), CPI d'octobre signalé.
+- Instruments du sélecteur à jour au 12/11 (devises, indices, gaz, actions AAPL, TTE, MC, INTC) ; cuivre en moyenne mensuelle FMI (octobre non publié).
+- Test de bout en bout : aucune case vide dans les six vues du volet.
+

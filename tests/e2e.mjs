@@ -14,6 +14,14 @@ await p.goto('file://' + path.join(root, 'index.html')); await p.waitForTimeout(
 const step = async (name, fn) => { try { await fn(); console.log('ok   ' + name); } catch (e) { errs.push(name + ' : ' + e.message); console.log('FAIL ' + name); } };
 for (const t of ['bp', 'an', 'sc', 'lbo', 'pf', 'cm', 'pc', 'jr']) await step('volet ' + t, () => p.evaluate(t => { ui.tab = t; renderAll(); }, t));
 for (const a of ['brent', 'gold', 'silver']) await step('commodities ' + a, () => p.evaluate(a => { ui.tab = 'cm'; ui.cmA = a; ui.cmOv = { cpi: true, ff: true, wasde: true, gsb: true }; renderAll(); }, a));
+await step('commodities : aucune case vide, séries jusqu\'au 12/11/2026', () => p.evaluate(() => {
+  if (cmSeries().d.slice(-1)[0] !== '2026-11-12') throw new Error('dernière séance ' + cmSeries().d.slice(-1)[0]);
+  const bad = [];
+  for (const T of ['t', 'c']) for (const a of ['brent', 'gold', 'silver']) { ui.tab = 'cm'; ui.cmA = a; ui.cmT = T; renderAll();
+    document.querySelectorAll('#p-cm table.tbl td, #p-cm .card b, #p-cm .card span').forEach(e => { if (e.children.length) return; const t = e.textContent.trim();
+      if ((e.tagName === 'TD' && t === '') || /^(—|NO DATA|NaN|undefined|n\.d\.)$/.test(t) || /pas de donnée/.test(t)) bad.push(T + '/' + a + ' : ' + (e.closest('tr') || e).textContent.replace(/\s+/g, ' ').slice(0, 60)); }); }
+  if (bad.length) throw new Error(bad.length + ' case(s) vide(s) : ' + bad.slice(0, 3).join(' | '));
+}));
 await step('mapping multi-actifs', async () => { await p.evaluate(() => { ui.tab = 'an'; renderAll(); }); await p.click('[data-act=anmopen]');
   for (const c of ['stk', 'etf', 'cry', 'cmd']) await p.evaluate(c => { S.mm.cls = c; renderAnMap(); if (!document.querySelectorAll('#anmap svg.mm .pt').length) throw new Error('quadrant vide ' + c); }, c); });
 await step('clic ETF vers analyse', async () => { await p.evaluate(() => { S.mm.cls = 'etf'; renderAnMap(); }); await p.click('#anmap svg.mm .pt[data-id="SPY"]');
