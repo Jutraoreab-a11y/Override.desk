@@ -169,3 +169,14 @@ test('recherche : liens DuckDuckGo, jetons serveur réservés au compte proprié
   assert.equal(AI.validateIngest({ module: 'lbo', subject: 'Dossier A', trigger: 'recalc' }).module, 'lbo');
   assert.equal(AI.buildRequest('lbo', 'm', 'x', 't', null).tool_choice.name, 'deal_inputs');
 });
+test('moteur hybride : clé personnelle (BYOK) d\'abord, clé infrastructure réservée au propriétaire, pages des matières premières', async () => {
+  const AI = await import('../lib/ai-ingest.ts'), mine = 'sk-ant-api03-' + 'a'.repeat(40);
+  assert.equal(AI.validAnthropicKey(mine), true); assert.equal(AI.validAnthropicKey('sk-test'), false); assert.equal(AI.validAnthropicKey(42), false);
+  assert.deepEqual(AI.pickEngine(mine, 'sk-infra', 'autre@exemple.com', 'moi@exemple.com'), { key: mine, engine: 'byok' });
+  assert.equal(AI.pickEngine(null, 'sk-infra', 'moi@exemple.com', 'moi@exemple.com').engine, 'infra');
+  assert.throws(() => AI.pickEngine(null, 'sk-infra', 'autre@exemple.com', 'moi@exemple.com'), (e: { code?: number }) => e.code === 403);
+  assert.throws(() => AI.pickEngine(null, undefined, 'moi@exemple.com', ''), (e: { code?: number }) => e.code === 503);
+  assert.deepEqual(AI.cmPages('GOLD'), ['https://www.investing.com/commodities/gold-historical-data']); assert.deepEqual(AI.cmPages('inconnu'), []);
+  const v = AI.validateIngest({ module: 'cm', subject: 'brent', trigger: 'recalc', force: true }); assert.equal(v.force, true);
+  assert.throws(() => AI.validateIngest({ module: 'all', subject: 'x', trigger: 'recalc' }));
+});

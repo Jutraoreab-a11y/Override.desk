@@ -5,7 +5,7 @@ import { handler, body, send, HttpError, num, type Req, type Res } from '../../.
 import { db, check, requireUser } from '../../../lib/supabase.js';
 import type { AiSourceRecord } from '../../../types/models.js';
 import { q } from '../../../lib/http.js';
-import { ingestRoute } from '../../../lib/ai-ingest-route.js';
+import { ingestRoute, keyRoute } from '../../../lib/ai-ingest-route.js';
 import { fundamentalsRoute } from '../../../lib/fundamentals-route.js';
 
 export { htmlToText } from '../../../lib/html.js';
@@ -19,6 +19,7 @@ export function confidence(modelConf: number, quoteFound: boolean, valueInQuote:
 export default handler(async (req: Req, res: Res) => {
   /* /api/v1/ai/ingest est réécrit vers cette fonction avec op=ingest */
   if (q(req, 'op') === 'ingest') return ingestRoute(req, res);
+  if (q(req, 'op') === 'key') return keyRoute(req, res);
   if (q(req, 'op') === 'fundamentals') return fundamentalsRoute(req, res);
   const uid = await requireUser(req);
   const b = body<{ url: string; metric: string; question: string }>(req);

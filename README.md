@@ -211,3 +211,11 @@ Sources des données livrées (collecte du 10/11/2026) : FRED (CPIAUCSL, PPIFIS,
 - Chaque chiffre retenu doit être cité par un extrait retrouvé dans la page lue ; sinon la recherche est rejetée et rien n'est modifié. Les valeurs sourcées apparaissent « Sourcé » (et non « Forcé ») dans le tableau des hypothèses.
 - Aucun appel au chargement : uniquement au clic. Migration `20261112180000_ai_lbo_module.sql`.
 
+## Version 8.7 : ingestion hybride Claude client et repli backend
+- **Recalculer** et l'ouverture d'un nouveau dossier déclenchent la recherche du **seul volet affiché** (Business plan, Dossier LBO, Analyse financière, Commodities) ; aucun rafraîchissement global.
+- **Priorité 1** : Claude dans l'application Claude (0 jeton pour l'infrastructure). Délai maximal de 120 s, puis **repli automatique**.
+- **Priorité 2** : backend. À l'initialisation, cache Supabase d'abord (0 jeton) ; sur Recalculer, nouvel appel forcé, avec **votre clé Anthropic** (BYOK, chiffrée côté serveur, saisie dans Collecte IA) ou, à défaut, la clé de l'infrastructure réservée au propriétaire. En cas d'échec, la dernière extraction stockée est servie et signalée.
+- **Module 5** : cours comptant de l'actif affiché (Brent, WTI, or, argent) lu sur TradingView et Investing.com, recoupé à 1,5 % ; un cours à plus de 35 % du dernier connu est écarté.
+- **Voyant « Collecte IA »** : vert prêt, orange pulsé pendant une ingestion (avec le volet et le moteur), rouge sans moteur. Le panneau Collecte IA affiche l'ordre des moteurs.
+- Migration `20261112200000_ai_byok_engine.sql` ; la vue `ai_usage_monthly` sépare les jetons `byok` et `infra`.
+

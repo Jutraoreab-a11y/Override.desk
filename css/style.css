@@ -611,3 +611,6 @@ svg.gauge{width:100%;max-width:260px;height:auto}svg.gauge .gv{fill:var(--hi);fo
 @media (max-width:1600px){#uxSearch .lbl,#uxMode .lbl,#uxBell .lbl{display:none}}
 .rsbar{display:flex;align-items:center;gap:10px;padding:10px 14px;margin:0 0 12px;border:1px solid var(--line);border-radius:6px;background:var(--pane)}.rsbar>div{display:flex;flex-direction:column;gap:2px;flex:1;min-width:0}.rsbar b{color:var(--hi);font-size:13px}.rsbar .meta{font-size:11px}
 @media (max-width:700px){.rsbar{flex-wrap:wrap}}
+@keyframes rspulse{0%,100%{opacity:1;box-shadow:0 0 0 0 rgba(245,166,35,.6)}50%{opacity:.55;box-shadow:0 0 0 4px rgba(245,166,35,0)}}.dot.pulse{animation:rspulse 1.2s ease-in-out infinite}
+@media (prefers-reduced-motion:reduce){.dot.pulse{animation:none}}
+.rskey{margin:0 0 12px;padding:10px 12px;border:1px solid var(--line);border-radius:6px}.rskey ol{list-style:none;margin:6px 0;padding:0;display:grid;gap:4px}.rskey li{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap}.rskey li b{font-weight:500}.rskey-f{display:flex;gap:8px;margin:8px 0 4px;flex-wrap:wrap}.rskey-f input{flex:1;min-width:200px}

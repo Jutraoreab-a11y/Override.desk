@@ -98,3 +98,16 @@ export function aiAllowed(email: string, list: string | undefined): boolean {
   const L = String(list || '').split(',').map(x => x.trim().toLowerCase()).filter(Boolean);
   return !L.length || L.includes(String(email || '').toLowerCase());
 }
+/** Clé personnelle Anthropic : format attendu « sk-ant-… », 40 caractères au moins, sans espace. */
+export const validAnthropicKey = (k: unknown): boolean => typeof k === 'string' && /^sk-ant-[A-Za-z0-9_\-]{30,}$/.test(k.trim());
+/** Choix du moteur serveur : la clé personnelle de l'utilisateur d'abord (0 jeton pour l'infrastructure), sinon la clé de l'infrastructure,
+    réservée aux comptes de AI_OWNER_EMAILS. Lève une erreur lisible (code HTTP, message) si aucun moteur n'est permis. */
+export function pickEngine(userKey: string | null, infraKey: string | undefined, email: string, owners: string | undefined): { key: string; engine: 'byok' | 'infra' } {
+  if (userKey && validAnthropicKey(userKey)) return { key: userKey.trim(), engine: 'byok' };
+  if (!infraKey) throw Object.assign(new Error('Aucune clé Anthropic : enregistrez la vôtre (Collecte IA) ou utilisez l\'application Claude'), { code: 503 });
+  if (!aiAllowed(email, owners)) throw Object.assign(new Error("Recherche IA serveur réservée au compte propriétaire : enregistrez votre propre clé Anthropic ou utilisez l'application Claude"), { code: 403 });
+  return { key: infraKey, engine: 'infra' };
+}
+/** Pages lues par défaut pour une matière première (module 5) quand le front n'en fournit pas. */
+export const CM_PAGES: Record<string, string> = { brent: 'brent-oil', wti: 'crude-oil', gold: 'gold', silver: 'silver', natgas: 'natural-gas', copper: 'copper' };
+export const cmPages = (subject: string): string[] => { const k = CM_PAGES[subject.toLowerCase()]; return k ? [`https://www.investing.com/commodities/${k}-historical-data`] : []; };

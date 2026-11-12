@@ -157,7 +157,7 @@ document.addEventListener('click',e=>{
   switch(act){
     case 'tab':ui.tab=id;renderAll();save();$('#main').scrollTop=0;window.scrollTo(0,0);break;
     case 'edit':ui.edit=!ui.edit;if(!ui.edit&&pending.size){recalc();}else renderAll();break;
-    case 'recalc':recalc();if(FLUX.on){liveRefresh(false);liveIngest(LIVE_MOD[ui.tab],'recalc');}break;
+    case 'recalc':recalc();if(FLUX.on)liveRefresh(false);liveIngest(null,'recalc');break;
     case 'print':{const was=ui.edit;if(pending.size)recalc('Recalculé avant export');ui.edit=false;renderAll();setTimeout(()=>{window.print();if(was){ui.edit=true;renderAll();}},120);break;}
     case 'reset':{const v=ui.tab;if(v==='jr'||v==='lbo'){toast('Le journal n\'est jamais réinitialisé : supprimez les trades un par un');break;}if(S[v]){S[v]=clone(DEF[v]);pending.clear();renderAll();save();toast('Volet réinitialisé aux valeurs de référence');}break;}
     case 'tk':ui.tk=id;ui.qmsg='';renderAll();save();break;

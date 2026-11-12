@@ -65,11 +65,31 @@ await step('dossier LBO : Claude indisponible, repli sur l\'API (simulée)', () 
   if (!S.lbo.list.length) lboNew(Object.keys(S.an.assets).map(k => 'an:' + k)[0]); ui.tab = 'lbo'; renderAll();
   if (!document.querySelector('#p-lbo .rsbar [data-act=rslbo]')) throw new Error('bouton LBO absent');
   const d = lboCur(); AI.mcp = null; AI.sample = null; FLUX.on = true; let sent = null;
-  liveApi = async (path, o) => { sent = { path, body: o.body }; return { record: { payload: { euribor_3m_pct: 2.051, euribor_date: '2026-11-11', sector_label: 'Luxe', sector_ev_ebitda: 13.5, sector_source: 'Étude test', sources: [{ url: 'https://x', quote: 'q' }] } }, cached: false, tokens: 900 }; };
+  liveApi = async (path, o = {}) => { if (path === '/api/v1/ai/ingest' && o.method === 'POST') sent = { path, body: o.body }; return { record: { payload: { euribor_3m_pct: 2.051, euribor_date: '2026-11-11', sector_label: 'Luxe', sector_ev_ebitda: 13.5, sector_source: 'Étude test', sources: [{ url: 'https://x', quote: 'q' }] } }, cached: false, tokens: 900 }; };
   await rsLbo(); FLUX.on = false;
   if (!sent || sent.path !== '/api/v1/ai/ingest' || sent.body.module !== 'lbo' || sent.body.trigger !== 'recalc') throw new Error('appel API ' + JSON.stringify(sent));
-  if (d.p.euribor !== 2.051 || d.p.entryMult !== 13.5 || d.rsAI.how !== 'api') throw new Error('LBO non alimenté ' + d.p.euribor + ' ' + d.p.entryMult);
+  if (d.p.euribor !== 2.051 || d.p.entryMult !== 13.5 || !['infra', 'byok'].includes(d.rsAI.how)) throw new Error('LBO non alimenté ' + d.p.euribor + ' ' + d.p.entryMult);
   const e0 = d.p.euribor; await rsLbo(); if (d.p.euribor !== e0) throw new Error('sans moteur, rien ne doit changer');
+}));
+await step('Recalculer : volet affiché seulement, Claude puis repli sur votre clé après délai dépassé', () => p.evaluate(async () => {
+  ui.tab = 'cm'; ui.cmA = 'gold'; renderAll(); if (!document.querySelector('#p-cm .rsbar [data-act=rscm]')) throw new Error('bouton commodities absent');
+  const last = rsCmLast('gold').v, P = { 'https://www.tradingview.com/symbols/TVC-GOLD/': ('Gold spot price PRICE=' + (last * 1.01).toFixed(2) + ' USD per troy ounce. ').repeat(30),
+    'https://www.investing.com/commodities/gold': ('Gold Futures PRICE=' + (last * 1.012).toFixed(2) + ' USD. ').repeat(30) };
+  AI.mcp = {}; aiPage = async u => P[u] || 'page not found'; FLUX.on = false;
+  AI.sample = { json: async q => { const m = q.match(/PRICE=([\d.]+)/); return { price: m ? +m[1] : null, currency: 'USD', date: '2026-11-12' }; } };
+  let calls = []; const _bp = rsMarket, _lbo = rsLbo; rsMarket = () => calls.push('bp'); rsLbo = () => calls.push('lbo');
+  document.querySelector('[data-act=recalc]').click();
+  if (!/pulse/.test(document.querySelector('#aiBtn .dot').className)) throw new Error('voyant non pulsé pendant la collecte');
+  for (let i = 0; i < 50 && RS.busy.cm; i++) await new Promise(r => setTimeout(r, 20));
+  rsMarket = _bp; rsLbo = _lbo; if (calls.length) throw new Error('autres volets appelés : ' + calls);
+  const g = S.cm.add.gold['2026-11-12']; if (!g || Math.abs(g[0] / last - 1.01) > 0.003 || !S.cm.rsAI.gold.checked) throw new Error('or non recoupé ' + JSON.stringify(g));
+  if (!/ok/.test(document.querySelector('#aiBtn .dot').className)) throw new Error('voyant non revenu au vert');
+  /* Claude ne répond pas : repli automatique sur le backend, moteur « byok » rapporté par le serveur */
+  RS.to = 60; AI.sample = { json: () => new Promise(() => {}) }; FLUX.on = true; RS.key = { has: true, last4: 'abcd', infra: true }; let sent = null;
+  liveApi = async (path, o = {}) => { if (path === '/api/v1/ai/ingest' && o.method === 'POST') { sent = o.body; return { engine: 'byok', cached: false, tokens: 700, record: { payload: { instrument: 'gold', rows: [{ date: '2026-11-11', close: +(last * 1.005).toFixed(2) }] } } }; } return {}; };
+  await rsCm('recalc'); FLUX.on = false; RS.to = 0;
+  if (!sent || sent.module !== 'cm' || sent.force !== true || sent.subject !== 'gold') throw new Error('repli backend ' + JSON.stringify(sent));
+  if (S.cm.rsAI.gold.how !== 'byok' || !S.cm.add.gold['2026-11-11']) throw new Error('moteur de repli ' + S.cm.rsAI.gold.how);
 }));
 await b.close();
 if (errs.length) { console.error(errs.join('\n')); process.exit(1); }

@@ -73,7 +73,7 @@ function prjAct(act,mod,b){
       const data=mod==='bp'?Object.assign(clone(DEF.bp),{name:'Nouveau projet'}):prjSnap('an');
       const n={id:uid('v'),label:mod==='bp'?'Version A':nextLabel(p,mod),date:new Date().toISOString(),note:'',data};
       const np={id:uid('p'),name:mod==='bp'?'Nouveau projet':'Nouvelles analyses',folder:p.folder||'',created:today(),versions:[n],cur:n.id};
-      S.prj[mod].push(np);ui['prj_'+mod]=np.id;ui['prjOpen_'+mod]=true;prjApply(mod,data);toast('Projet créé : renseignez son nom et son dossier');if(typeof liveIngest==='function'&&typeof FLUX==='object'&&FLUX.on)setTimeout(()=>liveIngest(mod,'init'),0);break;}
+      S.prj[mod].push(np);ui['prj_'+mod]=np.id;ui['prjOpen_'+mod]=true;prjApply(mod,data);toast('Projet créé : renseignez son nom et son dossier');if(typeof liveIngest==='function')setTimeout(()=>liveIngest(mod,'init'),0);break;}
     case 'prjdup':{if(prjDirty(mod)&&sameTk(mod))v.data=prjSnap(mod);const np=clone(p);np.id=uid('p');np.name=p.name+' (copie)';np.created=today();np.versions.forEach(x=>x.id=uid('v'));np.cur=np.versions[np.versions.length-1].id;S.prj[mod].push(np);ui['prj_'+mod]=np.id;toast('Projet dupliqué');break;}
     case 'prjdel':{if(S.prj[mod].length<2)break;S.prj[mod]=S.prj[mod].filter(x=>x.id!==p.id);ui['prj_'+mod]=S.prj[mod][0].id;prjApply(mod,verCur(mod).data);toast('Projet supprimé');break;}
     case 'prjopen':ui['prjOpen_'+mod]=!ui['prjOpen_'+mod];break;
