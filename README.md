@@ -234,3 +234,8 @@ Sources des données livrées (collecte du 10/11/2026) : FRED (CPIAUCSL, PPIFIS,
 - ETF (Yahoo Finance) et cryptos (CoinGecko) du mapping à jour au 12/11/2026 à 20:17 (`js/live-1112.js`).
 - Plus aucun tiret : une valeur absente s'affiche « non renseigné », « non publié », « base » ou « non calculable » avec une infobulle.
 
+## Version 8.10 : tous les boutons de recherche et de collecte passent par Claude, valeurs sur les graphiques
+- Lecture des pages par Claude : navigateur intégré de l'application Claude (ordinateur), sinon **connecteur Firecrawl du compte Claude** (web, mobile, ordinateur), choisi automatiquement au premier échec (`aiPage` dans `js/collecte.js`). Les boutons « Lancer la recherche », « Collecter », « Actualiser » et Recalculer en profitent.
+- L'artefact déclare `host:claude_browser` (navigate, get_page_text) et `Firecrawl` (firecrawl_scrape) ; la première lecture demande l'autorisation une fois.
+- Valeurs inscrites sur tous les graphiques SVG : fondamentaux historiques (chaque exercice), barres et courbes (`colChart`), CA / EBITDA, trésorerie (fin de chaque année), Monte-Carlo (scénarios finaux).
+

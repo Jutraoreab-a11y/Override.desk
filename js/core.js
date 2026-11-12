@@ -99,6 +99,7 @@ function bars(yrs,labels){
   yrs.forEach((y,i)=>{const x0=L+gw*i+gw/2;
     s+=`<rect x="${x0-bw-2}" y="${Math.min(Y(y.rev),Y(0))}" width="${bw}" height="${Math.abs(Y(y.rev)-Y(0))}" fill="var(--c-bar)"/>`;
     s+=`<rect x="${x0+2}" y="${Math.min(Y(y.ebitda),Y(0))}" width="${bw}" height="${Math.max(1,Math.abs(Y(y.ebitda)-Y(0)))}" fill="${y.ebitda>=0?'var(--up)':'var(--down)'}"/>`;
+    s+=`<text x="${x0-bw/2-2}" y="${Y(Math.max(y.rev,0))-4}" class="vl" text-anchor="middle">${big(y.rev,'')}</text><text x="${x0+bw/2+2}" y="${y.ebitda>=0?Y(y.ebitda)-4:Y(y.ebitda)+11}" class="vl" text-anchor="middle">${big(y.ebitda,'')}</text>`;
     s+=`<text x="${x0}" y="${H-8}" class="ax" text-anchor="middle">${labels?esc(labels[i]):'Année '+(i+1)}</text>`;});
   return s+'</svg>';
 }
@@ -111,18 +112,18 @@ function colChart(labels,vals,o={}){
   const st=niceStep(rng/4);for(let v=Math.ceil(mn/st)*st;v<=mx+1e-9;v+=st)s+=`<line x1="${L}" x2="${L+iw}" y1="${Y(v)}" y2="${Y(v)}" class="mid"/><text x="${L-6}" y="${Y(v)+3}" class="ax" text-anchor="end">${o.fmt?o.fmt(v):nf(v,0)}</text>`;
   vals.forEach((v,i)=>{if(!isFinite(v))return;const x=L+gw*i+(gw-bw)/2;const col=o.colors?o.colors[i]:(v>=0?(o.pos||'var(--c-bar)'):'var(--down)');
     s+=`<rect x="${x}" y="${Math.min(Y(v),Y(0))}" width="${bw}" height="${Math.max(1,Math.abs(Y(v)-Y(0)))}" fill="${col}"><title>${esc(labels[i])} : ${o.fmt?o.fmt(v):nf(v,0)}</title></rect>`;
-    if(o.vlab)s+=`<text x="${x+bw/2}" y="${(v>=0?Y(v)-4:Y(v)+11)}" class="ax" text-anchor="middle">${o.vlab(v,i)}</text>`;
+    {const vl=o.vlab?o.vlab(v,i):o.novl||n>26?'':(o.fmt?o.fmt(v):auto(v));if(vl!==''){const inside=o.line&&v>=0&&Math.abs(Y(v)-Y(0))>18;s+=`<text x="${x+bw/2}" y="${inside?Y(v)+12:(v>=0?Y(v)-4:Y(v)+11)}" class="vl" text-anchor="middle">${vl}</text>`;}}
     s+=`<text x="${L+gw*i+gw/2}" y="${H-7}" class="ax" text-anchor="middle">${esc(labels[i])}</text>`;});
   if(o.line){const lv=o.line.vals.map(v=>v===null||v===undefined?NaN:v),lmx=Math.max(...lv.filter(isFinite)),lmn=Math.min(0,...lv.filter(isFinite)),Yl=o.line.same?Y:v=>T+(lmx-v)/((lmx-lmn)||1)*ih;
     s+=`<polyline points="${lv.map((v,i)=>isFinite(v)?`${L+gw*i+gw/2},${Yl(v)}`:'').filter(Boolean).join(' ')}" fill="none" stroke="${o.line.c||'var(--hi)'}" stroke-width="1.6"/>`;
-    lv.forEach((v,i)=>{if(isFinite(v))s+=`<circle cx="${L+gw*i+gw/2}" cy="${Yl(v)}" r="2.6" fill="${o.line.c||'var(--hi)'}"/>`;});
+    lv.forEach((v,i)=>{if(isFinite(v)){s+=`<circle cx="${L+gw*i+gw/2}" cy="${Yl(v)}" r="2.6" fill="${o.line.c||'var(--hi)'}"/>`;if(n<=26)s+=`<text x="${L+gw*i+gw/2+4}" y="${Yl(v)-6}" class="vl" style="fill:${o.line.c||'var(--hi)'}">${esc(String(o.line.fmt?o.line.fmt(v):auto(v)))}</text>`;}});
     if(!o.line.same)[lmx,lmn].forEach(v=>{s+=`<text x="${L+iw+6}" y="${Yl(v)+3}" class="ax">${o.line.fmt?o.line.fmt(v):nf(v,0)}</text>`;});}
   s+=`<line x1="${L}" x2="${L+iw}" y1="${Y(0)}" y2="${Y(0)}" stroke="var(--line2)"/>`;
   return s+'</svg>';
 }
 /* Petites séries historiques (5 ans) */
 function spark(labels,vals,o={}){
-  const W=240,H=96,L=6,R=6,T=16,B=16,iw=W-L-R,ih=H-T-B,n=vals.length;
+  const W=240,H=112,L=6,R=6,T=26,B=16,iw=W-L-R,ih=H-T-B,n=vals.length,lf=v=>o.fmt?o.fmt(v):auto(v);
   const ok=vals.filter(v=>v!==null&&isFinite(v));if(!ok.length)return'<p class="note">Non disponible</p>';
   const mx=Math.max(0,...ok),mn=Math.min(0,...ok),rng=(mx-mn)||1,Y=v=>T+(mx-v)/rng*ih,gw=iw/n,bw=gw*.56;
   let s=`<svg class="sc" viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(o.title||'')}">`;
@@ -130,8 +131,8 @@ function spark(labels,vals,o={}){
   if(o.type==='line'){s+=`<polyline points="${vals.map((v,i)=>isFinite(v)&&v!==null?`${L+gw*i+gw/2},${Y(v)}`:'').filter(Boolean).join(' ')}" fill="none" stroke="var(--hi)" stroke-width="1.6"/>`;
     vals.forEach((v,i)=>{if(v!==null&&isFinite(v))s+=`<circle cx="${L+gw*i+gw/2}" cy="${Y(v)}" r="2.4" fill="var(--hi)"/>`;});}
   else vals.forEach((v,i)=>{if(v===null||!isFinite(v))return;s+=`<rect x="${L+gw*i+(gw-bw)/2}" y="${Math.min(Y(v),Y(0))}" width="${bw}" height="${Math.max(1,Math.abs(Y(v)-Y(0)))}" fill="${v>=0?(i===n-1?'var(--hi)':'var(--c-bar)'):'var(--down)'}"/>`;});
-  vals.forEach((v,i)=>{s+=`<text x="${L+gw*i+gw/2}" y="${H-3}" class="ax" text-anchor="middle">${esc(String(labels[i]).replace('FY20',"'"))}</text>`;});
-  const last=vals[n-1];s+=`<text x="${W-R}" y="11" class="ax" text-anchor="end" style="fill:var(--hi)">${o.fmt?o.fmt(last):auto(last)}</text>`;
+  vals.forEach((v,i)=>{s+=`<text x="${L+gw*i+gw/2}" y="${H-3}" class="ax" text-anchor="middle">${esc(String(labels[i]).replace('FY20',"'"))}</text>`;
+    if(v!==null&&isFinite(v))s+=`<text x="${L+gw*i+gw/2}" y="${v>=0||o.type==='line'?Y(v)-5-(i%2&&n>5?8:0):Y(v)+10}" class="vl${i===n-1?' last':''}" text-anchor="middle">${esc(String(lf(v)))}</text>`;});
   return s+'</svg>';
 }
 /* Quadrant centré sur zéro (suivi de portefeuille) */

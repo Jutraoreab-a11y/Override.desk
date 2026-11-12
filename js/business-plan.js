@@ -179,6 +179,7 @@ function cashChart(M){
   s+=`<polyline points="${M.map((x,i)=>`${X(i)},${Y(x.cash)}`).join(' ')}" fill="none" stroke="#D4D4D8" stroke-width="1.5"/>`;
   const neg=M.map((x,i)=>x.cash<0?i:-1).filter(i=>i>=0);
   neg.forEach(i=>{s+=`<circle cx="${X(i)}" cy="${Y(M[i].cash)}" r="2.4" fill="var(--down)"/>`;});
+  for(let i=11;i<M.length;i+=12){s+=`<circle cx="${X(i)}" cy="${Y(M[i].cash)}" r="2.6" fill="#D4D4D8"/><text x="${Math.min(X(i),W-R-30)}" y="${Y(M[i].cash)-6}" class="vl" text-anchor="middle">${big(M[i].cash,'')}</text>`;}
   let mi=0;M.forEach((x,i)=>{if(x.cash<M[mi].cash)mi=i;});
   s+=`<circle cx="${X(mi)}" cy="${Y(M[mi].cash)}" r="4" fill="none" stroke="${M[mi].cash<0?'var(--down)':'#A1A1AA'}" stroke-width="2"/><text x="${Math.min(X(mi)+6,W-90)}" y="${Y(M[mi].cash)-7}" class="ax">point bas ${big(M[mi].cash,'')}</text>`;
   return s+'</svg>';

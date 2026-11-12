@@ -20,15 +20,27 @@ function aiApplyLive(){const L=S.live||{};
 const AI={mcp:undefined,sample:undefined,busy:{},msg:{}};
 (async()=>{try{AI.mcp=await claude.use('mcp');}catch(e){AI.mcp=null;}try{AI.sample=await claude.use('sample');}catch(e){AI.sample=null;}if(ui.aiOpen)renderAI();if(typeof renderAll==='function')renderAll();})();
 const normTxt=s=>String(s||'').replace(/\s+/g,' ').toLowerCase();
-async function aiPage(url){
+/* Lecture d'une page par Claude : navigateur intégré de l'application Claude (ordinateur), sinon connecteur Firecrawl du compte Claude
+   (claude.ai web, mobile et ordinateur). Le premier moyen qui répond est retenu pour la suite de la session. */
+const AI_FC='Firecrawl';AI.via=null;
+async function aiPageBrowser(url){
   await AI.mcp.callTool(AI_HOST,'navigate',{url},{cache:false});
   await new Promise(r=>setTimeout(r,2500));
   const r=await AI.mcp.callTool(AI_HOST,'get_page_text',{max_chars:60000},{cache:false});
   const p=r.payload;let txt=typeof p==='string'?p:(r.content||[]).filter(c=>c.type==='text').map(c=>c.text).join('\n');
   if(!txt&&p&&typeof p==='object')txt=JSON.stringify(p);
-  return String(txt||'');
-}
-function aiErr(e){const c=e&&e.code;return{server_not_connected:"Navigateur intégré non disponible : ouvrez cette page dans l'application Claude (ordinateur).",not_in_manifest:"Accès au navigateur refusé pour cette page.",cancelled:"Ouverture de la page refusée dans l'application Claude.",approval_required:"Autorisation requise dans l'application Claude.",not_granted:"Claude n'est pas autorisé pour cette page : collecte impossible.",rate_limited:"Trop de demandes : réessayez dans quelques minutes.",invalid_json:"La page n'a pas permis d'extraire une valeur lisible.",tool_error:"La page source n'a pas pu être lue ("+(e.message||'')+")."}[c]||("Échec de la collecte"+(c?' ('+c+')':'')+(e&&e.message&&!c?' : '+e.message:''));}
+  return String(txt||'');}
+async function aiPageFC(url){
+  const r=await AI.mcp.callTool(AI_FC,'firecrawl_scrape',{url,formats:['markdown'],onlyMainContent:true,maxAge:0,objective:'Lire cette page publique pour alimenter le terminal OVERRIDE.DESK (cours, comptes, études de marché).'},{cache:false});
+  const pick=o=>o&&typeof o==='object'?(o.markdown||o.rawHtml||(o.data&&(o.data.markdown||o.data.rawHtml))||''):'';
+  let t=pick(r.payload);
+  if(!t){t=(r.content||[]).filter(c=>c.type==='text').map(c=>c.text).join('\n');try{const j=JSON.parse(t);t=pick(j)||t;}catch(e){}}
+  return String(t||'');}
+async function aiPage(url){
+  if(AI.via!=='firecrawl'){try{const t=await aiPageBrowser(url);AI.via='browser';return t;}
+    catch(e){if(AI.via==='browser'&&!['server_not_connected','not_in_manifest','blocked_by_policy'].includes(e&&e.code))throw e;}}
+  const t=await aiPageFC(url);AI.via='firecrawl';return t;}
+function aiErr(e){const c=e&&e.code;return{server_not_connected:"Ni le navigateur intégré (application Claude sur ordinateur) ni le connecteur Firecrawl ne sont reliés à votre compte Claude : activez l'un des deux.",not_in_manifest:"Accès au navigateur refusé pour cette page.",cancelled:"Ouverture de la page refusée dans l'application Claude.",approval_required:"Autorisation requise dans l'application Claude.",not_granted:"Claude n'est pas autorisé pour cette page : collecte impossible.",rate_limited:"Trop de demandes : réessayez dans quelques minutes.",invalid_json:"La page n'a pas permis d'extraire une valeur lisible.",tool_error:"La page source n'a pas pu être lue ("+(e.message||'')+")."}[c]||("Échec de la collecte"+(c?' ('+c+')':'')+(e&&e.message&&!c?' : '+e.message:''));}
 async function aiCollect(t){
   if(!AI.mcp||!AI.sample){AI.msg[t.k]=['ko',"Collecte IA indisponible ici : elle fonctionne dans l'application Claude (ordinateur), navigateur intégré activé."];renderAI();return;}
   AI.busy[t.k]=true;AI.msg[t.k]=['am','Lecture de la source…'];renderAI();

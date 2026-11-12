@@ -17,7 +17,7 @@ const rsClaude=()=>typeof AI==='object'&&!!AI.mcp&&!!AI.sample;
 const rsSrv=()=>typeof FLUX==='object'&&FLUX.on?(RS.key&&RS.key.has?'byok':RS.key&&RS.key.infra===false?null:'infra'):null;
 const rsWho=()=>rsClaude()?'claude':rsSrv();
 const rsChain=()=>[rsClaude()?'claude':null,typeof FLUX==='object'&&FLUX.on?'cache':null,rsSrv()].filter(Boolean);
-const rsLabel=w=>({claude:'Claude (application, votre abonnement)',byok:'API Anthropic (votre clé)',infra:'API Anthropic (clé du serveur)',api:'API Anthropic',cache:'base Supabase (0 jeton)'})[w]||'indisponible';
+const rsLabel=w=>({claude:'Claude ('+(typeof AI==='object'&&AI.via==='firecrawl'?'connecteur Firecrawl':AI&&AI.via==='browser'?'navigateur intégré':'navigateur ou Firecrawl')+', votre abonnement)',byok:'API Anthropic (votre clé)',infra:'API Anthropic (clé du serveur)',api:'API Anthropic',cache:'base Supabase (0 jeton)'})[w]||'indisponible';
 const rsShort=w=>({claude:'Claude',byok:'votre clé',infra:'clé serveur',api:'API',cache:'cache'})[w]||w;
 function rsTimeout(p,ms,who){let t;return Promise.race([p,new Promise((_,rej)=>{t=setTimeout(()=>rej(new Error(`${who} ne répond pas (plus de ${Math.round(ms/1000)} s)`)),ms);})]).finally(()=>clearTimeout(t));}
 

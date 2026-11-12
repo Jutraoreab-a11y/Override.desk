@@ -34,6 +34,17 @@ await step('clic ETF vers analyse', async () => { await p.evaluate(() => { S.mm.
 await step('recherche universelle', async () => { await p.keyboard.press('Control+k'); await p.keyboard.type('bitc'); await p.keyboard.press('Enter');
   if (await p.evaluate(() => ui.anX && ui.anX.id) !== 'BTC') throw new Error('BTC non ouvert'); });
 await step('mode simple et alertes', () => p.evaluate(() => { document.getElementById('uxMode').click(); document.getElementById('uxBell').click(); if (!document.getElementById('uxal') || document.getElementById('uxal').hidden) throw new Error('panneau alertes'); }));
+await step('lecture de page : navigateur absent, repli automatique sur le connecteur Firecrawl du compte Claude', () => p.evaluate(async () => {
+  const calls = []; const saved = aiPage;
+  AI.via = null; AI.mcp = { callTool: async (srv, tool, input) => { calls.push(srv + ':' + tool);
+    if (srv === 'host:claude_browser') throw Object.assign(new Error('absent'), { code: 'server_not_connected' });
+    if (srv === 'Firecrawl' && tool === 'firecrawl_scrape') return { content: [], payload: { markdown: 'Page lue ' + input.url } };
+    throw new Error('inattendu'); } };
+  const t = await saved('https://example.com/x');
+  if (t !== 'Page lue https://example.com/x' || AI.via !== 'firecrawl' || calls[0] !== 'host:claude_browser:navigate') throw new Error('repli ' + t + ' ' + calls);
+  const t2 = await saved('https://example.com/y'); if (calls.length !== 3 || !/Firecrawl/.test(calls[2])) throw new Error('le navigateur ne doit plus être retenté ' + calls);
+  ui.tab = 'an'; ui.anX = null; renderAll(); if (!document.querySelector('#p-an .sparks .vl')) throw new Error('valeurs absentes des graphiques des fondamentaux');
+}));
 await step('création par lecture IA (navigateur et Claude simulés)', () => p.evaluate(async () => {
   const pages = { 'https://stockanalysis.com/quote/epa/RMS/': 'Hermes International (EPA:RMS) 2,104.00 EUR Nov 11, 2026 Shares Out 104.7M ' + 'Market data. '.repeat(60),
     'https://stockanalysis.com/quote/epa/RMS/financials/': 'Financials in millions EUR FY 2025 FY 2024 FY 2023 FY 2022 FY 2021 Revenue 16,002 15,170 13,427 11,602 8,982 Net Income 4,524 4,603 4,311 3,367 2,445',

@@ -52,6 +52,7 @@ function mcChart(v){
   s+=`<polygon points="${pl(b[2])} ${b[0].map((y,i)=>`${X(i).toFixed(1)},${Y(y).toFixed(1)}`).reverse().join(' ')}" fill="rgba(255,255,255,.05)"/>`;
   s+=`<line x1="${L}" x2="${W-R}" y1="${Y(v.cap)}" y2="${Y(v.cap)}" stroke="var(--line2)" stroke-dasharray="3 3"/>`;
   s+=`<polyline points="${pl(b[0])}" fill="none" stroke="var(--down)" stroke-width="1.2"/><polyline points="${pl(b[2])}" fill="none" stroke="var(--up)" stroke-width="1.2"/><polyline points="${pl(b[1])}" fill="none" stroke="var(--hi)" stroke-width="1.8"/>`;
+  [[b[0],'var(--down)','pessimiste'],[b[1],'var(--hi)','médian'],[b[2],'var(--up)','optimiste']].forEach(([a,c,l])=>{const y=a[a.length-1];s+=`<text x="${W-R-2}" y="${Y(y)-5}" class="vl" text-anchor="end" style="fill:${c}">${l} ${nf(y,0)}</text>`;});
   [0,Math.round(v.n/2),v.n].forEach(i=>{s+=`<text x="${X(i)}" y="${H-8}" class="ax" text-anchor="middle">${i===0?'départ':'trade '+i}</text>`;});
   return s+'</svg>';
 }
