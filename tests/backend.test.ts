@@ -130,3 +130,24 @@ test('ingestion IA v8 : JSON strict par outil forcé, champs requis, extraits v�
   assert.equal(AI8.verifyQuotes(p.payload, 'Cours : Brent 107,03 le 03/11/2026', p.confidence).confidence, 0.9);
   assert.equal(AI8.verifyQuotes(p.payload, 'page sans la valeur', p.confidence).confidence, 0.3);
 });
+test('SEC EDGAR : cinq exercices au format de l\'analyse, exercice identifié par sa date de clôture', async () => {
+  const { toStatements, findCik } = await import('../lib/sec.ts');
+  const fs = await import('node:fs');
+  const st = toStatements(JSON.parse(fs.readFileSync(new URL('./fixtures/sec-costco.json', import.meta.url), 'utf8')));
+  assert.equal(st.ends.length, 5); assert.equal(st.ends[4], '2026-08-30'); assert.equal(st.years[4], 'FY2026');
+  assert.equal(st.rev[4], 303154); assert.equal(st.ni[4], 9226);
+  assert.equal(st.ebitda[4], 14359);            // résultat opérationnel 11 685 + amortissements 2 674
+  assert.equal(st.fcf[4], 9382);                // flux d'exploitation 15 817 − investissements 6 435
+  assert.equal(st.nd[4], -14045);               // dette 3 914 + 2 248 − trésorerie 20 207
+  assert.equal(st.roe[4], 25.77); assert.equal(st.rev[3], 275235); assert.ok(st.shares && st.shares > 400);
+  assert.deepEqual(findCik({ 0: { cik_str: 909832, ticker: 'COST', title: 'COSTCO' } }, 'cost'), { cik: '0000909832', title: 'COSTCO' });
+});
+test('cours du soir : CoinGecko, Tiingo et EODHD convertis en points datés et sourcés', async () => {
+  const P = await import('../lib/prices.ts');
+  const c = P.parseCoinGecko({ bitcoin: { usd: 73732.39, last_updated_at: 1794441600 }, solana: { usd: 83.3 } });
+  assert.equal(c.length, 1); assert.equal(c[0].instrument, 'CRY:BTC'); assert.equal(c[0].price_date, '2026-11-12');
+  assert.equal(P.parseTiingo('AAPL', [{ date: '2026-11-10T00:00:00.000Z', close: 350 }, { date: '2026-11-11T00:00:00.000Z', close: 355.63 }])[0].close, 355.63);
+  assert.equal(P.parseEodhd('MC.PA', [{ date: '2026-11-11', close: 403.1 }, { date: '2026-11-10', close: 400 }])[0].price_date, '2026-11-11');
+  const r = await P.fetchDailyPrices({}, (async () => ({ ok: true, json: async () => ({ ethereum: { usd: 2051, last_updated_at: 1794441600 } }) })) as unknown as typeof fetch);
+  assert.equal(r.prices.length, 1); assert.equal(r.errors.length, 2);
+});

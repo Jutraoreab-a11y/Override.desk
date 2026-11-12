@@ -7,8 +7,9 @@ import { db, check, isCron, requireUser } from '../../../lib/supabase.js';
 import { fetchEia, fetchEcb, ecbCrosses } from '../../../lib/macro.js';
 import { computeSeries } from '../../../lib/series.js';
 import type { PricePoint } from '../../../types/models.js';
+import { fetchDailyPrices } from '../../../lib/prices.js';
 
-const INSTR = /^(BRENT|WTI|GOLD|SILVER|COPPER|NATGAS|EURUSD|GBPUSD|USDJPY|USDCNH|AUDUSD|USDCAD|SPX|NDX|DJI|DAX|CAC|NKX|STK:[A-Z0-9.\-]{1,12})$/;
+const INSTR = /^(BRENT|WTI|GOLD|SILVER|COPPER|NATGAS|EURUSD|GBPUSD|USDJPY|USDCNH|AUDUSD|USDCAD|SPX|NDX|DJI|DAX|CAC|NKX|STK:[A-Z0-9.\-]{1,12}|CRY:[A-Z0-9]{1,10})$/;
 async function store(prices: PricePoint[]) {
   const s = db();
   if (prices.length) check(await s.from('commodity_prices').upsert(prices.map(p => ({ ...p, retrieved_at: new Date().toISOString() })), { onConflict: 'instrument,contract,price_date' }));
@@ -21,11 +22,13 @@ async function store(prices: PricePoint[]) {
 export default handler(async (req: Req, res: Res) => {
   if (req.method === 'GET' && q(req, 'action') === 'ingest') {
     if (!isCron(req)) throw new HttpError(401, 'Tâche planifiée non autorisée');
-    const key = process.env.EIA_API_KEY; if (!key) throw new HttpError(503, 'EIA_API_KEY non configurée');
-    const prices = await fetchEia(key);
+    /* EIA si la clé existe, puis cours du soir des actions, ETF et cryptos (lib/prices.ts) */
+    const key = process.env.EIA_API_KEY, errors: string[] = [];
+    const prices = key ? await fetchEia(key).catch(e => { errors.push('EIA ' + (e as Error).message); return []; }) : (errors.push('EIA_API_KEY absente : pétrole non actualisé'), []);
+    const daily = await fetchDailyPrices(process.env); prices.push(...daily.prices); errors.push(...daily.errors);
     const fx = await fetchEcb().catch(() => []);
     if (fx.length) check(await db().from('fx_rates').upsert(fx.map(r => ({ ...r, source: 'BCE' })), { onConflict: 'currency,rate_date' }));
-    send(res, 200, { ok: true, fx: fx.length, ...(await store([...prices, ...ecbCrosses(fx)])) }); return;
+    send(res, 200, { ok: true, fx: fx.length, errors, ...(await store([...prices, ...ecbCrosses(fx)])) }); return;
   }
   await requireUser(req);
   if (req.method === 'POST') {

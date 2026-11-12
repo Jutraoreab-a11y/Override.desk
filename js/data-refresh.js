@@ -3,18 +3,23 @@
    la mise à jour ne s'applique que si le cours en mémoire est encore celui de la livraison précédente. */
 const REFRESH_AT='2026-11-03';
 const PX_REFRESH={
-  AAPL:{p:338.32,d:'02/11/2026',s:'stockanalysis.com, clôture du 02/11/2026'},
-  MSFT:{p:532.60,d:'26/10/2026',s:'Investing.com, clôture du 26/10/2026'},
-  NVDA:{p:204.64,d:'30/10/2026',s:'stockanalysis.com, clôture du 30/10/2026'},
-  KO:{p:92.68,d:'27/10/2026',s:'stockanalysis.com, clôture du 27/10/2026'},
-  ASML:{p:1437.80,d:'27/10/2026',s:'stockanalysis.com (Euronext Amsterdam), cours différé du 27/10/2026 11 h 30'},
-  SAP:{p:210.50,d:'02/11/2026',s:'MarketBeat (Xetra), cours du 02/11/2026'},
-  MC:{p:385.40,d:'26/10/2026',s:'stockanalysis.com (Euronext Paris), clôture du 26/10/2026'},
-  OR:{p:436.20,d:'26/10/2026',s:'stockanalysis.com (Euronext Paris), clôture du 26/10/2026'},
-  AIR:{p:193.40,d:'26/10/2026',s:'stockanalysis.com (Euronext Paris), clôture du 26/10/2026'},
-  TTE:{p:83.61,d:'02/11/2026',s:'Boursorama, clôture de la Bourse de Paris du 02/11/2026'}
-  /* INTC : aucune source plus récente que le 19/10/2026 n'a pu être lue ; cours inchangé, signalé par le contrôle qualité. */
+  AAPL:{p:355.63,d:'11/11/2026',s:'EODHD (Nasdaq), clôture du 11/11/2026'},
+  MSFT:{p:521.12,d:'11/11/2026',s:'EODHD (Nasdaq), clôture du 11/11/2026'},
+  NVDA:{p:173.73,d:'11/11/2026',s:'EODHD (Nasdaq), clôture du 11/11/2026'},
+  INTC:{p:62.5,d:'11/11/2026',s:'EODHD (Nasdaq), clôture du 11/11/2026'},
+  KO:{p:97.57,d:'11/11/2026',s:'EODHD (NYSE), clôture du 11/11/2026'},
+  ASML:{p:1403.8,d:'11/11/2026',s:'EODHD (Euronext Amsterdam), clôture du 11/11/2026'},
+  SAP:{p:210.95,d:'11/11/2026',s:'EODHD (Xetra), clôture du 11/11/2026'},
+  MC:{p:403.1,d:'11/11/2026',s:'EODHD (Euronext Paris), clôture du 11/11/2026'},
+  OR:{p:446.65,d:'11/11/2026',s:'EODHD (Euronext Paris), clôture du 11/11/2026'},
+  AIR:{p:210.7,d:'11/11/2026',s:'EODHD (Euronext Paris), clôture du 11/11/2026'},
+  TTE:{p:79.37,d:'11/11/2026',s:'EODHD (Euronext Paris), clôture du 11/11/2026'}
 };
+/* Cours livrés par les versions précédentes : un état qui les porte encore est mis à jour (sinon valeur saisie, conservée) */
+const PX_OLD={"AAPL": 338.32, "MSFT": 532.6, "NVDA": 204.64, "KO": 92.68, "ASML": 1437.8, "SAP": 210.5, "MC": 385.4, "OR": 436.2, "AIR": 193.4, "TTE": 83.61};
+/* Risque et liquidité des titres (EODHD, séances du 03/11/2025 au 11/11/2026) : volatilité annualisée des rendements quotidiens, montant moyen échangé par séance sur 60 séances (millions, devise de cotation) */
+const STK_RISK={src:'EODHD, cours quotidiens du 03/11/2025 au 11/11/2026',d:{"AAPL":{"vol":24.8,"adv":14344.6,"r1y":32.7},"MSFT":{"vol":33.4,"adv":11937.5,"r1y":1.6},"NVDA":{"vol":39.1,"adv":28299.5,"r1y":-15.8},"INTC":{"vol":85.1,"adv":10585.9,"r1y":58.2},"KO":{"vol":18.7,"adv":1508.1,"r1y":47.4},"ASML":{"vol":43.8,"adv":891.3,"r1y":52.4},"SAP":{"vol":41.0,"adv":419.8,"r1y":-6.3},"MC":{"vol":27.2,"adv":240.1,"r1y":-33.0},"OR":{"vol":24.8,"adv":144.7,"r1y":25.9},"AIR":{"vol":29.7,"adv":205.4,"r1y":0.2},"TTE":{"vol":23.2,"adv":304.8,"r1y":55.1}}};
+
 const FX_REFRESH={v:1.1172,d:'30/10/2026',s:'BCE, taux de change de référence du 30/10/2026'};
 /* Historiques quotidiens (clôtures) pour la mesure de performance du portefeuille */
 const MKT_HIST={
@@ -47,7 +52,7 @@ function dataRefreshApply(){
   Object.entries(PX_REFRESH).forEach(([k,r])=>{const D=DEF.an&&DEF.an.assets&&DEF.an.assets[k],A=S.an&&S.an.assets&&S.an.assets[k];
     const oP=D?+D.price:NaN,oD=D?D.pxDate:'';
     /* L'état n'est mis à jour que s'il porte encore le cours de référence livré (sinon : valeur saisie par l'utilisateur, conservée) */
-    if(A&&pd(A.pxDate)<pd(r.d)&&(!D||(+A.price===oP&&A.pxDate===oD))){A.price=r.p;A.pxDate=r.d;A.pxSrc=r.s;}
+    if(A&&pd(A.pxDate)<pd(r.d)&&(!D||(+A.price===oP&&A.pxDate===oD)||+A.price===PX_OLD[k])){A.price=r.p;A.pxDate=r.d;A.pxSrc=r.s;}
     if(D&&pd(D.pxDate)<pd(r.d)){D.price=r.p;D.pxDate=r.d;D.pxSrc=r.s;}});
   if(pd(FX_DATE)<pd(FX_REFRESH.d)){const old=FX_EURUSD;FX_EURUSD=FX_REFRESH.v;FX_DATE=FX_REFRESH.d;FX_SRC=FX_REFRESH.s;if(S.pf&&(+S.pf.eurusd===old||!S.pf.eurusd))S.pf.eurusd=FX_EURUSD;}}
 dataRefreshApply();

@@ -6,20 +6,22 @@ const MM_CLS=[['stk','📈 Actions'],['etf','🌐 ETF'],['cry','⚡ Cryptos'],['
 const MM_H={stk:[1,3,5],etf:[1,2,5,10,20,30],cry:['30j','200j','1an'],cmd:[1,'max']};
 /* Axes : inv = le risque ou la cherté se lit à gauche, pour que le quadrant supérieur droit regroupe les surperformeurs */
 const MM_AX={
-  stk:{x:{per:['PER',1,'×'],evE:['VE / EBITDA',1,'×'],evS:['VE / CA',1,'×'],pb:['Cours / actif net',1,'×']},y:{cagr:['Croissance du CA annualisée',0,'%'],em:['Marge EBITDA',0,'%'],nm:['Marge nette',0,'%'],fcfY:['Rendement FCF',0,'%'],score:["Score de l'analyse",0,'/100']}},
+  stk:{x:{per:['PER',1,'×'],vol:['Volatilité 1 an',1,'%'],evE:['VE / EBITDA',1,'×'],evS:['VE / CA',1,'×'],pb:['Cours / actif net',1,'×']},y:{cagr:['Croissance du CA annualisée',0,'%'],em:['Marge EBITDA',0,'%'],nm:['Marge nette',0,'%'],fcfY:['Rendement FCF',0,'%'],score:["Score de l'analyse",0,'/100']}},
   etf:{x:{vol:['Volatilité annualisée',1,'%'],dd:['Pire perte (mois ou année)',1,'%']},y:{cagr:['Performance annualisée',0,'%']}},
-  cry:{x:{dd:['Repli depuis le plus haut historique',1,'%'],fdvR:['FDV / capitalisation (dilution)',1,'×'],vel:['Vélocité (volume 24 h / capitalisation)',0,'%']},y:{p:['Performance sur la période',0,'%']}},
+  cry:{x:{vol:['Volatilité 1 an',1,'%'],dd:['Repli depuis le plus haut historique',1,'%'],fdvR:['FDV / capitalisation (dilution)',1,'×'],vel:['Vélocité (volume 24 h / capitalisation)',0,'%']},y:{p:['Performance sur la période',0,'%']}},
   cmd:{x:{vol:['Volatilité annualisée',1,'%']},y:{ret:['Performance annualisée',0,'%']}}};
 function mmS(){if(!S.mm)S.mm={};const M=S.mm;M.cls=M.cls||'stk';M.f=M.f||{};MM_CLS.forEach(([k])=>{M.f[k]=M.f[k]||{};});
-  M.h=M.h||{stk:3,etf:5,cry:'1an',cmd:1};M.x=M.x||{stk:'per',etf:'vol',cry:'dd',cmd:'vol'};M.y=M.y||{stk:'cagr',etf:'cagr',cry:'p',cmd:'ret'};M.th=M.th||{};return M;}
+  M.h=M.h||{stk:3,etf:5,cry:'1an',cmd:1};M.x=M.x||{stk:'per',etf:'vol',cry:'vol',cmd:'vol'};M.y=M.y||{stk:'cagr',etf:'cagr',cry:'p',cmd:'ret'};M.th=M.th||{};return M;}
 const mmNum=v=>v===''||v===null||v===undefined||!isFinite(+v)?null:+v;
 const mmYrs=(a,b)=>(Date.parse(b)-Date.parse(a))/(365.25*864e5);
 
 /* ---- Lignes par univers ---- */
+/* Montant moyen échangé par séance en M€ : saisie au crayon, sinon mesure EODHD sur 60 séances convertie en euros */
+const mmAdv=(k,a)=>{const r=STK_RISK.d[k];if(!r)return null;return a.cur==='USD'?r.adv/(typeof FX_EURUSD==='number'?FX_EURUSD:1.1):r.adv;};
 function mmStocks(h){const A=S.an.assets;return Object.keys(A).map(k=>{const a=A[k],b=anBase(a),R=anCalc(k),L=b.L;
   const eq=a.roe&&a.roe[L]?a.ni[L]/(a.roe[L]/100):NaN,cg=n=>L>=n&&a.rev[L-n]>0?((a.rev[L]/a.rev[L-n])**(1/n)-1)*100:NaN;
   return{id:k,l:a.t,n:a.n,g:a.sec,m:{per:b.per,evE:b.evE,evS:b.evR/a.rev[L],pb:eq>0?b.capR/eq:NaN,cagr:cg(h),em:b.em[L],nm:a.ni[L]/a.rev[L]*100,fcfY:b.fcfY,score:R.score,
-    cap:b.capEUR/1e3,adv:mmNum(a.adv)},note:L<h?`historique de ${L+1} exercices : croissance sur ${h} ans non calculable`:''};});}
+    cap:b.capEUR/1e3,vol:(STK_RISK.d[k]||{}).vol,adv:mmNum(a.adv)??mmAdv(k,a)},note:L<h?`historique de ${L+1} exercices : croissance sur ${h} ans non calculable`:''};});}
 function mmEtfPerf(e,h){const last=ETF_U.last,m=e.m||[],y0=e.y0,v=e.v;
   const mDate=i=>{const y=2024+Math.floor((9+i)/12),mo=(9+i)%12+1,dd=new Date(Date.UTC(y,mo,0)).getUTCDate();return`${y}-${String(mo).padStart(2,'0')}-${dd}`;};
   if(h<=2){const i0=h===1?12:0;if(m.length<26)return{};const yrs=mmYrs(mDate(i0),last),r=[];for(let i=i0+1;i<m.length;i++)r.push(m[i]/m[i-1]-1);
@@ -29,7 +31,7 @@ function mmEtfPerf(e,h){const last=ETF_U.last,m=e.m||[],y0=e.y0,v=e.v;
   return{cagr:((v[v.length-1]/v[i])**(1/yrs)-1)*100,vol:r.length>2?macSd(r)*100:NaN,dd:r.length?-Math.min(...r)*100:NaN,yrs,from:`${ys}-12-31`,n:r.length,base:'annuel'};}
 function mmEtfs(h){return Object.entries(ETF_U.d).map(([k,e])=>{const p=mmEtfPerf(e,h);return{id:k,l:k,n:e.n,g:e.th,geo:e.geo,grp:e.grp,m:{cagr:p.cagr,vol:p.vol,dd:p.dd},p,note:p.na||''};});}
 function mmCryptos(h){const f=h==='30j'?'p30':h==='200j'?'p200':'p1y';return CRYPTO_U.d.map(c=>({id:c.sym,l:c.sym,n:c.name,g:c.nar,
-  m:{p:c[f],dd:(1-c.px/c.ath)*100,fdvR:c.fdv/c.mc,vel:c.vol/c.mc*100,cap:c.mc/1e9},c}));}
+  m:{p:c[f],vol:c.v1y,dd:(1-c.px/c.ath)*100,fdvR:c.fdv/c.mc,vel:c.vol/c.mc*100,cap:c.mc/1e9},c}));}
 function mmCmds(h){const s=cmSeries(),last=s.d[s.d.length-1],from=h===1?new Date(Date.parse(last)-365.25*864e5).toISOString().slice(0,10):s.d[0];
   const L={brent:'Brent daté',wti:'WTI Cushing',gold:'Or comptant',silver:'Argent comptant',cnh:'USD/CNH',spx:'S&P 500'};
   return Object.keys(L).map(k=>{const P=s.d.map((d,i)=>[d,s[k][i]]).filter(([d,v])=>d>=from&&nn(v));if(P.length<40)return null;
@@ -39,9 +41,9 @@ function mmCmds(h){const s=cmSeries(),last=s.d[s.d.length-1],from=h===1?new Date
 function mmRows(cls){const M=mmS(),h=M.h[cls];return cls==='stk'?mmStocks(h):cls==='etf'?mmEtfs(h):cls==='cry'?mmCryptos(h):mmCmds(h);}
 
 /* ---- Filtres (bornes min / max) ---- */
-const MM_F={stk:[['evE','VE / EBITDA','×'],['per','PER','×'],['pb','Cours / actif net','×',1],['evS','VE / CA','×',1],['cagr','Croissance du CA','%',0,1],['em','Marge EBITDA','%',0,1],['nm','Marge nette','%',0,1],['fcfY','Rendement FCF','%',0,1],['cap','Capitalisation','Md€'],['adv','Volume moyen quotidien','M€',0,1]],
+const MM_F={stk:[['evE','VE / EBITDA','×'],['per','PER','×'],['pb','Cours / actif net','×',1],['evS','VE / CA','×',1],['cagr','Croissance du CA','%',0,1],['em','Marge EBITDA','%',0,1],['nm','Marge nette','%',0,1],['fcfY','Rendement FCF','%',0,1],['cap','Capitalisation','Md€'],['vol','Volatilité 1 an','%',1],['adv','Volume moyen quotidien','M€',0,1]],
   etf:[['cagr','Performance annualisée','%',0,1],['vol','Volatilité annualisée','%',1]],
-  cry:[['p','Performance','%',0,1],['cap','Capitalisation','Md$',0,1],['fdvR','FDV / capitalisation','×',1],['vel','Vélocité 24 h','%',0,1]],
+  cry:[['p','Performance','%',0,1],['vol','Volatilité 1 an','%',1],['cap','Capitalisation','Md$',0,1],['fdvR','FDV / capitalisation','×',1],['vel','Vélocité 24 h','%',0,1]],
   cmd:[['ret','Performance annualisée','%',0,1],['vol','Volatilité annualisée','%',1]]};
 function mmPass(r,cls){const F=mmS().f[cls];for(const[k]of MM_F[cls]){const lo=mmNum(F[k+'Min']),hi=mmNum(F[k+'Max']),v=r.m[k];
     if(lo===null&&hi===null)continue;if(!isFinite(v)&&v!==0)return[false,k];if(lo!==null&&v<lo)return[false,k];if(hi!==null&&v>hi)return[false,k];}
@@ -120,7 +122,7 @@ function mmHTML(){const M=mmS(),cls=M.cls,Q=mmQuad(cls),ax=MM_AX[cls],h=M.h[cls]
       return`<tr class="${p[0]?'':'mute'}"><td><button class="lnk" data-act="mmpt" data-cls="${cls}" data-id="${esc(r.id)}">${esc(r.l)}</button> <span class="meta">${esc(r.n)}</span>${r.note?`<div class="meta">${esc(r.note)}</div>`:''}</td><td class="meta">${esc(r.g||'')}</td>
       ${MM_F[cls].map(([k])=>`<td class="n">${k==='adv'?penV('an.assets.'+r.id+'.adv',isFinite(r.m.adv)&&r.m.adv!==null?nf(r.m.adv,1):'—',{t:'nn',al:'Volume moyen quotidien '+r.l+' (M€)'}):isFinite(r.m[k])?nf(r.m[k],Math.abs(r.m[k])<10?2:1):'—'}</td>`).join('')}
       <td>${p[0]?`<span class="tag ${qq[0]}">${qq[1]}</span>`:'<span class="meta">filtré</span>'}</td></tr>`;}).join('')}</tbody></table></div>
-    ${cls==='stk'?'<p class="note">Volume moyen quotidien : non fourni par les comptes publiés, à saisir au crayon (M€) ; tant qu\'il est vide, le filtre correspondant écarte le titre. Croissance sur 5 ans : nécessite six exercices, non disponible avec l\'historique livré (cinq exercices).</p>':cls==='etf'?'<p class="note">Cours ajustés des dividendes et divisions. Un horizon plus long que l\'historique du fonds reste vide plutôt que d\'être raccourci.</p>':cls==='cry'?'<p class="note">Instantané de marché ; la volatilité historique n\'est pas collectée, le risque est mesuré par l\'écart au plus haut historique et la dilution (FDV).</p>':''}</div>`;
+    ${cls==='stk'?'<p class="note">Volatilité 1 an et volume moyen quotidien (montant échangé, 60 séances) : ${esc(STK_RISK.src)}, modifiables au crayon. Croissance sur 5 ans : nécessite six exercices, non disponible avec l\'historique livré (cinq exercices).</p>':cls==='etf'?'<p class="note">Cours ajustés des dividendes et divisions. Un horizon plus long que l\'historique du fonds reste vide plutôt que d\'être raccourci.</p>':cls==='cry'?`<p class="note">Instantané de marché CoinGecko ; volatilité 1 an : ${esc(CRYPTO_U.volSrc)}.</p>`:''}</div>`;
   const dm=cls==='stk'&&ui.tk&&S.an.assets[ui.tk]?(()=>{const h0=anMapHTML(),i=h0.indexOf('<div class="grid">');return i<0?'':`<div class="card s12 mmsub"><h2><span>Double mapping de ${esc(S.an.assets[ui.tk].n)} <span class="meta">secteur puis titre</span></span></h2></div>`+h0.slice(i,h0.lastIndexOf('</div>'));})():'';
   return`<div class="ai-box anm mm" role="dialog" aria-label="Mapping multi-actifs"><div class="ai-h"><b>Mapping multi-actifs</b>${mmBar()}<button class="btn sm" data-act="anmclose">Fermer</button></div>
     <div class="mmgrid">${mmFilters(cls)}<div class="mmmain"><div class="grid">${quad}${cls==='cmd'?mmCmdTable():''}${tbl}</div>${dm}</div></div></div>`;}
@@ -165,7 +167,7 @@ function anxHTML(){const{cls,id}=ui.anX,Q=mmQuad(cls),r=Q.rows.find(x=>x.id===id
     <div class="card s5"><h2>Rendements calendaires <span class="meta">${e.y0+1} à 2026 (année en cours)</span></h2>${colChart(yl,yr,{h:200})}<p class="note">Dernière barre : du 31/12/2025 au ${fdate(ETF_U.last)}.</p></div>`;}
   else{const c=r.c,P=CRYPTO_U.d.filter(x=>x.nar===c.nar),dil=c.fdv/c.mc,sup=c.max?c.circ/c.max*100:null;
     body=head(c.sym,c.name,`Narratif ${c.nar} · CoinGecko, ${new Date(CRYPTO_U.at).toLocaleString('fr-FR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})}`,nf(c.px,c.px<1?4:2),'USD')+
-    `<div class="card s12"><div class="stats">${k('Capitalisation',nf(c.mc/1e9,2)+' Md$','rang '+(CRYPTO_U.d.slice().sort((a,b)=>b.mc-a.mc).indexOf(c)+1)+' de l\'univers')}${k('FDV / capitalisation',nf(dil,2)+' ×',dil>1.5?'dilution importante à venir':dil>1.1?'dilution modérée':'offre quasi entièrement émise',dil>1.5?'down':'')}${k('Vélocité 24 h',nf(c.vol/c.mc*100,2)+' %','volume ÷ capitalisation')}${k('Repli depuis le plus haut','−'+nf((1-c.px/c.ath)*100,1)+' %','plus haut '+nf(c.ath,c.ath<1?3:0)+' $ le '+fdate(c.athD),'down')}${k('Performance 1 an',sgn(c.p1y,1),'30 j '+sgn(c.p30,1)+' · 200 j '+sgn(c.p200,1),cls_(c.p1y))}</div></div>
+    `<div class="card s12"><div class="stats">${k('Capitalisation',nf(c.mc/1e9,2)+' Md$','rang '+(CRYPTO_U.d.slice().sort((a,b)=>b.mc-a.mc).indexOf(c)+1)+' de l\'univers')}${k('FDV / capitalisation',nf(dil,2)+' ×',dil>1.5?'dilution importante à venir':dil>1.1?'dilution modérée':'offre quasi entièrement émise',dil>1.5?'down':'')}${k('Volatilité 1 an',isFinite(c.v1y)?nf(c.v1y,1)+' %':'—','rendements quotidiens annualisés')}${k('Vélocité 24 h',nf(c.vol/c.mc*100,2)+' %','volume ÷ capitalisation')}${k('Repli depuis le plus haut','−'+nf((1-c.px/c.ath)*100,1)+' %','plus haut '+nf(c.ath,c.ath<1?3:0)+' $ le '+fdate(c.athD),'down')}${k('Performance 1 an',sgn(c.p1y,1),'30 j '+sgn(c.p30,1)+' · 200 j '+sgn(c.p200,1),cls_(c.p1y))}</div></div>
     <div class="card s7"><h2>Comparables du narratif ${esc(c.nar)}</h2><div class="tw"><table class="tbl"><thead><tr><th>Actif</th><th class="n">Capitalisation</th><th class="n">FDV / cap.</th><th class="n">Vélocité</th><th class="n">Repli / plus haut</th><th class="n">30 j</th><th class="n">1 an</th></tr></thead><tbody>
       ${P.map(x=>`<tr${x===c?' class="hl"':''}><td><b>${esc(x.sym)}</b> <span class="meta">${esc(x.name)}</span></td><td class="n">${nf(x.mc/1e9,2)} Md$</td><td class="n">${nf(x.fdv/x.mc,2)} ×</td><td class="n">${nf(x.vol/x.mc*100,2)} %</td><td class="n down">−${nf((1-x.px/x.ath)*100,0)} %</td><td class="n ${cls_(x.p30)}">${sgn(x.p30,1)}</td><td class="n ${cls_(x.p1y)}">${sgn(x.p1y,1)}</td></tr>`).join('')}</tbody></table></div></div>
     <div class="card s5"><h2>Offre et dilution</h2>${sup!==null?`<div class="kv"><span>Offre émise / offre maximale</span><b>${nf(sup,1)} %</b></div><div class="track" style="height:8px;background:var(--line);border-radius:4px;margin:6px 0 10px"><div style="width:${clamp(sup,0,100)}%;height:100%;background:var(--accent);border-radius:4px"></div></div>`:'<p class="note">Pas d\'offre maximale : émission continue.</p>'}

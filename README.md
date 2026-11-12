@@ -178,3 +178,15 @@ Sources des données livrées (collecte du 10/11/2026) : FRED (CPIAUCSL, PPIFIS,
 - **Clic ETF ou crypto → analyse financière** : la slide d'analyse affiche l'actif sans ressaisie. ETF : performances 1 à 30 ans, volatilité, rendement / risque, écart au S&P 500, rendements calendaires. Crypto : capitalisation, FDV et dilution, vélocité, repli depuis le plus haut, comparables du narratif. Boutons retour vers le mapping ou vers l'analyse du titre.
 - Barre du mapping : 📈 Actions · 🌐 ETF · ⚡ Cryptos · 🛢️ Commodities / Macro ; sous-onglet « Comptes trading directs » du volet 4.
 - Déjà en place depuis les versions 7 et 8 et conservés : trois panneaux redimensionnables, crayon d'override en cascade, bloc sectoriel du business plan (EBITDA, PER, BPA, valorisation, marge nette, BFR, FRNC en jauges et histogrammes), zone unique pays / région / monde, matrice TAM-SAM-SOM échelle × 5 ans, ciblage et bassins d'acquisition, verdict Go / No-Go, volet 4 en trois sous-onglets, macro / WASDE / or-argent, IA cache-first.
+
+## Version 8.3 : prêt pour l'usage réel
+
+- **Ajout d'une société en un clic** : Ctrl+K, taper le ticker, « Créer la fiche ». Backend connecté : les cinq derniers exercices (chiffre d'affaires, EBITDA, résultat net, BPA, FCF, dette nette, ROE, nombre d'actions) sont chargés depuis la SEC (XBRL des rapports 10-K, sans clé, 0 jeton), cours via Tiingo si la clé existe. Société non américaine : message explicite et ingestion IA à partir de l'URL d'une page de comptes.
+- **Cours du soir automatiques** : la tâche planifiée de 21 h 30 UTC actualise cryptos (CoinGecko, sans clé), actions et ETF américains (Tiingo), actions européennes (EODHD) ; les fiches et les cryptos reprennent ces cours au chargement, sans écraser une saisie.
+- **Données rafraîchies au 11/11/2026** (EODHD) : cours des 11 titres, volatilité 1 an et montant moyen échangé (mapping : nouvel axe et filtre « Volatilité 1 an », volume rempli automatiquement), volatilité 1 an des 11 cryptos (axe par défaut du mapping crypto).
+- **Recherche universelle** (Ctrl+K ou /) : actions, ETF, cryptos, marchés, dossiers et volets, navigation au clavier.
+- **Centre d'alertes** (cloche) : prix d'achat cible atteint, cours périmé (plus de 7 jours), mouvement FOMO or / argent, signal lead / lag ; notifications du navigateur sur demande.
+- **Mode simple / expert** : en mode simple, chaque volet montre ses trois premières cartes, le détail se déplie au clic.
+- **Guide de premier lancement** en trois étapes.
+- **Intégration continue** (`.github/workflows/ci.yml`) : typage, 19 tests unitaires, test de bout en bout de l'interface (`npm run e2e`, 15 parcours) à chaque push.
+- Le mapping des entreprises cotées ne s'ouvre que depuis l'Analyse financière.

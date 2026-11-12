@@ -6,6 +6,7 @@ import { db, check, requireUser } from '../../../lib/supabase.js';
 import type { AiSourceRecord } from '../../../types/models.js';
 import { q } from '../../../lib/http.js';
 import { ingestRoute } from '../../../lib/ai-ingest-route.js';
+import { fundamentalsRoute } from '../../../lib/fundamentals-route.js';
 
 export { htmlToText } from '../../../lib/html.js';
 import { htmlToText } from '../../../lib/html.js';
@@ -18,6 +19,7 @@ export function confidence(modelConf: number, quoteFound: boolean, valueInQuote:
 export default handler(async (req: Req, res: Res) => {
   /* /api/v1/ai/ingest est réécrit vers cette fonction avec op=ingest */
   if (q(req, 'op') === 'ingest') return ingestRoute(req, res);
+  if (q(req, 'op') === 'fundamentals') return fundamentalsRoute(req, res);
   const uid = await requireUser(req);
   const b = body<{ url: string; metric: string; question: string }>(req);
   if (!/^https:\/\//.test(b.url ?? '') || !b.metric || !b.question) throw new HttpError(400, 'url (https), metric et question requis');
