@@ -34,8 +34,8 @@ export function validateIngest(b: Partial<IngestInput>): { module: Module; subje
   if (!TRIGGERS.includes(t as Trigger)) throw Object.assign(new Error('Déclenchement explicite requis : trigger = recalc ou init (aucun appel automatique)'), { code: 400 });
   const subject = String(b.subject ?? '').trim().slice(0, 80);
   if (!subject) throw Object.assign(new Error('subject requis (dossier, ticker ou instrument)'), { code: 400 });
-  /* Jusqu'à trois pages lues pour une même extraction (cours, comptes, ratios) */
-  const urls = [...(b.url ? [String(b.url)] : []), ...(Array.isArray(b.urls) ? b.urls.map(String) : [])].slice(0, 3);
+  /* Jusqu'à quatre pages lues pour une même extraction (cours, comptes, ratios, MarketScreener) */
+  const urls = [...(b.url ? [String(b.url)] : []), ...(Array.isArray(b.urls) ? b.urls.map(String) : [])].slice(0, 4);
   if (urls.some(u => !/^https:\/\//.test(u))) throw Object.assign(new Error('url https requise'), { code: 400 });
   return { module: m as Module, subject, trigger: t as Trigger, url: urls[0] ?? null, urls, force: !!b.force };
 }

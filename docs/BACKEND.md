@@ -6,7 +6,7 @@ Architecture : fonctions serveur Vercel (Node 20, TypeScript) dans `api/v1/`, ba
 
 ## 0. Principe : pas de clé de fournisseur de données
 
-OVERRIDE.DESK s'alimente en faisant lire les pages publiques par l'IA (cotations, comptes annuels, ratios sur stockanalysis.com ; Investing.com, BCE, euribor-rates.eu…). Dans l'application Claude, la lecture passe par le navigateur intégré et ne demande **aucune clé**. Sur le web, le serveur lit les mêmes pages avec la seule clé Anthropic (`POST /api/v1/ai/ingest`, module `an`, pages déduites du ticker : `RMS.PA`, `EPA:RMS` ou `COST`). Chaque montant extrait est recherché dans le texte des pages avant d'être accepté. Seules sources sans IA conservées, toutes sans clé : CoinGecko (cryptos), BCE (devises), SEC EDGAR (secours pour les sociétés américaines).
+OVERRIDE.DESK s'alimente en faisant lire les pages publiques par l'IA (cours recoupés entre Google Finance, TradingView, stockanalysis.com et Investing.com ; comptes MarketScreener recoupés avec stockanalysis.com, Yahoo Finance en secours ; Investing.com pour les matières premières, BCE, euribor-rates.eu…). Dans l'application Claude, la lecture passe par le navigateur intégré et ne demande **aucune clé**. Sur le web, le serveur lit les mêmes pages avec la seule clé Anthropic (`POST /api/v1/ai/ingest`, module `an`, pages déduites du ticker : `RMS.PA`, `EPA:RMS` ou `COST`). Chaque montant extrait est recherché dans le texte des pages avant d'être accepté. Seules sources sans IA conservées, toutes sans clé : CoinGecko (cryptos), BCE (devises), SEC EDGAR (secours pour les sociétés américaines).
 
 ## 1. Mise en service
 

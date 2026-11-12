@@ -197,3 +197,10 @@ Sources des données livrées (collecte du 10/11/2026) : FRED (CPIAUCSL, PPIFIS,
 - **Cours de toutes les fiches** : bouton « Actualiser » du panneau Collecte IA, une page de cotation lue par titre, valeur vérifiée dans la page ; une saisie au crayon n'est jamais écrasée.
 - Retrait de Tiingo et EODHD : la tâche du soir ne garde que des sources publiques sans clé (CoinGecko, BCE ; EIA si sa clé gratuite est fournie).
 - Test de bout en bout : création d'une société par lecture IA (acceptation des montants présents, rejet des montants absents).
+
+## Version 8.5 : sources réelles recoupées
+
+- **Cours** : Google Finance, TradingView, stockanalysis.com et Investing.com (si l'adresse est connue) sont lus dans cet ordre ; un cours est retenu dès que **deux sites concordent à 1,5 % près**, une source isolée est acceptée mais marquée « source unique », un désaccord laisse le cours inchangé. Mention « recoupé » ou « source unique » à côté du cours dans l'Analyse financière.
+- **Comptes** : MarketScreener (CA, EBITDA, résultat net, BPA, FCF, dette nette ; liens déjà présents pour les 11 sociétés) recoupé avec stockanalysis.com à 3 % près sur le chiffre d'affaires ; les lignes manquantes d'une source sont complétées par l'autre ; Yahoo Finance en dernier recours. Un désaccord laisse les comptes inchangés. Bouton « Comptes de … » du panneau Collecte IA.
+- **Nouvelle société** : après stockanalysis, recoupement du CA avec MarketScreener ou Yahoo et du cours avec Google Finance / TradingView. Côté serveur, MarketScreener est trouvé par sa page de recherche et ajouté aux pages lues.
+- Constat des tests de lecture (12/11/2026, LVMH) : Google Finance, TradingView, Investing.com, MarketScreener et stockanalysis lisibles ; Yahoo Finance bloqué par son mur de consentement en Europe (gardé en secours).

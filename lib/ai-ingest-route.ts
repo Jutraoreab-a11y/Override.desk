@@ -28,7 +28,12 @@ export async function ingestRoute(req: Req, res: Res): Promise<void> {
   if (d.serve) return send(res, 200, { ok: true, cached: true, stale: d.stale, age_h: d.ageH, record: rec, tokens: 0 });
   const apiKey = process.env.ANTHROPIC_API_KEY; if (!apiKey) throw new HttpError(503, 'ANTHROPIC_API_KEY non configurée (mode simulation)');
   /* Société : sans URL fournie, les pages publiques (cours, comptes, ratios) sont déduites du ticker */
-  if (!v.urls.length && v.module === 'an') v.urls = companyPages(v.subject).urls;
+  if (!v.urls.length && v.module === 'an') {
+    v.urls = companyPages(v.subject).urls;
+    /* MarketScreener (comptes et EBITDA les plus complets) : adresse trouvée sur sa page de recherche */
+    try { const sr = await fetch('https://www.marketscreener.com/search/?q=' + encodeURIComponent(v.subject.replace(/[.:].*$/, '')), { headers: { 'User-Agent': 'Mozilla/5.0 OVERRIDE.DESK ingest' } });
+      const m = sr.ok ? (await sr.text()).match(/\/quote\/stock\/[A-Z0-9\-]+-\d+\//) : null; if (m) v.urls.push('https://www.marketscreener.com' + m[0] + 'finances/'); } catch { /* source facultative */ }
+  }
   if (!v.urls.length) throw new HttpError(400, 'url source requise pour une nouvelle extraction');
   v.url = v.urls[0];
   const parts: string[] = [];

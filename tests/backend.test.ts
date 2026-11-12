@@ -155,6 +155,7 @@ test('lecture IA des pages publiques : pages déduites du ticker, trois pages au
   const AI = await import('../lib/ai-ingest.ts');
   assert.deepEqual(AI.companyPages('RMS.PA').urls, ['https://stockanalysis.com/quote/epa/RMS/', 'https://stockanalysis.com/quote/epa/RMS/financials/', 'https://stockanalysis.com/quote/epa/RMS/financials/ratios/']);
   assert.equal(AI.companyPages('EPA:MC').path, 'quote/epa/MC'); assert.equal(AI.companyPages('cost').path, 'stocks/cost');
-  const v = AI.validateIngest({ module: 'an', subject: 'RMS.PA', trigger: 'init', urls: ['https://a.example', 'https://b.example', 'https://c.example', 'https://d.example'] });
+  const v = AI.validateIngest({ module: 'an', subject: 'RMS.PA', trigger: 'init', urls: ['https://a.example', 'https://b.example', 'https://c.example'] });
   assert.equal(v.urls.length, 3);
+  assert.equal(AI.validateIngest({ module: 'an', subject: 'X', trigger: 'init', urls: ['https://a.example','https://b.example','https://c.example','https://d.example','https://e.example'] }).urls.length, 4);
 });

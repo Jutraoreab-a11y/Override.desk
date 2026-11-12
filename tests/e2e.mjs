@@ -35,6 +35,20 @@ await step('création par lecture IA (navigateur et Claude simulés)', () => p.e
   const before = Object.keys(S.an.assets).length; await uxCreate('EPA:XYZ'); const z = S.an.assets[ui.tk];
   if (z.rev.some(v => v)) throw new Error('extraction non vérifiée acceptée');
 }));
+await step('cours recoupés entre sites (navigateur et Claude simulés)', () => p.evaluate(async () => {
+  const pad = 'Cours, graphique, actualités. '.repeat(20), P = {
+    'https://www.google.com/finance/quote/MC:EPA': 'PRICE=403.10 ' + pad, 'https://www.tradingview.com/symbols/EURONEXT-MC/': 'PRICE=404.70 ' + pad,
+    'https://www.google.com/finance/quote/AIR:EPA': 'PRICE=150.00 ' + pad, 'https://www.tradingview.com/symbols/EURONEXT-AIR/': 'PRICE=210.70 ' + pad, 'https://stockanalysis.com/quote/epa/AIR/': 'PRICE=211.20 ' + pad };
+  AI.mcp = {}; aiPage = async u => P[u] || 'page not found';
+  AI.sample = { json: async q => { const m = q.match(/PRICE=([\d.]+)/); return { price: m ? +m[1] : null, currency: 'EUR', date: '2026-11-12' }; } };
+  S.an.assets.MC.pxManual = false; S.an.assets.AIR.pxManual = false;
+  await aiRefreshPrices();
+  const mc = S.an.assets.MC, air = S.an.assets.AIR, ko = S.an.assets.KO;
+  if (mc.price !== 403.1 && mc.price !== 404.7) throw new Error('MC non recoupé ' + mc.price);
+  if (!/Recoupé · Google Finance et TradingView/.test(mc.pxSrc)) throw new Error('source MC ' + mc.pxSrc);
+  if (![210.7, 211.2].includes(air.price) || !/TradingView et stockanalysis/.test(air.pxSrc)) throw new Error('AIR : la source discordante devait être écartée ' + air.price + ' ' + air.pxSrc);
+  if (/lecture IA/.test(ko.pxSrc || '')) throw new Error('KO sans page lisible ne devait pas changer');
+}));
 await b.close();
 if (errs.length) { console.error(errs.join('\n')); process.exit(1); }
 console.log('Test de bout en bout : aucune erreur');

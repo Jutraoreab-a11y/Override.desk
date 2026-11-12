@@ -74,7 +74,7 @@ function renderAN(){
     ${ui.qmsg?`<div class="card s12 msg">${ui.qmsg}</div>`:''}
     <div class="card s12"><div class="symhead">
       <div class="sh-id"><div class="sh-t">${esc(a.t)}</div><div class="sh-n">${esc(a.n)}</div><div class="sh-m">${esc(a.sec)}, exercice clos en ${esc(a.fy)}, comptes en ${esc(rc)}</div></div>
-      <div><div class="sh-px">${fld(P('price'),'n',{al:'Cours',d:2})}<em class="u">${esc(cur)}</em></div><div class="sh-m">cours au ${esc(a.pxDate)}</div></div>
+      <div><div class="sh-px">${fld(P('price'),'n',{al:'Cours',d:2})}<em class="u">${esc(cur)}</em></div><div class="sh-m">cours au ${esc(a.pxDate)}${a.pxSrc&&/Recoupé|Non recoupé/.test(a.pxSrc)?`<span class="${/^Recoupé/.test(a.pxSrc)?'up':'amber'}" title="${esc(a.pxSrc)}"> · ${/^Recoupé/.test(a.pxSrc)?'recoupé':'source unique'}</span>`:''}${a.fundSrc?`<span class="meta" title="${esc(a.fundSrc)}"> · comptes ${/^Recoupé/.test(a.fundSrc)?'recoupés':'non recoupés'}</span>`:''}</div></div>
       <div class="sh-kv">
         <div><span>Valeur de référence</span><b>${nf(R.ref,2)}</b></div>
         <div><span>Potentiel</span><b class="${cls(R.up)}">${isFinite(R.up)?sgn(R.up*100):'—'}</b></div>
