@@ -61,8 +61,8 @@ function mmScatter(P,o){const W=420,H=300,L=40,R=12,T=12,B=36,iw=W-L-R,ih=H-T-B;
   tk(x0,x1).forEach(v=>{s+=`<text x="${X(v)}" y="${T+ih+12}" class="ax" text-anchor="middle">${nf(v,Math.abs(v)<10&&v%1?1:0)}</text>`;});tk(y0,y1).forEach(v=>{s+=`<text x="${L-5}" y="${Y(v)+3}" class="ax" text-anchor="end">${nf(v,Math.abs(v)<10&&v%1?1:0)}</text>`;});
   s+=`<text x="${L+iw/2}" y="${H-4}" class="at" text-anchor="middle">${esc(o.xl)}</text><text transform="translate(10 ${T+ih/2}) rotate(-90)" class="at" text-anchor="middle">${esc(o.yl)}</text>`;
   const placed=[];P.map(p=>({p,cx:X(p.x),cy:Y(p.y)})).sort((a,b)=>a.cy-b.cy).forEach(({p,cx,cy})=>{const r=p.r||4,right=cx>W-80,lx=right?cx-r-4:cx+r+4,w=p.label.length*4.6;let ly=cy+3;
-    const xa=right?lx-w:lx,hit=()=>placed.find(q=>Math.abs(q.ly-ly)<10&&xa<q.x0+q.w&&q.x0<xa+w);for(let n=0;n<8&&hit();n++)ly+=9;placed.push({x0:xa,w,ly});
-    s+=`<g class="pt ${p.cls||''}" data-act="mmpt" data-id="${esc(p.id)}" tabindex="0" role="button" aria-label="${esc(p.aria||p.label)}"><circle cx="${cx}" cy="${cy}" r="${r}"/><text x="${lx}" y="${ly}" text-anchor="${right?'end':'start'}">${esc(p.label)}</text></g>`;});
+    const xa=right?lx-w:lx,hit=()=>placed.find(q=>Math.abs(q.ly-ly)<10&&xa<q.x0+q.w&&q.x0<xa+w);let lab=p.label;if(o.sparse){if(hit())lab='';else placed.push({x0:xa,w,ly});}else{for(let n=0;n<8&&hit();n++)ly+=9;placed.push({x0:xa,w,ly});}
+    s+=`<g class="pt ${p.cls||''}" data-act="mmpt" data-id="${esc(p.id)}" tabindex="0" role="button" aria-label="${esc(p.aria||p.label)}"><title>${esc(p.aria||p.label)}</title><circle cx="${cx}" cy="${cy}" r="${r}"/><text x="${lx}" y="${ly}" text-anchor="${right?'end':'start'}">${esc(lab)}</text></g>`;});
   return s+'</svg>';}
 const mmMed=a=>{const b=a.filter(isFinite).sort((x,y)=>x-y),n=b.length;return n?(n%2?b[(n-1)/2]:(b[n/2-1]+b[n/2])/2):NaN;};
 function mmQuad(cls){const M=mmS(),ax=MM_AX[cls],xk=ax.x[M.x[cls]]?M.x[cls]:Object.keys(ax.x)[0],yk=ax.y[M.y[cls]]?M.y[cls]:Object.keys(ax.y)[0],[xl,inv,xu]=ax.x[xk],[yl,,yu]=ax.y[yk];

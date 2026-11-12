@@ -23,12 +23,25 @@ await step('commodities : aucune case vide, séries jusqu\'au 12/11/2026', () =>
   if (bad.length) throw new Error(bad.length + ' case(s) vide(s) : ' + bad.slice(0, 3).join(' | '));
 }));
 await step('mapping visible dans Analyse financière, date de mise à jour sur chaque volet, spread sur contrats M1', () => p.evaluate(() => {
-  ui.tab = 'an'; renderAll(); if (!document.querySelector('#p-an .anmm svg') || !document.querySelector('#p-an .anmm [data-act=anmopen]')) throw new Error('mapping des sociétés cotées absent');
+  ui.tab = 'an'; renderAll(); const mb = document.querySelector('#p-an [data-act=anmopen]'); if (!mb || !/^Mapping$/.test(mb.textContent.trim()) || mb.getBoundingClientRect().height > 28 || document.querySelector('#p-an .anmm')) throw new Error('bouton Mapping compact absent');
   for (const t of ['bp', 'an', 'sc', 'lbo', 'pf', 'cm', 'pc']) { ui.tab = t; renderAll(); const m = document.querySelector('#p-' + t + ' .majbar'); if (!m || !/Mise à jour : \d{2}\/\d{2}\/\d{4} à \d{2}:\d{2}/.test(m.textContent)) throw new Error('date de mise à jour absente : ' + t); }
   const C = cmCalc(), s = C.s, i = s.d.indexOf('2026-10-02'); if (Math.abs(C.R[i].spread - (s.brentS[i] - s.wtiF[i])) > 1e-9 || C.R[i].spread > 12) throw new Error('spread Brent − WTI ' + C.R[i].spread);
 }));
 await step('mapping multi-actifs', async () => { await p.evaluate(() => { ui.tab = 'an'; renderAll(); }); await p.click('[data-act=anmopen]');
   for (const c of ['stk', 'etf', 'cry', 'cmd']) await p.evaluate(c => { S.mm.cls = c; renderAnMap(); if (!document.querySelectorAll('#anmap svg.mm .pt').length) throw new Error('quadrant vide ' + c); }, c); });
+await step('mapping par secteur sur l\'univers coté, puis sociétés du secteur, puis analyse financière', async () => {
+  await p.evaluate(() => { ui.tab = 'an'; ui.anX = null; S.mm.cls = 'stk'; S.uv = { view: 'sec', lvl: 'sec' }; ui.anmOpen = true; renderAnMap();
+    if (UNIV.rows.length < 45000 || UNIV.cty.length < 100) throw new Error('univers incomplet ' + UNIV.rows.length);
+    if (document.querySelectorAll('#anmap svg.mm .pt').length !== 11) throw new Error('11 secteurs attendus, ' + document.querySelectorAll('#anmap svg.mm .pt').length);
+    S.uv.lvl = 'ind'; renderAnMap(); if (document.querySelectorAll('#anmap tr.uvr').length < 70) throw new Error('industries manquantes');
+    const semi = UNIV.ind.findIndex(d => d.i === 'Semiconductors & Chip Equipment'); const el = document.querySelector(`#anmap [data-act=uvsec][data-id="${semi}"]`); if (!el) throw new Error("point Semiconducteurs absent"); el.dispatchEvent(new MouseEvent("click", { bubbles: true })); });
+  await p.evaluate(() => { const rows = [...document.querySelectorAll('#anmap tr.uvr')]; if (rows.length < 100) throw new Error('sociétés du secteur ' + rows.length);
+    const nv = [...document.querySelectorAll('#anmap tr.uvr')].find(r => r.dataset.id === 'NVDA'); if (!nv || !/Analysée/.test(nv.textContent)) throw new Error('NVDA non reconnue comme analysée');
+    nv.click(); if (ui.tk !== 'NVDA' || ui.tab !== 'an' || ui.anmOpen) throw new Error('ouverture analyse ' + ui.tk); });
+  await p.evaluate(async () => { let got = null; const _u = uxCreate; uxCreate = async q => { got = q; }; S.uv.view = 'cos'; S.uv.cty = 'Taiwan'; ui.anmOpen = true; renderAnMap();
+    const r = [...document.querySelectorAll('#anmap tr.uvr')].find(x => !/Analysée/.test(x.textContent)); r.click(); await new Promise(z => setTimeout(z, 20)); uxCreate = _u;
+    if (!got || got !== r.dataset.id) throw new Error('lancement analyse Claude ' + got); S.uv = { view: 'sec' }; ui.tab = 'an'; ui.anmOpen = true; renderAnMap(); });
+});
 await step('clic ETF vers analyse', async () => { await p.evaluate(() => { S.mm.cls = 'etf'; renderAnMap(); }); await p.click('#anmap svg.mm .pt[data-id="SPY"]');
   if (await p.evaluate(() => document.querySelector('#p-an .sh-t')?.textContent) !== 'SPY') throw new Error('slide ETF absente'); });
 await step('recherche universelle', async () => { await p.keyboard.press('Control+k'); await p.keyboard.type('bitc'); await p.keyboard.press('Enter');

@@ -36,5 +36,5 @@ function majFill(){const P=document.getElementById('p-'+ui.tab);if(!P)return;
     const isFirstNum=tr&&[...tr.cells].indexOf(e)===1;
     e.textContent=/croissance|variation|évolution/i.test(lab)&&isFirstNum?'base':/consensus/i.test(lab)?'non publié':'non renseigné';
     e.classList.add('meta');e.title=e.textContent==='base'?'Première année : pas d\'année précédente pour calculer une croissance':'Valeur à saisir au crayon ou à collecter : elle n\'est pas fournie par la source';});}
-{const _r=renderAll;renderAll=function(){_r.apply(this,arguments);try{majBar();anMmCard();majFill();}catch(e){console.error('maj',e);}};}
+{const _r=renderAll;renderAll=function(){_r.apply(this,arguments);try{majBar();majFill();}catch(e){console.error('maj',e);}};}
 if(typeof rsBar==='function'){const _b=rsBar;rsBar=function(){_b.apply(this,arguments);try{majBar();}catch(e){}};}

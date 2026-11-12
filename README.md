@@ -239,3 +239,10 @@ Sources des données livrées (collecte du 10/11/2026) : FRED (CPIAUCSL, PPIFIS,
 - L'artefact déclare `host:claude_browser` (navigate, get_page_text) et `Firecrawl` (firecrawl_scrape) ; la première lecture demande l'autorisation une fois.
 - Valeurs inscrites sur tous les graphiques SVG : fondamentaux historiques (chaque exercice), barres et courbes (`colChart`), CA / EBITDA, trésorerie (fin de chaque année), Monte-Carlo (scénarios finaux).
 
+
+## Version 8.11 : mapping par secteur sur tout l'univers coté
+
+- Bouton « Mapping » compact (icône grille) dans Analyse financière, à la place de la grande carte.
+- Mapping par secteur : 46 072 sociétés actives (cotation principale, doublons de places secondaires retirés), 111 pays, 80 places de cotation, au niveau 11 secteurs, 26 groupes ou 75 industries (GICS). Filtres pays, place et taille.
+- Clic sur un secteur : la liste complète de ses sociétés (paginée, recherche par nom ou ticker) et le quadrant des titres déjà analysés. Clic sur une société : l'analyse financière s'ouvre ; si le titre n'est pas encore couvert, Claude lit ses comptes et crée l'analyse.
+- Sources : FinanceDatabase (Jeroen Bouma, données ouvertes, v2.5.1) pour l'univers ; Aswath Damodaran (NYU Stern, janvier 2026, sociétés américaines) pour les repères VE / EBITDA, PER, marges et croissance du BPA attendue à 5 ans. Banques et assurances : VE / EBITDA non pertinent, hors quadrant.

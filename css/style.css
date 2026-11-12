@@ -619,3 +619,10 @@ sup.cmf{font-size:9px;color:var(--amber);margin-left:2px;cursor:help;font-weight
 .anmm{margin:0 0 12px}.anmm h2{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}.anmm-g{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(0,1fr);gap:16px;align-items:center;padding:4px 14px 14px}.anmm-s p{margin:0 0 10px;font-size:13px}.anmm-s .dot{margin-right:6px}
 @media (max-width:900px){.anmm-g{grid-template-columns:1fr}}
 .sc .vl,.lv .vl{font-size:9px;fill:var(--hi);font-variant-numeric:tabular-nums}.sc .vl.last{font-weight:700}
+.anm-b{height:24px;padding:0 9px;font-size:12px;gap:5px}
+.uvside label.uvlab{display:flex;flex-direction:column;gap:3px;font-size:11px;color:var(--mute)}.uvside select{height:26px;font-size:12px;max-width:100%}.uvcaps{display:flex;flex-direction:column;gap:3px;font-size:11px;color:var(--mute)}.uvcaps label{display:flex;gap:6px;align-items:center}
+.uvtabs{margin:0 0 10px}.uvt tr.uvr{cursor:pointer}.uvt tr.uvr:hover td{background:var(--pane2,rgba(255,255,255,.04))}.uvq{height:26px;font-size:12px;width:200px;max-width:50%}.uvpg{display:flex;gap:10px;align-items:center;justify-content:flex-end;padding:8px 14px}
+.uvk{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;padding:8px 14px}.uvk div{display:flex;flex-direction:column;gap:2px}.uvk span{font-size:11px;color:var(--mute)}
+@media (max-width:700px){.uvk{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
+.uvside .seg{display:flex;flex-wrap:wrap;gap:2px}.uvside .seg button{flex:1 1 auto;font-size:11px;padding:4px 6px}
