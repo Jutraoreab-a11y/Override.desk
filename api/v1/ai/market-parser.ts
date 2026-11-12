@@ -1,14 +1,14 @@
 /* POST /api/v1/ai/market-parser {url, metric, question}
    Le serveur lit la page source, Claude en extrait la donnée, l'extrait cité est vérifié dans la page,
    puis la mesure est stockée avec source_url, source_name, timestamp_retrieved et confidence_score. */
-import { handler, body, send, HttpError, num, type Req, type Res } from '../../../lib/http.ts';
-import { db, check, requireUser } from '../../../lib/supabase.ts';
-import type { AiSourceRecord } from '../../../types/models.ts';
-import { q } from '../../../lib/http.ts';
-import { ingestRoute } from '../../../lib/ai-ingest-route.ts';
+import { handler, body, send, HttpError, num, type Req, type Res } from '../../../lib/http.js';
+import { db, check, requireUser } from '../../../lib/supabase.js';
+import type { AiSourceRecord } from '../../../types/models.js';
+import { q } from '../../../lib/http.js';
+import { ingestRoute } from '../../../lib/ai-ingest-route.js';
 
-export { htmlToText } from '../../../lib/html.ts';
-import { htmlToText } from '../../../lib/html.ts';
+export { htmlToText } from '../../../lib/html.js';
+import { htmlToText } from '../../../lib/html.js';
 const norm = (s: string) => s.replace(/\s+/g, ' ').toLowerCase();
 /** Score de confiance : confiance déclarée par le modèle, plafonnée selon la vérification de l'extrait et de la valeur dans la page. */
 export function confidence(modelConf: number, quoteFound: boolean, valueInQuote: boolean): number {

@@ -1,7 +1,7 @@
 /* Espaces partagés : rôles, empreinte canonique et signature des versions. */
 import { createHash, createHmac } from 'node:crypto';
-import { db, check } from './supabase.ts';
-import { HttpError } from './http.ts';
+import { db, check } from './supabase.js';
+import { HttpError } from './http.js';
 
 export type Role = 'admin' | 'analyste' | 'valideur' | 'lecteur';
 export const ROLES: Role[] = ['admin', 'analyste', 'valideur', 'lecteur'];

@@ -1,6 +1,6 @@
 /* Chiffrement des identifiants courtiers : AES-256-GCM, clé ENCRYPTION_KEY (32 octets base64) hors base. */
 import { createCipheriv, createDecipheriv, randomBytes, createHash, timingSafeEqual } from 'node:crypto';
-import { HttpError } from './http.ts';
+import { HttpError } from './http.js';
 
 function key(): Buffer {
   const k = Buffer.from(process.env.ENCRYPTION_KEY || '', 'base64');

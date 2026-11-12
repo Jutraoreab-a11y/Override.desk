@@ -5,12 +5,12 @@
    POST {action:'sync', id}  : une connexion
    GET ?action=cron          : tâche planifiée, synchronise toutes les connexions de tous les utilisateurs
    DELETE ?id=               : supprime une connexion et ses données */
-import { handler, body, send, q, HttpError, type Req, type Res } from '../../../lib/http.ts';
-import { db, check, requireUser, isCron, configured } from '../../../lib/supabase.ts';
-import { encrypt } from '../../../lib/crypto.ts';
-import { syncConnection } from '../../../lib/sync.ts';
-import { ADAPTERS, BROKER_MAP } from '../../../lib/brokers/index.ts';
-import type { BrokerCredentials, BrokerId } from '../../../types/models.ts';
+import { handler, body, send, q, HttpError, type Req, type Res } from '../../../lib/http.js';
+import { db, check, requireUser, isCron, configured } from '../../../lib/supabase.js';
+import { encrypt } from '../../../lib/crypto.js';
+import { syncConnection } from '../../../lib/sync.js';
+import { ADAPTERS, BROKER_MAP } from '../../../lib/brokers/index.js';
+import type { BrokerCredentials, BrokerId } from '../../../types/models.js';
 
 type Conn = { id: string; user_id: string; broker: BrokerId; credentials_enc: string | null };
 export default handler(async (req: Req, res: Res) => {

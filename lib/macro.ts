@@ -1,5 +1,5 @@
 /* Sources macro publiques : EIA (pétrole spot et futures WTI) et BCE (taux de change de référence). */
-import type { PricePoint } from '../types/models.ts';
+import type { PricePoint } from '../types/models.js';
 
 /** EIA API v2 : séries quotidiennes. RBRTE = Brent spot, RWTC = WTI spot (Cushing), RCLC1..3 = futures WTI NYMEX contrats 1 à 3. */
 export const EIA_SERIES: Record<string, { instrument: 'BRENT' | 'WTI'; contract: 'SPOT' | 'M1' | 'M2' | 'M3' }> = {

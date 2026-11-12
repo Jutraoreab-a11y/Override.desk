@@ -1,7 +1,7 @@
 /* Registre des adaptateurs. Les plateformes sans API officielle (XTB, Trade Republic, DEGIRO, Boursorama…) passent par l'import CSV. */
-import type { BrokerAdapter, BrokerId } from '../../types/models.ts';
-import { binance, kraken, okx, coinbase, ledger } from './crypto-exchanges.ts';
-import { saxo, ibkrFlex, gateway } from './securities.ts';
+import type { BrokerAdapter, BrokerId } from '../../types/models.js';
+import { binance, kraken, okx, coinbase, ledger } from './crypto-exchanges.js';
+import { saxo, ibkrFlex, gateway } from './securities.js';
 
 export const ADAPTERS: Partial<Record<BrokerId, BrokerAdapter>> = { binance, kraken, okx, coinbase, ledger, saxo, ibkr_flex: ibkrFlex, gateway };
 /** Correspondance nom affiché → adaptateur (liste déroulante du volet 4). */

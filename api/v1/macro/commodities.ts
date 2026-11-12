@@ -2,11 +2,11 @@
    GET ?from=&to=&series=SPREAD_BRENT_WTI,...    : séries synchronisées (pour le multi-tracé du volet 5) et prix
    GET ?action=ingest  (tâche planifiée Vercel)    : EIA (Brent, WTI spot, futures WTI M1-M3) + BCE, puis recalcul des séries
    POST {prices:[PricePoint]} (utilisateur)          : ingestion d'autres sources (or, argent, cuivre, gaz, indices, actions STK:<ticker>…) puis recalcul */
-import { handler, body, send, q, HttpError, type Req, type Res } from '../../../lib/http.ts';
-import { db, check, isCron, requireUser } from '../../../lib/supabase.ts';
-import { fetchEia, fetchEcb, ecbCrosses } from '../../../lib/macro.ts';
-import { computeSeries } from '../../../lib/series.ts';
-import type { PricePoint } from '../../../types/models.ts';
+import { handler, body, send, q, HttpError, type Req, type Res } from '../../../lib/http.js';
+import { db, check, isCron, requireUser } from '../../../lib/supabase.js';
+import { fetchEia, fetchEcb, ecbCrosses } from '../../../lib/macro.js';
+import { computeSeries } from '../../../lib/series.js';
+import type { PricePoint } from '../../../types/models.js';
 
 const INSTR = /^(BRENT|WTI|GOLD|SILVER|COPPER|NATGAS|EURUSD|GBPUSD|USDJPY|USDCNH|AUDUSD|USDCAD|SPX|NDX|DJI|DAX|CAC|NKX|STK:[A-Z0-9.\-]{1,12})$/;
 async function store(prices: PricePoint[]) {

@@ -1,10 +1,10 @@
 /* POST /api/v1/trading/mt-sync : réception des données envoyées par l'EA MetaTrader (MT4/MT5).
    Authentification par compte : en-tête X-Override-Key (clé générée dans OVERRIDE.DESK, stockée hachée). */
-import { handler, header, body, send, HttpError, type Req, type Res } from '../../../lib/http.ts';
-import { db, check } from '../../../lib/supabase.ts';
-import { sha256, sameHash } from '../../../lib/crypto.ts';
-import { ingestMt } from '../../../lib/sync.ts';
-import type { MtSyncPayload } from '../../../types/models.ts';
+import { handler, header, body, send, HttpError, type Req, type Res } from '../../../lib/http.js';
+import { db, check } from '../../../lib/supabase.js';
+import { sha256, sameHash } from '../../../lib/crypto.js';
+import { ingestMt } from '../../../lib/sync.js';
+import type { MtSyncPayload } from '../../../types/models.js';
 
 export function validate(p: MtSyncPayload): string | null {
   if (!p?.account || p.account.login == null || !p.account.currency) return 'account.login et account.currency requis';

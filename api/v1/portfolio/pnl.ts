@@ -1,11 +1,11 @@
 /* GET /api/v1/portfolio/pnl?start_date=AAAA-MM-JJ&end_date=AAAA-MM-JJ
    PnL latent (à date) et réalisé (sur la période) par portefeuille et classe d'actifs, plus le risque par ligne (SL, TP, RR). */
-import { handler, send, q, HttpError, type Req, type Res } from '../../../lib/http.ts';
-import { requireUser, check, db } from '../../../lib/supabase.ts';
-import { ensureFx } from '../../../lib/sync.ts';
+import { handler, send, q, HttpError, type Req, type Res } from '../../../lib/http.js';
+import { requireUser, check, db } from '../../../lib/supabase.js';
+import { ensureFx } from '../../../lib/sync.js';
 import { createClient } from '@supabase/supabase-js';
-import { header } from '../../../lib/http.ts';
-import type { PnlRow, PositionRisk, RiskSummary } from '../../../types/models.ts';
+import { header } from '../../../lib/http.js';
+import type { PnlRow, PositionRisk, RiskSummary } from '../../../types/models.js';
 
 export function summarize(rows: PositionRisk[]): RiskSummary {
   const r = rows.filter(x => x.risk_eur != null).reduce((a, x) => a + (x.risk_eur ?? 0), 0);

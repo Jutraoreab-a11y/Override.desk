@@ -2,12 +2,12 @@
    POST avec X-Override-Key : réception d'un webhook (même format que mt-sync, platform « STT »).
    GET ?action=pull (tâche planifiée ou utilisateur) : aspiration via STT_API_BASE / STT_API_TOKEN.
    Le contrat exact de l'API SocialTraderTools doit être confirmé avec leur documentation : la correspondance des champs est isolée dans mapStt(). */
-import { handler, header, body, send, HttpError, type Req, type Res } from '../../../lib/http.ts';
-import { db, check, isCron, requireUser } from '../../../lib/supabase.ts';
-import { sha256, sameHash } from '../../../lib/crypto.ts';
-import { ingestMt } from '../../../lib/sync.ts';
-import { validate } from './mt-sync.ts';
-import type { MtSyncPayload } from '../../../types/models.ts';
+import { handler, header, body, send, HttpError, type Req, type Res } from '../../../lib/http.js';
+import { db, check, isCron, requireUser } from '../../../lib/supabase.js';
+import { sha256, sameHash } from '../../../lib/crypto.js';
+import { ingestMt } from '../../../lib/sync.js';
+import { validate } from './mt-sync.js';
+import type { MtSyncPayload } from '../../../types/models.js';
 
 /** Convertit une réponse STT (compte master ou slave) vers le format commun. À ajuster au contrat réel de l'API. */
 export function mapStt(a: Record<string, any>): MtSyncPayload {

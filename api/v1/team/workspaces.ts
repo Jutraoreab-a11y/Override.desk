@@ -4,9 +4,9 @@
    POST {action:'invite', workspace_id, email, role}   (admin)
    POST {action:'role', workspace_id, user_id, role}   (admin ; au moins un administrateur doit rester)
    POST {action:'remove', workspace_id, user_id}       (admin) */
-import { handler, body, send, HttpError, type Req, type Res } from '../../../lib/http.ts';
-import { db, check, requireUserInfo } from '../../../lib/supabase.ts';
-import { ROLES, requireRole, audit, type Role } from '../../../lib/team.ts';
+import { handler, body, send, HttpError, type Req, type Res } from '../../../lib/http.js';
+import { db, check, requireUserInfo } from '../../../lib/supabase.js';
+import { ROLES, requireRole, audit, type Role } from '../../../lib/team.js';
 
 export default handler(async (req: Req, res: Res) => {
   const me = await requireUserInfo(req), s = db();

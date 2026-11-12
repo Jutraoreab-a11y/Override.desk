@@ -4,10 +4,10 @@
    POST /api/v1/ai/ingest {module, subject, trigger: 'recalc'|'init', url?, force?}
         sert le cache s'il est valide ; sinon lit la source, appelle Claude avec un schéma JSON strict (outil forcé),
         vérifie les extraits cités et stocke le résultat (horodatage, indice de confiance, jetons consommés). */
-import { body, send, q, HttpError, type Req, type Res } from './http.ts';
-import { db, check, requireUser } from './supabase.ts';
-import { htmlToText } from './html.ts';
-import { validateIngest, cacheKey, cacheDecision, buildRequest, parseResponse, verifyQuotes, MODULES, type Module } from './ai-ingest.ts';
+import { body, send, q, HttpError, type Req, type Res } from './http.js';
+import { db, check, requireUser } from './supabase.js';
+import { htmlToText } from './html.js';
+import { validateIngest, cacheKey, cacheDecision, buildRequest, parseResponse, verifyQuotes, MODULES, type Module } from './ai-ingest.js';
 
 const fail = (e: unknown): never => { const x = e as { code?: number; message?: string }; throw new HttpError(x.code || 500, x.message || 'Erreur'); };
 async function latest(uid: string, key: string) {

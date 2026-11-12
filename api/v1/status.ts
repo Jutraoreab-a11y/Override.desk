@@ -1,7 +1,7 @@
 /* GET /api/v1/status : état des connecteurs pour les pastilles « Mode simulation » / « Flux live » du front,
    et configuration publique de Supabase (URL et clé anonyme, publiques par nature). */
-import { handler, send, type Req, type Res } from '../../lib/http.ts';
-import { configured } from '../../lib/supabase.ts';
+import { handler, send, type Req, type Res } from '../../lib/http.js';
+import { configured } from '../../lib/supabase.js';
 
 export default handler(async (_req: Req, res: Res) => {
   const k = Buffer.from(process.env.ENCRYPTION_KEY || '', 'base64').length === 32;

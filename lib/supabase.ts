@@ -1,6 +1,6 @@
 /* Clients Supabase côté serveur. La clé service_role ne quitte jamais le serveur. */
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
-import { HttpError, header, type Req } from './http.ts';
+import { HttpError, header, type Req } from './http.js';
 
 let admin: SupabaseClient | null = null;
 export function configured(): boolean { return !!(process.env.SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY); }

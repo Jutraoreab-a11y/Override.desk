@@ -1,5 +1,5 @@
 /* Adaptateurs de courtiers titres. */
-import type { BrokerAdapter, Position, CashBalance, AssetClass } from '../../types/models.ts';
+import type { BrokerAdapter, Position, CashBalance, AssetClass } from '../../types/models.js';
 
 /** Saxo OpenAPI : GET /port/v1/positions/me et /port/v1/balances/me avec un jeton OAuth (Bearer). */
 export const saxo: BrokerAdapter = {

@@ -1,5 +1,5 @@
 /* Séries dérivées des matières premières, mêmes formules que le volet 5 (classeur TRADING_Dashboard). */
-import type { PricePoint, SeriesPoint, SeriesName } from '../types/models.ts';
+import type { PricePoint, SeriesPoint, SeriesName } from '../types/models.js';
 
 const mean = (a: number[]) => a.reduce((x, y) => x + y, 0) / a.length;
 const sd = (a: number[]) => { if (a.length < 2) return NaN; const m = mean(a); return Math.sqrt(a.reduce((s, v) => s + (v - m) ** 2, 0) / (a.length - 1)); };

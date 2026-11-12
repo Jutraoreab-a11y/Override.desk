@@ -5,10 +5,10 @@
    POST {action:'submit', id}            (auteur ou admin)                → soumise
    POST {action:'validate', id, comment} (valideur, admin ; jamais l'auteur) → validée et signée
    POST {action:'reject', id, comment}   (valideur, admin)               → rejetée */
-import { handler, body, send, q, HttpError, type Req, type Res } from '../../../lib/http.ts';
-import { db, check, requireUser } from '../../../lib/supabase.ts';
-import { contentHash, sign, requireRole, roleOf, audit } from '../../../lib/team.ts';
-import { sameHash } from '../../../lib/crypto.ts';
+import { handler, body, send, q, HttpError, type Req, type Res } from '../../../lib/http.js';
+import { db, check, requireUser } from '../../../lib/supabase.js';
+import { contentHash, sign, requireRole, roleOf, audit } from '../../../lib/team.js';
+import { sameHash } from '../../../lib/crypto.js';
 
 type V = { id: string; workspace_id: string; module: string; project: string; label: string; data?: unknown; content_hash: string; status: string; author_id: string; validated_by: string | null; validated_at: string | null; signature: string | null };
 async function load(id: string, withData = false): Promise<V> {

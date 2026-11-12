@@ -1,7 +1,7 @@
 /* Adaptateurs d'exchanges crypto : soldes en lecture seule (clés « lecture » uniquement). */
 import { createHmac, createHash, createSign, randomBytes } from 'node:crypto';
-import type { BrokerAdapter, BrokerCredentials, BrokerSnapshot, Position, CashBalance } from '../../types/models.ts';
-import { cryptoPrice, krakenAsset } from './prices.ts';
+import type { BrokerAdapter, BrokerCredentials, BrokerSnapshot, Position, CashBalance } from '../../types/models.js';
+import { cryptoPrice, krakenAsset } from './prices.js';
 
 const FIAT = new Set(['EUR', 'USD', 'GBP', 'CHF', 'CAD', 'JPY']);
 async function toSnapshot(bal: Array<[string, number]>, f: typeof fetch): Promise<BrokerSnapshot> {

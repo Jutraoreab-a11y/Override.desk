@@ -1,10 +1,10 @@
 /* Services d'agrégation : ingestion MetaTrader et synchronisation des courtiers. */
-import type { MtSyncPayload, BrokerCredentials, BrokerSnapshot } from '../types/models.ts';
-import { db, check } from './supabase.ts';
-import { decrypt } from './crypto.ts';
-import { ADAPTERS } from './brokers/index.ts';
-import type { BrokerId } from '../types/models.ts';
-import { fetchEcb } from './macro.ts';
+import type { MtSyncPayload, BrokerCredentials, BrokerSnapshot } from '../types/models.js';
+import { db, check } from './supabase.js';
+import { decrypt } from './crypto.js';
+import { ADAPTERS } from './brokers/index.js';
+import type { BrokerId } from '../types/models.js';
+import { fetchEcb } from './macro.js';
 
 /** Garantit un taux BCE pour chaque devise non-euro utilisée (sinon les conversions en euros resteraient vides). */
 export async function ensureFx(currencies: string[], f: typeof fetch = fetch): Promise<void> {

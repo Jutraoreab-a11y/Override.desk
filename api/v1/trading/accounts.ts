@@ -2,9 +2,9 @@
    GET  : comptes de trading de l'utilisateur, positions ouvertes, historique (option ?start_date&end_date)
    POST : {platform, login, server, broker, account_type, currency} crée ou met à jour un compte et renvoie une clé d'EA (affichée une seule fois)
    DELETE ?id= : supprime un compte */
-import { handler, body, send, q, HttpError, type Req, type Res } from '../../../lib/http.ts';
-import { db, check, requireUser } from '../../../lib/supabase.ts';
-import { sha256, newKey } from '../../../lib/crypto.ts';
+import { handler, body, send, q, HttpError, type Req, type Res } from '../../../lib/http.js';
+import { db, check, requireUser } from '../../../lib/supabase.js';
+import { sha256, newKey } from '../../../lib/crypto.js';
 
 export default handler(async (req: Req, res: Res) => {
   const uid = await requireUser(req), s = db();

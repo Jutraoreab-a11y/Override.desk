@@ -1,8 +1,8 @@
 /* /api/v1/portfolio/nav : valorisations quotidiennes du portefeuille et flux (apports / retraits), base du TWR et du MWR.
    GET                         : historique de l'utilisateur
    POST {date, value, flow?}   : enregistre (ou complète) la valorisation d'un jour */
-import { handler, body, send, HttpError, type Req, type Res } from '../../../lib/http.ts';
-import { db, check, requireUser } from '../../../lib/supabase.ts';
+import { handler, body, send, HttpError, type Req, type Res } from '../../../lib/http.js';
+import { db, check, requireUser } from '../../../lib/supabase.js';
 
 export default handler(async (req: Req, res: Res) => {
   const uid = await requireUser(req), s = db();

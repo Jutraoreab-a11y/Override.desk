@@ -1,9 +1,9 @@
 /* /api/v1/team/audit : journal d'audit serveur (ajout seul).
    POST {workspace_id?, events:[{module, path, old, new, mode}]} : envoi du journal des forçages du navigateur
    GET ?workspace_id=                                           : 500 derniers événements de l'espace (ou les miens sans espace) */
-import { handler, body, send, q, HttpError, type Req, type Res } from '../../../lib/http.ts';
-import { db, check, requireUser } from '../../../lib/supabase.ts';
-import { requireRole } from '../../../lib/team.ts';
+import { handler, body, send, q, HttpError, type Req, type Res } from '../../../lib/http.js';
+import { db, check, requireUser } from '../../../lib/supabase.js';
+import { requireRole } from '../../../lib/team.js';
 
 export default handler(async (req: Req, res: Res) => {
   const uid = await requireUser(req), s = db();
