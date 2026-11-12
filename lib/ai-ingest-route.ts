@@ -7,7 +7,7 @@
 import { body, send, q, HttpError, type Req, type Res } from './http.js';
 import { db, check, requireUser } from './supabase.js';
 import { htmlToText } from './html.js';
-import { validateIngest, cacheKey, cacheDecision, buildRequest, parseResponse, verifyQuotes, MODULES, type Module } from './ai-ingest.js';
+import { validateIngest, cacheKey, cacheDecision, buildRequest, parseResponse, verifyQuotes, companyPages, MODULES, type Module } from './ai-ingest.js';
 
 const fail = (e: unknown): never => { const x = e as { code?: number; message?: string }; throw new HttpError(x.code || 500, x.message || 'Erreur'); };
 async function latest(uid: string, key: string) {
@@ -27,13 +27,16 @@ export async function ingestRoute(req: Req, res: Res): Promise<void> {
   const key = cacheKey(v.module, v.subject), rec = await latest(uid, key), d = cacheDecision(rec as { timestamp_retrieved: string } | null, v.module, v.trigger, v.force);
   if (d.serve) return send(res, 200, { ok: true, cached: true, stale: d.stale, age_h: d.ageH, record: rec, tokens: 0 });
   const apiKey = process.env.ANTHROPIC_API_KEY; if (!apiKey) throw new HttpError(503, 'ANTHROPIC_API_KEY non configurée (mode simulation)');
-  if (!v.url) throw new HttpError(400, 'url source requise pour une nouvelle extraction');
-  const page = await fetch(v.url, { headers: { 'User-Agent': 'OVERRIDE.DESK ingest' } });
-  if (!page.ok) throw new HttpError(502, `Source HTTP ${page.status}`);
-  const text = htmlToText(await page.text());
+  /* Société : sans URL fournie, les pages publiques (cours, comptes, ratios) sont déduites du ticker */
+  if (!v.urls.length && v.module === 'an') v.urls = companyPages(v.subject).urls;
+  if (!v.urls.length) throw new HttpError(400, 'url source requise pour une nouvelle extraction');
+  v.url = v.urls[0];
+  const parts: string[] = [];
+  for (const u of v.urls) { const page = await fetch(u, { headers: { 'User-Agent': 'Mozilla/5.0 OVERRIDE.DESK ingest' } }); if (!page.ok) throw new HttpError(502, `Source HTTP ${page.status} (${u})`); parts.push(`=== PAGE ${u} ===\n` + htmlToText(await page.text()).slice(0, 20000)); }
+  const text = parts.join('\n\n');
   const model = process.env.ANTHROPIC_MODEL || 'claude-haiku-5-5';
   const r = await fetch('https://api.anthropic.com/v1/messages', { method: 'POST', headers: { 'x-api-key': apiKey, 'anthropic-version': '2023-06-01', 'content-type': 'application/json' },
-    body: JSON.stringify(buildRequest(v.module, model, v.subject, text, v.url)) });
+    body: JSON.stringify(buildRequest(v.module, model, v.subject, text, v.urls.join(' ; '))) });
   if (!r.ok) throw new HttpError(502, `API Claude HTTP ${r.status}`);
   let p: ReturnType<typeof parseResponse>; try { p = parseResponse(await r.json(), v.module); } catch (e) { return fail(e); }
   const ver = verifyQuotes(p.payload, text, p.confidence);

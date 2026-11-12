@@ -149,5 +149,12 @@ test('cours du soir : CoinGecko, Tiingo et EODHD convertis en points datés et s
   assert.equal(P.parseTiingo('AAPL', [{ date: '2026-11-10T00:00:00.000Z', close: 350 }, { date: '2026-11-11T00:00:00.000Z', close: 355.63 }])[0].close, 355.63);
   assert.equal(P.parseEodhd('MC.PA', [{ date: '2026-11-11', close: 403.1 }, { date: '2026-11-10', close: 400 }])[0].price_date, '2026-11-11');
   const r = await P.fetchDailyPrices({}, (async () => ({ ok: true, json: async () => ({ ethereum: { usd: 2051, last_updated_at: 1794441600 } }) })) as unknown as typeof fetch);
-  assert.equal(r.prices.length, 1); assert.equal(r.errors.length, 2);
+  assert.equal(r.prices.length, 1); assert.equal(r.errors.length, 0);  // aucune clé requise
+});
+test('lecture IA des pages publiques : pages déduites du ticker, trois pages au plus', async () => {
+  const AI = await import('../lib/ai-ingest.ts');
+  assert.deepEqual(AI.companyPages('RMS.PA').urls, ['https://stockanalysis.com/quote/epa/RMS/', 'https://stockanalysis.com/quote/epa/RMS/financials/', 'https://stockanalysis.com/quote/epa/RMS/financials/ratios/']);
+  assert.equal(AI.companyPages('EPA:MC').path, 'quote/epa/MC'); assert.equal(AI.companyPages('cost').path, 'stocks/cost');
+  const v = AI.validateIngest({ module: 'an', subject: 'RMS.PA', trigger: 'init', urls: ['https://a.example', 'https://b.example', 'https://c.example', 'https://d.example'] });
+  assert.equal(v.urls.length, 3);
 });

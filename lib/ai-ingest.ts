@@ -17,16 +17,16 @@ export const SCHEMAS: Record<Module, { name: string; description: string; input_
     input_schema: { type: 'object', additionalProperties: false, properties: { currency: s, year: n, tam: n, sam: n, som: n, cagr_pct: n,
       sector: s, ev_ebitda: n, ebitda_margin_pct: n, net_margin_pct: n, confidence: { type: 'number' }, sources: src }, required: ['tam', 'sam', 'som', 'cagr_pct', 'confidence', 'sources'] } },
   an: { name: 'financial_statements', description: "États financiers publiés du titre (compte de résultat, bilan, flux), uniquement s'ils figurent dans le texte fourni.",
-    input_schema: { type: 'object', additionalProperties: false, properties: { ticker: s, currency: s, unit: s, fiscal_years: { type: 'array', items: { type: 'number' } },
-      revenue: ns, ebitda: ns, net_income: ns, eps: ns, fcf: ns, net_debt: ns, equity: ns, shares: n, confidence: { type: 'number' }, sources: src },
+    input_schema: { type: 'object', additionalProperties: false, properties: { ticker: s, name: s, sector: s, currency: s, unit: s, fiscal_years: { type: 'array', items: { type: 'number' } },
+      revenue: ns, ebitda: ns, ebitda_margin_pct: ns, net_income: ns, eps: ns, fcf: ns, net_debt: ns, equity: ns, roe_pct: ns, shares: n, price: n, price_date: s, confidence: { type: 'number' }, sources: src },
       required: ['fiscal_years', 'revenue', 'ebitda', 'net_income', 'confidence', 'sources'] } },
   cm: { name: 'price_series', description: "Séries de cours quotidiens (clôture) lues dans le tableau du texte fourni ; aucune valeur hors tableau.",
     input_schema: { type: 'object', additionalProperties: false, properties: { instrument: { type: 'string' }, rows: { type: 'array', items: { type: 'object', properties: { date: { type: 'string' }, close: { type: 'number' } }, required: ['date', 'close'] } },
       confidence: { type: 'number' }, sources: src }, required: ['instrument', 'rows', 'confidence', 'sources'] } },
 };
-export interface IngestInput { module: string; subject: string; trigger: string; url?: string; force?: boolean }
+export interface IngestInput { module: string; subject: string; trigger: string; url?: string; urls?: string[]; force?: boolean }
 /** Valide une demande d'ingestion. Lève une erreur lisible (code HTTP, message) si elle n'est pas autorisée. */
-export function validateIngest(b: Partial<IngestInput>): { module: Module; subject: string; trigger: Trigger; url: string | null; force: boolean } {
+export function validateIngest(b: Partial<IngestInput>): { module: Module; subject: string; trigger: Trigger; url: string | null; urls: string[]; force: boolean } {
   const m = String(b.module ?? '');
   if (m === 'all' || m === '*' || m.includes(',')) throw Object.assign(new Error('Payload global interdit : un appel par module (bp, an ou cm)'), { code: 400 });
   if (!MODULES.includes(m as Module)) throw Object.assign(new Error('module attendu : bp, an ou cm'), { code: 400 });
@@ -34,9 +34,10 @@ export function validateIngest(b: Partial<IngestInput>): { module: Module; subje
   if (!TRIGGERS.includes(t as Trigger)) throw Object.assign(new Error('Déclenchement explicite requis : trigger = recalc ou init (aucun appel automatique)'), { code: 400 });
   const subject = String(b.subject ?? '').trim().slice(0, 80);
   if (!subject) throw Object.assign(new Error('subject requis (dossier, ticker ou instrument)'), { code: 400 });
-  const url = b.url ? String(b.url) : null;
-  if (url && !/^https:\/\//.test(url)) throw Object.assign(new Error('url https requise'), { code: 400 });
-  return { module: m as Module, subject, trigger: t as Trigger, url, force: !!b.force };
+  /* Jusqu'à trois pages lues pour une même extraction (cours, comptes, ratios) */
+  const urls = [...(b.url ? [String(b.url)] : []), ...(Array.isArray(b.urls) ? b.urls.map(String) : [])].slice(0, 3);
+  if (urls.some(u => !/^https:\/\//.test(u))) throw Object.assign(new Error('url https requise'), { code: 400 });
+  return { module: m as Module, subject, trigger: t as Trigger, url: urls[0] ?? null, urls, force: !!b.force };
 }
 export const cacheKey = (m: Module, subject: string) => `${m}:${subject.toUpperCase()}`;
 /** Le cache est-il servable sans appel ? « init » ne rappelle jamais l'IA si une extraction existe déjà ; « recalc » rappelle si la donnée a dépassé sa durée de validité ou si force est demandé. */
@@ -46,11 +47,14 @@ export function cacheDecision(rec: { timestamp_retrieved: string } | null, m: Mo
   if (trigger === 'init') return { serve: true, stale, ageH };
   return { serve: !force && !stale, stale, ageH };
 }
+const HINT: Record<Module, string> = {
+  an: "\nComptes : colonnes annuelles « FY » seulement (jamais TTM ni trimestres), du plus ancien au plus récent, cinq au plus ; montants en millions de la devise des comptes ; BPA dilué en unités ; dette nette = dette totale − trésorerie et placements ; EBITDA si la ligne existe, sinon null et marge d'EBITDA depuis les ratios ; ROE en % depuis les ratios ; nombre d'actions en millions ; cours et date depuis la page de cotation.",
+  bp: '', cm: '' };
 /** Corps de la requête Messages : réponse forcée par l'outil du module, donc JSON conforme au schéma. */
 export function buildRequest(m: Module, model: string, subject: string, text: string, url: string | null) {
   const S = SCHEMAS[m];
   return { model, max_tokens: m === 'an' ? 1500 : 900, tools: [S], tool_choice: { type: 'tool', name: S.name },
-    messages: [{ role: 'user', content: `Sujet : ${subject}${url ? `\nSource : ${url}` : ''}\nRègles : n'utilise que le texte ci-dessous ; une donnée absente vaut null ; chaque valeur doit pouvoir être citée (champ sources.quote, extrait exact de 120 caractères au plus) ; confidence entre 0 et 1.\n\n---\n${text.slice(0, 60000)}` }] };
+    messages: [{ role: 'user', content: `Sujet : ${subject}${url ? `\nSource : ${url}` : ''}${HINT[m]}\nRègles : n'utilise que le texte ci-dessous ; une donnée absente vaut null ; chaque valeur doit pouvoir être citée (champ sources.quote, extrait exact de 120 caractères au plus) ; confidence entre 0 et 1.\n\n---\n${text.slice(0, 60000)}` }] };
 }
 /** Extrait l'entrée de l'outil (JSON strict) et le décompte de jetons de la réponse de l'API. */
 export function parseResponse(j: { content?: Array<{ type: string; name?: string; input?: unknown }>; usage?: { input_tokens?: number; output_tokens?: number } }, m: Module) {
@@ -67,4 +71,13 @@ export function verifyQuotes(payload: Record<string, unknown>, text: string, con
   const q = Array.isArray(payload.sources) ? (payload.sources as Array<{ quote?: string }>).map(x => String(x.quote || '')).filter(Boolean) : [];
   const ok = q.filter(x => T.includes(norm(x).slice(0, 60))).length;
   return { confidence: q.length && ok ? conf : Math.min(conf, 0.3), verified: ok, total: q.length };
+}
+/** Pages publiques lues pour une société (stockanalysis.com) : « EPA:RMS » ou « RMS.PA » → cotation européenne, « COST » → États-Unis. */
+const EXCH: Record<string, string> = { PA: 'epa', AS: 'ams', DE: 'etr', MI: 'bit', MC: 'bme', L: 'lon', SW: 'swx', BR: 'ebr', LS: 'elisbon' };
+export function companyPages(ticker: string): { path: string; urls: string[] } {
+  const t = ticker.trim().toUpperCase(); let path: string;
+  const m1 = t.match(/^([A-Z]{2,8}):([A-Z0-9.\-]{1,12})$/), m2 = t.match(/^([A-Z0-9\-]{1,12})\.([A-Z]{1,2})$/);
+  if (m1) path = `quote/${m1[1].toLowerCase()}/${m1[2]}`; else if (m2 && EXCH[m2[2]]) path = `quote/${EXCH[m2[2]]}/${m2[1]}`; else path = `stocks/${t.toLowerCase()}`;
+  const b = `https://stockanalysis.com/${path}/`;
+  return { path, urls: [b, b + 'financials/', b + 'financials/ratios/'] };
 }

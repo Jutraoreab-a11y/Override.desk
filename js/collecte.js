@@ -63,7 +63,7 @@ function renderAI(){
   const T=aiTargets(),L=S.live||{},avail=AI.mcp&&AI.sample,load=AI.mcp===undefined;
   el.innerHTML=`<div class="ai-box" role="dialog" aria-label="Collecte IA et sources"><div class="ai-h"><b>Collecte IA et traçabilité des sources</b><button class="btn sm" data-act="aiclose">Fermer</button></div>
     <p class="note" style="margin:0 0 10px">${load?'Connexion à l\'application Claude…':avail?"Claude ouvre chaque source validée dans le navigateur intégré, lit la page et en extrait la donnée. Chaque valeur garde son URL, sa date de consultation et l'extrait cité ; une valeur absente de la page est rejetée.":"Collecte indisponible dans cet affichage : ouvrez la page dans l'application Claude sur ordinateur (navigateur intégré) pour l'activer. Les valeurs déjà collectées restent appliquées."}</p>
-    <div class="tw"><table class="tbl"><thead><tr><th>Donnée</th><th>Volet</th><th>Dernière valeur</th><th>Source et consultation</th><th></th></tr></thead><tbody>
+    <div class="tw"><table class="tbl"><thead><tr><th>Donnée</th><th>Volet</th><th>Dernière valeur</th><th>Source et consultation</th><th></th></tr></thead><tbody><tr><td><b>Cours de toutes les fiches</b><div class="meta">${Object.keys(S.an.assets).length} sociétés, une page de cotation chacune</div></td><td>Analyse financière</td><td class="meta">${(AI.msg.prices||[])[1]?esc(AI.msg.prices[1]):'—'}</td><td class="meta">stockanalysis.com, valeur vérifiée dans le texte de la page</td><td><button class="btn sm${AI.mcp&&AI.sample?' pri':''}" data-act="aiprices"${!(AI.mcp&&AI.sample)||AI.busy.prices?' disabled':''}>${AI.busy.prices?'En cours…':'Actualiser'}</button></td></tr>
     ${T.map(t=>{const x=L[t.k],m=AI.msg[t.k];return`<tr><td><b>${esc(t.l)}</b></td><td class="meta">${t.mod}</td><td class="num">${x?nf(x.v,t.k==='eurusd'?4:3)+(t.unit?' '+t.unit:'')+(x.d?` <span class="meta">au ${fdate(x.d)}</span>`:''):'<span class="meta">jamais collectée</span>'}</td>
       <td class="wrap"><a href="${esc(t.url)}" target="_blank" rel="noopener">${esc(new URL(t.url).hostname)}</a>${x?` · consulté le ${new Date(x.at).toLocaleString('fr-FR',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'})}${x.quote?`<br><span class="meta">« ${esc(x.quote)} »</span>`:''}`:''}${m?`<br><span class="dot ${m[0]}"></span> <span class="${m[0]==='ko'?'down':''}">${esc(m[1])}</span>`:''}</td>
       <td><button class="btn sm${avail?' pri':''}" data-act="aicol" data-id="${t.k}"${!avail||AI.busy[t.k]?' disabled':''}>${AI.busy[t.k]?'En cours…':'Collecter'}</button></td></tr>`;}).join('')}
@@ -76,3 +76,46 @@ aiApplyLive();
 function aiState(){const srv=!!(typeof FLUX==='object'&&FLUX.on&&FLUX.status&&FLUX.status.connectors&&FLUX.status.connectors.ai),app=!!(AI.mcp&&AI.sample);
   return srv||app?['ok','Collecte IA active : '+[app?'navigateur intégré de l\'application Claude':'',srv?'passerelle serveur à serveur (API Anthropic)':''].filter(Boolean).join(' et ')+' · appels uniquement sur Recalculer, Collecter ou à l\'initialisation d\'un dossier']
     :AI.mcp===undefined?['am','Connexion aux passerelles IA…']:['ko','Passerelles IA indisponibles ici : lecture seule des données en cache'];}
+
+/* ============ v8.4 : le SaaS s'alimente en lisant les pages publiques (aucune clé de fournisseur de données) ============
+   Dans l'application Claude : navigateur intégré + Claude, sans aucune clé. Sur le web avec backend : lecture serveur (clé Anthropic seule).
+   Source : stockanalysis.com (cotation, comptes annuels, ratios). Chaque chiffre extrait est recherché dans le texte de la page avant d'être accepté. */
+const SA_EX={PA:'epa',AS:'ams',DE:'etr',MI:'bit',MC:'bme',L:'lon',SW:'swx',BR:'ebr'};
+const SA_PATH={AAPL:'stocks/aapl',MSFT:'stocks/msft',NVDA:'stocks/nvda',INTC:'stocks/intc',KO:'stocks/ko',ASML:'quote/ams/ASML',SAP:'quote/etr/SAP',MC:'quote/epa/MC',OR:'quote/epa/OR',AIR:'quote/epa/AIR',TTE:'quote/epa/TTE'};
+function saPath(t){t=String(t).trim().toUpperCase();const m1=t.match(/^([A-Z]{2,8}):([A-Z0-9.\-]{1,12})$/),m2=t.match(/^([A-Z0-9\-]{1,12})\.([A-Z]{1,2})$/);
+  return m1?`quote/${m1[1].toLowerCase()}/${m1[2]}`:m2&&SA_EX[m2[2]]?`quote/${SA_EX[m2[2]]}/${m2[1]}`:`stocks/${t.toLowerCase()}`;}
+const saUrls=p=>{const b=`https://stockanalysis.com/${p}/`;return[b,b+'financials/',b+'financials/ratios/'];};
+const aiNumIn=(v,nt)=>{if(!isFinite(v)||v===null)return false;const a=Math.abs(v),f=[a.toFixed(0),a.toFixed(1),a.toFixed(2),a.toLocaleString('en-US',{maximumFractionDigits:2}),a.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})];return f.some(x=>nt.includes(x.toLowerCase()));};
+/* Applique des comptes extraits (navigateur ou serveur, même format) à une fiche : cinq colonnes, les plus récentes à droite */
+function anApply(a,p,src){const ys=(p.fiscal_years||[]).map(Number),n=Math.min(5,ys.length),cut=x=>(Array.isArray(x)?x:[]).slice(-n),pad=v=>Array(5-n).fill(0).concat(cut(v).map(x=>x===null||!isFinite(+x)?0:+x));
+  const rev=cut(p.revenue),mg=cut(p.ebitda_margin_pct),eb=cut(p.ebitda).map((x,i)=>x!==null&&isFinite(+x)?+x:(isFinite(+mg[i])&&mg[i]!==null&&isFinite(+rev[i])?+(rev[i]*mg[i]/100).toFixed(1):null));
+  Object.assign(a,{n:p.name||a.n,sec:p.sector||a.sec,cur:p.currency||a.cur,rcur:p.currency||a.rcur,y:Array(5-n).fill('—').concat(ys.slice(-n).map(y=>'FY'+y)),
+    rev:pad(p.revenue),ebitda:pad(eb),ni:pad(p.net_income),eps:pad(p.eps),fcf:pad(p.fcf),nd:pad(p.net_debt),roe:pad(p.roe_pct),shares:isFinite(+p.shares)&&p.shares?+p.shares:a.shares,src,srcNote:'Lecture IA des pages publiques'});
+  if(isFinite(+p.price)&&+p.price>0){a.price=+p.price;a.pxDate=fdate(/^\d{4}-\d{2}-\d{2}$/.test(String(p.price_date))?p.price_date:new Date().toISOString().slice(0,10));a.pxSrc='stockanalysis.com, lecture IA du '+fdate(new Date().toISOString().slice(0,10));}
+  return{missing:[['rev','chiffre d\'affaires'],['ebitda','EBITDA'],['ni','résultat net'],['fcf','FCF'],['nd','dette nette'],['roe','ROE']].filter(([k])=>a[k].every(v=>!v)).map(x=>x[1])};}
+/* Société inconnue : lecture IA des pages publiques dans le navigateur intégré (aucune clé) */
+async function aiCompany(q,a){
+  let path=SA_PATH[q.toUpperCase()]||saPath(q),U=saUrls(path),quote=await aiPage(U[0]);
+  if(quote.length<500||/page not found|404/i.test(quote.slice(0,600))){/* nom en clair : recherche sur le site, puis choix du titre par Claude */
+    const st=await aiPage('https://stockanalysis.com/search/?q='+encodeURIComponent(q));
+    const r=await AI.sample.json(`Résultats de recherche boursière pour « ${q} ». Choisis l'action ordinaire principale de la société visée.\nRéponds en JSON : {"symbol":"MC","exchange":"EPA"|"NASDAQ"|"NYSE"|...|null,"name":"..."} ; null si rien ne correspond.\n\n${st.slice(0,12000)}`,{modelTier:'quick',cache:false});
+    if(!r||!r.symbol)throw{code:'invalid_json',message:'société introuvable'};
+    path=/^(NASDAQ|NYSE|NYSEAMERICAN|AMEX|OTC|BATS)$/i.test(r.exchange||'')||!r.exchange?`stocks/${String(r.symbol).toLowerCase()}`:`quote/${String(r.exchange).toLowerCase()}/${r.symbol}`;U=saUrls(path);quote=await aiPage(U[0]);}
+  const fin=await aiPage(U[1]),rat=await aiPage(U[2]),all=normTxt(quote+' '+fin+' '+rat);
+  const p=await AI.sample.json(`Trois pages publiques d'une société cotée (cotation, comptes annuels, ratios).\nExtrais en JSON strict :\n{"name":"","sector":"","currency":"EUR","fiscal_years":[2021,...],"revenue":[...],"ebitda":[...|null],"ebitda_margin_pct":[...|null],"net_income":[...],"eps":[...],"fcf":[...],"net_debt":[...],"roe_pct":[...],"shares":nombre,"price":nombre,"price_date":"AAAA-MM-JJ"|null}\nRègles : colonnes annuelles « FY » seulement (jamais TTM), du plus ancien au plus récent, cinq au plus ; montants en millions de la devise des comptes, tels qu'affichés ; dette nette = Total Debt − Cash & Investments ; EBITDA null si la ligne n'existe pas ; marge d'EBITDA et ROE depuis les ratios ; shares en millions ; n'invente rien, null si absent.\n\n=== COTATION ===\n${quote.slice(0,8000)}\n\n=== COMPTES ===\n${fin.slice(0,20000)}\n\n=== RATIOS ===\n${rat.slice(0,14000)}`,{modelTier:'default',cache:false});
+  if(!p||!Array.isArray(p.revenue)||!p.revenue.length)throw{code:'invalid_json',message:'comptes non lus'};
+  const chk=[...p.revenue,...(p.net_income||[])].filter(v=>v!==null&&isFinite(+v)),ok=chk.filter(v=>aiNumIn(+v,all)).length;
+  if(ok<Math.ceil(chk.length*0.8))throw{code:'invalid_json',message:`${chk.length-ok} montant(s) extrait(s) introuvable(s) dans les pages : extraction rejetée`};
+  if(isFinite(+p.price)&&!aiNumIn(+p.price,normTxt(quote)))p.price=null;
+  a.sa=path;return anApply(a,p,U.join(' ; '));}
+/* Actualisation des cours de toutes les fiches : une page de cotation par titre, valeur vérifiée dans le texte */
+async function aiRefreshPrices(){if(!AI.mcp||!AI.sample){toast("Lecture des cours par l'IA : ouvrez OVERRIDE.DESK dans l'application Claude (navigateur intégré)");return;}
+  const K=Object.keys(S.an.assets).filter(k=>S.an.assets[k].sa||SA_PATH[k]);let ok=0,ko=[];AI.busy.prices=true;renderAI();
+  for(const k of K){const a=S.an.assets[k],u=`https://stockanalysis.com/${a.sa||SA_PATH[k]}/`;AI.msg.prices=['am',`Lecture du cours de ${a.t} (${ok+ko.length+1}/${K.length})…`];renderAI();
+    try{const txt=await aiPage(u),nt=normTxt(txt);const j=await AI.sample.json(`Page de cotation de ${a.n} (${u}). Donne le dernier cours affiché et sa date.\nJSON : {"price":nombre|null,"date":"AAAA-MM-JJ"|null,"currency":"EUR"|"USD"|...}\n\n${txt.slice(0,6000)}`,{modelTier:'quick',cache:false});
+      if(!j||!isFinite(+j.price)||!aiNumIn(+j.price,nt))throw{code:'invalid_json'};
+      if(a.pxManual){ko.push(a.t+' (saisie conservée)');continue;}
+      a.price=+j.price;a.pxDate=fdate(/^\d{4}-\d{2}-\d{2}$/.test(String(j.date))?j.date:new Date().toISOString().slice(0,10));a.pxSrc='stockanalysis.com, lecture IA du '+fdate(new Date().toISOString().slice(0,10));ok++;}
+    catch(e){ko.push(a.t);}}
+  AI.busy.prices=false;AI.msg.prices=[ko.length?'am':'ok',`${ok} cours relus et vérifiés${ko.length?' · non actualisés : '+ko.join(', '):''}.`];save();recalc();renderAll();renderAI();toast(AI.msg.prices[1]);}
+document.addEventListener('click',e=>{const b=e.target.closest&&e.target.closest('[data-act="aiprices"]');if(b)aiRefreshPrices();});

@@ -181,8 +181,8 @@ Sources des données livrées (collecte du 10/11/2026) : FRED (CPIAUCSL, PPIFIS,
 
 ## Version 8.3 : prêt pour l'usage réel
 
-- **Ajout d'une société en un clic** : Ctrl+K, taper le ticker, « Créer la fiche ». Backend connecté : les cinq derniers exercices (chiffre d'affaires, EBITDA, résultat net, BPA, FCF, dette nette, ROE, nombre d'actions) sont chargés depuis la SEC (XBRL des rapports 10-K, sans clé, 0 jeton), cours via Tiingo si la clé existe. Société non américaine : message explicite et ingestion IA à partir de l'URL d'une page de comptes.
-- **Cours du soir automatiques** : la tâche planifiée de 21 h 30 UTC actualise cryptos (CoinGecko, sans clé), actions et ETF américains (Tiingo), actions européennes (EODHD) ; les fiches et les cryptos reprennent ces cours au chargement, sans écraser une saisie.
+- **Ajout d'une société en un clic** : Ctrl+K, taper le ticker, « Créer la fiche ». Backend connecté : les cinq derniers exercices (chiffre d'affaires, EBITDA, résultat net, BPA, FCF, dette nette, ROE, nombre d'actions) sont chargés depuis la SEC (XBRL des rapports 10-K, sans clé, 0 jeton), cours relu sur la page publique. Société non américaine : message explicite et ingestion IA à partir de l'URL d'une page de comptes.
+- **Cours du soir automatiques** des cryptos (CoinGecko, sans clé) ; les cours des actions sont relus par l'IA (version 8.4).
 - **Données rafraîchies au 11/11/2026** (EODHD) : cours des 11 titres, volatilité 1 an et montant moyen échangé (mapping : nouvel axe et filtre « Volatilité 1 an », volume rempli automatiquement), volatilité 1 an des 11 cryptos (axe par défaut du mapping crypto).
 - **Recherche universelle** (Ctrl+K ou /) : actions, ETF, cryptos, marchés, dossiers et volets, navigation au clavier.
 - **Centre d'alertes** (cloche) : prix d'achat cible atteint, cours périmé (plus de 7 jours), mouvement FOMO or / argent, signal lead / lag ; notifications du navigateur sur demande.
@@ -190,3 +190,10 @@ Sources des données livrées (collecte du 10/11/2026) : FRED (CPIAUCSL, PPIFIS,
 - **Guide de premier lancement** en trois étapes.
 - **Intégration continue** (`.github/workflows/ci.yml`) : typage, 19 tests unitaires, test de bout en bout de l'interface (`npm run e2e`, 15 parcours) à chaque push.
 - Le mapping des entreprises cotées ne s'ouvre que depuis l'Analyse financière.
+
+## Version 8.4 : l'IA lit les pages, aucune clé de données
+
+- **Nouvelle société** (Ctrl+K, « Créer la fiche », par ticker `RMS.PA`, `EPA:RMS`, `COST` ou par nom « Hermès ») : l'IA lit la page de cotation, les comptes annuels et les ratios publics (stockanalysis.com), extrait cinq exercices (CA, EBITDA ou marge d'EBITDA, résultat net, BPA, FCF, dette nette, ROE, actions, cours) et **rejette l'extraction si les montants ne figurent pas dans le texte des pages**. Application Claude : navigateur intégré, aucune clé. Web : lecture par le serveur (clé Anthropic seule), puis SEC EDGAR en secours pour les sociétés américaines.
+- **Cours de toutes les fiches** : bouton « Actualiser » du panneau Collecte IA, une page de cotation lue par titre, valeur vérifiée dans la page ; une saisie au crayon n'est jamais écrasée.
+- Retrait de Tiingo et EODHD : la tâche du soir ne garde que des sources publiques sans clé (CoinGecko, BCE ; EIA si sa clé gratuite est fournie).
+- Test de bout en bout : création d'une société par lecture IA (acceptation des montants présents, rejet des montants absents).

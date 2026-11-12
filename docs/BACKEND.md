@@ -4,6 +4,10 @@ Le front reste une page statique. Sans backend joignable, il tourne en **mode si
 
 Architecture : fonctions serveur Vercel (Node 20, TypeScript) dans `api/v1/`, base Supabase (Postgres + Auth + RLS), tâches planifiées Vercel.
 
+## 0. Principe : pas de clé de fournisseur de données
+
+OVERRIDE.DESK s'alimente en faisant lire les pages publiques par l'IA (cotations, comptes annuels, ratios sur stockanalysis.com ; Investing.com, BCE, euribor-rates.eu…). Dans l'application Claude, la lecture passe par le navigateur intégré et ne demande **aucune clé**. Sur le web, le serveur lit les mêmes pages avec la seule clé Anthropic (`POST /api/v1/ai/ingest`, module `an`, pages déduites du ticker : `RMS.PA`, `EPA:RMS` ou `COST`). Chaque montant extrait est recherché dans le texte des pages avant d'être accepté. Seules sources sans IA conservées, toutes sans clé : CoinGecko (cryptos), BCE (devises), SEC EDGAR (secours pour les sociétés américaines).
+
 ## 1. Mise en service
 
 1. **Supabase** : créer un projet, puis exécuter dans l'ordre les scripts de `supabase/migrations/` (éditeur SQL ou `supabase db push`) : `20261103000000_override_desk.sql`, puis `20261103180000_instruments_universe.sql` (instruments du sélecteur universel), puis `20261103200000_team_versions_nav.sql` (espaces partagés, rôles, versions signées, journal d'audit, valorisations quotidiennes), puis `20261110000000_ai_cache_v8.sql` (cache IA par module, vues `ai_cache_latest` et `ai_usage_monthly` pour suivre les jetons), puis `20261112000000_prices_v83.sql` (cours des cryptos). Les scripts sont rejouables.
@@ -26,8 +30,7 @@ En local : `npm install`, `npm run typecheck`, `npm test`.
 | `ANTHROPIC_API_KEY`, `ANTHROPIC_MODEL` | Parseur IA et ingestion modulaire (`claude-haiku-5-5` par défaut pour l'ingestion en JSON strict) | pour l'IA |
 | `STT_API_BASE`, `STT_API_TOKEN` | API SocialTraderTools (mode « pull ») | optionnel |
 | `IBKR_FLEX_BASE` | Hôte du Flex Web Service IBKR | optionnel |
-| `TIINGO_API_KEY`, `EODHD_API_KEY` | Cours du soir des actions et ETF (offres gratuites) ; sans clé, seules les cryptos sont actualisées | recommandé |
-| `SEC_USER_AGENT` | Identification exigée par la SEC (« Nom email ») pour les comptes des sociétés américaines | recommandé |
+| `SEC_USER_AGENT` | Identification exigée par la SEC (« Nom email ») : voie de secours sans IA pour les comptes des sociétés américaines | facultatif |
 | `ALLOWED_ORIGIN` | Origine autorisée en CORS si le front est servi ailleurs | optionnel |
 
 ## 3. Points d'accès
@@ -50,12 +53,12 @@ Authentification : jeton Supabase de l'utilisateur (`Authorization: Bearer <acce
 | `GET/POST /api/v1/team/versions` | Versions partagées : création (empreinte SHA-256 du JSON canonique), soumission, validation signée (HMAC serveur) ou rejet, vérification d'intégrité. Règle des quatre yeux : l'auteur ne valide jamais sa version ; une version validée est figée en base |
 | `GET/POST /api/v1/team/audit` | Journal d'audit serveur en ajout seul (forçages, changements de statut, membres) |
 | `GET/POST /api/v1/portfolio/nav` | Valorisations quotidiennes et apports / retraits, base du TWR et du MWR |
-| `GET /api/v1/fundamentals?ticker=…` | Comptes des cinq derniers exercices d'une société déposant à la SEC (XBRL des 10-K) et cours Tiingo si configuré ; stockés dans `ai_sources` et relus depuis la base pendant 7 jours (0 jeton). 404 explicite hors États-Unis. Servi par la fonction `ai/market-parser` (réécriture `vercel.json`) |
+| `GET /api/v1/fundamentals?ticker=…` | Comptes des cinq derniers exercices d'une société déposant à la SEC (XBRL des 10-K) sans clé (voie de secours sans IA) ; stockés dans `ai_sources` et relus depuis la base pendant 7 jours (0 jeton). 404 explicite hors États-Unis. Servi par la fonction `ai/market-parser` (réécriture `vercel.json`) |
 | `GET /api/v1/ai/ingest?module=bp\|an\|cm&subject=…` | Dernière extraction IA stockée pour ce module et ce sujet : lecture en base, **0 jeton**, jamais d'appel à l'API Anthropic |
 | `POST /api/v1/ai/ingest` | `{module, subject, trigger: 'recalc'\|'init', url, force?}` : un seul module par appel (`all` refusé). Sert le cache s'il est valide (an : 7 j, bp : 30 j, cm : 24 h ; `init` ne rappelle jamais si une extraction existe), sinon lit la source et appelle Claude avec un schéma JSON strict (outil forcé : étude de marché, états financiers ou séries de cours). Stocke charge utile, horodatage, confiance plafonnée si les extraits cités sont introuvables, et jetons consommés |
 | `POST /api/v1/ai/market-parser` | Lecture d'une page par l'IA. Chaque valeur est stockée dans `ai_sources` avec `source_url`, `source_name`, `timestamp_retrieved`, `confidence_score` |
 
-Tâches planifiées (`vercel.json`, en-tête `Authorization: Bearer $CRON_SECRET`) : ingestion du lundi au vendredi à 21 h 30 UTC (cours du soir des cryptos via CoinGecko, des actions et ETF américains via Tiingo, des actions européennes via EODHD, puis EIA si la clé existe, plus EUR/USD, GBP/USD, USD/JPY, AUD/USD et USD/CAD déduits des taux de référence BCE), resynchronisation de tous les courtiers chaque jour à 6 h UTC.
+Tâches planifiées (`vercel.json`, en-tête `Authorization: Bearer $CRON_SECRET`) : ingestion du lundi au vendredi à 21 h 30 UTC (cours du soir des cryptos via CoinGecko, public et sans clé, puis EIA si la clé existe, plus EUR/USD, GBP/USD, USD/JPY, AUD/USD et USD/CAD déduits des taux de référence BCE), resynchronisation de tous les courtiers chaque jour à 6 h UTC.
 
 ## 4. MetaTrader 4 et 5
 
@@ -101,7 +104,7 @@ Le plan Hobby accepte 12 fonctions serveur par déploiement. Le projet en compte
 
 - `npm run e2e` : test de bout en bout de l'interface dans Chromium (volets, commodities, mapping, clic ETF, recherche universelle, alertes) ; exécuté par GitHub Actions avec le typage et les tests unitaires.
 
-- `npm test` : 19 tests unitaires (comptes SEC sur un extrait réel de Costco, cours du soir CoinGecko / Tiingo / EODHD ; ingestion IA v8 : déclenchement explicite, payload global refusé, décisions de cache, JSON strict et vérification des extraits ; chiffrement, signatures Binance et Kraken comparées aux exemples officiels de leur documentation, signatures OKX et Coinbase, adaptateurs Binance, Kraken et IBKR, séries macro, validation du webhook MetaTrader, correspondance SocialTraderTools, score de confiance IA, risque RR, paires de devises déduites de la BCE).
+- `npm test` : 20 tests unitaires (pages publiques déduites du ticker, comptes SEC sur un extrait réel de Costco, cours CoinGecko sans clé ; ingestion IA v8 : déclenchement explicite, payload global refusé, décisions de cache, JSON strict et vérification des extraits ; chiffrement, signatures Binance et Kraken comparées aux exemples officiels de leur documentation, signatures OKX et Coinbase, adaptateurs Binance, Kraken et IBKR, séries macro, validation du webhook MetaTrader, correspondance SocialTraderTools, score de confiance IA, risque RR, paires de devises déduites de la BCE).
 - Test d'intégration des espaces partagés (21 contrôles) : invitation, rôles, quatre yeux, signature et vérification, version validée figée même pour la clé de service, écriture directe refusée au navigateur, journal en ajout seul, valorisations isolées par utilisateur, dernier administrateur protégé.
 - Test d'intégration effectué contre Postgres 16 et PostgREST 12 : isolation RLS entre utilisateurs, identifiants non lisibles, clé d'EA invalide refusée (403), conversions EUR, plage de dates invalide refusée (400), appels sans session refusés (401).
 

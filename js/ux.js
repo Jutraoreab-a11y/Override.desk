@@ -24,7 +24,7 @@ function uxPalette(){let el=document.getElementById('uxq');if(ui.uxQ===null||ui.
   const R=uxFind(ui.uxQ),sel=Math.min(ui.uxI||0,Math.max(0,R.length-1)),q=ui.uxQ.trim();
   el.innerHTML=`<div class="ai-box uxq" role="dialog" aria-label="Recherche universelle"><div class="uxq-in">${uxIc.search}<input id="uxqi" value="${esc(ui.uxQ)}" placeholder="Action, ETF, crypto, matière première, dossier, volet…" autocomplete="off" spellcheck="false" aria-label="Rechercher"><kbd>Échap</kbd></div>
     <div class="uxq-l" role="listbox">${R.map((x,i)=>`<button class="uxq-r${i===sel?' on':''}" role="option" aria-selected="${i===sel}" data-act="uxgo" data-id="${i}"><span class="tag">${x.t}</span><b>${esc(x.l)}</b><span class="meta">${esc(x.n||'')}</span></button>`).join('')}
-    ${q&&!R.some(x=>x.t==='Action'&&uxNorm(x.l)===uxNorm(q))?`<button class="uxq-r" data-act="uxcreate" data-id="${esc(q)}"><span class="tag am">Nouveau</span><b>Créer la fiche ${esc(q.toUpperCase())}</b><span class="meta">${FLUX.on?'comptes publiés chargés automatiquement (SEC) si la société est cotée aux États-Unis':'saisie des comptes au crayon (connecter le backend pour le remplissage automatique)'}</span></button>`:''}</div></div>`;
+    ${q&&!R.some(x=>x.t==='Action'&&uxNorm(x.l)===uxNorm(q))?`<button class="uxq-r" data-act="uxcreate" data-id="${esc(q)}"><span class="tag am">Nouveau</span><b>Créer la fiche ${esc(q.toUpperCase())}</b><span class="meta">${typeof AI==='object'&&AI.mcp&&AI.sample?"l'IA lit les pages publiques de la société (aucune clé)":FLUX.on?'lecture des pages publiques par le serveur':'saisie au crayon, ou ouvrir dans l\'application Claude pour la lecture IA'}</span></button>`:''}</div></div>`;
   ui.uxR=R;const i=document.getElementById('uxqi');i.focus();i.setSelectionRange(i.value.length,i.value.length);}
 document.addEventListener('input',e=>{if(e.target.id==='uxqi'){ui.uxQ=e.target.value;ui.uxI=0;uxPalette();}});
 document.addEventListener('keydown',e=>{
@@ -36,18 +36,23 @@ document.addEventListener('keydown',e=>{
 document.addEventListener('click',e=>{const p=document.getElementById('uxq');if(p&&!p.hidden&&e.target===p){ui.uxQ=null;uxPalette();}});
 
 /* ---- Création d'une fiche : comptes publiés depuis la SEC quand le backend est connecté ---- */
-async function uxCreate(q){ui.uxQ=null;uxPalette();const t=q.toUpperCase().replace(/[^A-Z0-9.\-]/g,'');
+async function uxCreate(q){ui.uxQ=null;uxPalette();const t=q.toUpperCase().replace(/[^A-Z0-9.:\-]/g,'');
   const tmp=document.createElement('button');tmp.dataset.act='create';tmp.dataset.id=q;tmp.hidden=true;document.body.appendChild(tmp);tmp.click();tmp.remove();
   const k=ui.tk,a=S.an.assets[k];ui.tab='an';ui.anX=null;renderAll();
-  if(!FLUX.on){toast('Fiche créée. Connectez le backend (badge en haut à droite) pour charger les comptes automatiquement, ou saisissez-les au crayon.');return;}
-  toast(`Recherche des comptes publiés de ${t}…`);
-  try{const r=await liveApi('/api/v1/fundamentals?ticker='+encodeURIComponent(t)),st=r.statements,n=st.years.length,pad=v=>Array(5-n).fill(0).concat(v.map(x=>x===null?0:x));
-    Object.assign(a,{n:r.title?r.title.replace(/\b\w+/g,w=>w[0]+w.slice(1).toLowerCase()):a.n,cur:st.currency,rcur:st.currency,y:Array(5-n).fill('—').concat(st.years),rev:pad(st.rev),ebitda:pad(st.ebitda),ni:pad(st.ni),eps:pad(st.eps),fcf:pad(st.fcf),nd:pad(st.nd),roe:pad(st.roe),
-      shares:st.shares||a.shares,src:r.source_url,srcNote:r.source});
-    if(r.price){a.price=r.price.close;a.pxDate=r.price.date.split('-').reverse().join('/');a.pxSrc='Tiingo, clôture du '+a.pxDate;}
-    ui.edit=false;recalc();save();renderAll();
-    toast(`${a.n} : ${n} exercices chargés depuis la SEC${r.cached?' (cache, 0 appel)':''}${st.missing.length?' · à compléter : '+st.missing.join(', '):''}${r.price?'':' · cours à saisir'}`);}
-  catch(e){toast(String(e.message||e).includes('404')||/SEC/.test(e.message)?`${t} : ${e.message}. Collez l'URL d'une page de comptes dans le panneau Flux pour l'ingestion IA.`:'Chargement impossible : '+e.message);}}
+  const done=(r,how)=>{ui.edit=false;recalc();save();renderAll();toast(`${a.n} : comptes chargés (${how})${r.missing&&r.missing.length?' · à compléter au crayon : '+r.missing.join(', '):''}`);};
+  /* 1. Application Claude : l'IA lit les pages publiques dans le navigateur intégré, aucune clé */
+  if(typeof AI==='object'&&AI.mcp&&AI.sample){toast(`Lecture des pages publiques de ${q} par l'IA…`);
+    try{return done(await aiCompany(q,a),"lecture IA des pages publiques, montants vérifiés dans le texte");}catch(e){toast('Lecture IA impossible : '+(e.message||aiErr(e))+'. Saisie au crayon possible.');return;}}
+  /* 2. Web avec backend : le serveur lit les mêmes pages (seule clé : Anthropic), cache en base */
+  if(FLUX.on){toast(`Lecture des pages publiques de ${t} par le serveur…`);
+    try{const r=await liveApi('/api/v1/ai/ingest',{method:'POST',body:{module:'an',subject:t,trigger:'init'}});const p=r.record&&r.record.payload;
+      if(p&&Array.isArray(p.revenue)&&p.revenue.length){a.sa=saPath(t);return done(anApply(a,p,(r.record.source_url||'')),r.cached?'base, 0 jeton':`lecture IA serveur, ${r.tokens} jetons`);}
+      throw new Error('aucun compte lu');}
+    catch(e){/* 3. Société américaine : comptes officiels de la SEC, sans IA ni clé */
+      try{const r=await liveApi('/api/v1/fundamentals?ticker='+encodeURIComponent(t)),st=r.statements;
+        return done(anApply(a,{name:r.title,currency:st.currency,fiscal_years:st.years.map(y=>+y.slice(2)),revenue:st.rev,ebitda:st.ebitda,net_income:st.ni,eps:st.eps,fcf:st.fcf,net_debt:st.nd,roe_pct:st.roe,shares:st.shares},r.source_url),'SEC EDGAR, sans IA');}
+      catch(e2){toast(`Lecture impossible (${e.message}). Saisissez les comptes au crayon.`);return;}}}
+  toast("Fiche créée. Ouvrez OVERRIDE.DESK dans l'application Claude pour que l'IA lise les comptes, ou saisissez-les au crayon.");}
 
 /* ---- Cours du soir (backend) appliqués aux fiches et aux cryptos, sans écraser une saisie ---- */
 if(typeof liveMerge==='function'){const _lm=liveMerge;liveMerge=function(tr,br,cm){const r=_lm.apply(this,arguments);
