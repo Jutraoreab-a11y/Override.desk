@@ -18,7 +18,7 @@ function lboTarget(src){
 }
 function lboNew(src){
   const T=lboTarget(src);if(!T)return null;const g=clamp(T.g,-5,40);
-  const d={id:uid('l'),name:'LBO '+T.name,src,date:today(),thesis:T.thesis||'',pres:T.pres||'',sell:T.sell||'',who:T.who||'',edge:T.edge||'',bm:T.bm||'',
+  const d={id:uid('l'),name:'LBO '+T.name,sec:T.sec||'',src,date:today(),thesis:T.thesis||'',pres:T.pres||'',sell:T.sell||'',who:T.who||'',edge:T.edge||'',bm:T.bm||'',
     p:{basis:'emplois',entryMult:+(isFinite(T.mult)&&T.mult>0?T.mult:8).toFixed(1),exitMult:+(isFinite(T.mult)&&T.mult>0?T.mult:8).toFixed(1),prem:T.prem,fees:3,seniorPct:55,margin:4,euribor:LBO_SRC.euribor.v,amortY:7,mezzPct:0,mezzRate:10,sweep:50,H:5,
       g:[1,2,3,4,5].map(i=>+(g*Math.pow(0.85,i-1)).toFixed(1)),m0:+(+T.m||0).toFixed(1),mT:+Math.max(+T.m||0,(+T.m||0)+3).toFixed(1),capex:3,bfr:10,da:3,tax:LBO_SRC.tax.v,covLev:4.5,covDscr:1.2,irrT:20,synIncl:true,debtCap:true,privDisc:T.type==='an'?0:30},
     syn:[{lev:'Achats et sous-traitance mutualisés',zone:'France ↔ Afrique',k:0,y:2,note:'À chiffrer avec les fournisseurs'},{lev:'Ouverture commerciale',zone:'Afrique de l\'Ouest (zone franc CFA)',k:0,y:3,note:'Clients et distributeurs à identifier'},{lev:'Centre de services partagés',zone:'France → Afrique du Nord',k:0,y:3,note:'Coûts de structure à comparer'}],

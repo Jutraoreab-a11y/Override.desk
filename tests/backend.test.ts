@@ -159,3 +159,13 @@ test('lecture IA des pages publiques : pages déduites du ticker, trois pages au
   assert.equal(v.urls.length, 3);
   assert.equal(AI.validateIngest({ module: 'an', subject: 'X', trigger: 'init', urls: ['https://a.example','https://b.example','https://c.example','https://d.example','https://e.example'] }).urls.length, 4);
 });
+test('recherche : liens DuckDuckGo, jetons serveur réservés au compte propriétaire, module lbo', async () => {
+  const AI = await import('../lib/ai-ingest.ts');
+  const html = '<a href="//duckduckgo.com/l/?uddg=https%3A%2F%2Fwww.xerfi.com%2Fmarche&rut=1">x</a><a href="//duckduckgo.com/l/?uddg=https%3A%2F%2Fduckduckgo.com%2Fy.js%3Fad">ad</a><a href="?uddg=https%3A%2F%2Fwww.insee.fr%2Ffr%2Fstatistiques">y</a><a href="?uddg=https%3A%2F%2Fwww.xerfi.com%2Fmarche">dup</a>';
+  assert.deepEqual(AI.ddgLinks(html), ['https://www.xerfi.com/marche', 'https://www.insee.fr/fr/statistiques']);
+  assert.equal(AI.aiAllowed('Moi@Exemple.com', 'moi@exemple.com, associe@exemple.com'), true);
+  assert.equal(AI.aiAllowed('autre@exemple.com', 'moi@exemple.com'), false);
+  assert.equal(AI.aiAllowed('autre@exemple.com', ''), true);
+  assert.equal(AI.validateIngest({ module: 'lbo', subject: 'Dossier A', trigger: 'recalc' }).module, 'lbo');
+  assert.equal(AI.buildRequest('lbo', 'm', 'x', 't', null).tool_choice.name, 'deal_inputs');
+});

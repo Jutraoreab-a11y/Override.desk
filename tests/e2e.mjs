@@ -49,6 +49,28 @@ await step('cours recoupés entre sites (navigateur et Claude simulés)', () => 
   if (![210.7, 211.2].includes(air.price) || !/TradingView et stockanalysis/.test(air.pxSrc)) throw new Error('AIR : la source discordante devait être écartée ' + air.price + ' ' + air.pxSrc);
   if (/lecture IA/.test(ko.pxSrc || '')) throw new Error('KO sans page lisible ne devait pas changer');
 }));
+await step('étude de marché du BP par Claude (navigateur et Claude simulés)', () => p.evaluate(async () => {
+  ui.tab = 'bp'; renderAll(); if (!document.querySelector('#p-bp .rsbar [data-act=rsbp]')) throw new Error('bouton Lancer la recherche absent');
+  const U = 'https://www.insee.fr/fr/statistiques/marche-test', body = 'Étude sectorielle. Le marché français atteint 4 200 M€ en 2025, contre 3 900 M€ en 2024. Croissance annuelle moyenne attendue de 5,2 % sur 2025-2030. '.repeat(4);
+  AI.mcp = {}; aiPage = async u => /duckduckgo/.test(u) ? 'Résultats : www.insee.fr/fr/statistiques/marche-test Étude du marché '.repeat(10) : u === U ? body : 'page not found';
+  AI.sample = { json: async q => /Résultats d'une recherche/.test(q) ? { urls: [U] } : { market_label: 'Marché test France', currency: 'EUR', unit: 'M', year: 2025, tam: 4200, cagr_pct: 5.2, cagr_horizon: '2025-2030',
+    hist: [{ year: 2024, value: 3900 }, { year: 2025, value: 4200 }], sources: [{ url: U, quote: 'Le marché français atteint 4 200 M€ en 2025' }] } };
+  await rsMarket();
+  if (S.bp.tamOv !== 4200 || !S.bp.tamAI || S.bp.cagrOv !== 5.2) throw new Error('BP non alimenté ' + S.bp.tamOv + ' ' + S.bp.cagrOv);
+  if (!S.bp.mktAI || S.bp.mktAI.how !== 'claude' || !/insee/.test(S.bp.mkt.src)) throw new Error('moteur ou source BP');
+  const t0 = S.bp.tamOv; AI.sample = { json: async q => /Résultats d'une recherche/.test(q) ? { urls: [U] } : { tam: 9999, sources: [{ url: U, quote: 'phrase inventée absente de la page' }] } };
+  await rsMarket(); if (S.bp.tamOv !== t0) throw new Error('extrait non vérifiable accepté');
+}));
+await step('dossier LBO : Claude indisponible, repli sur l\'API (simulée)', () => p.evaluate(async () => {
+  if (!S.lbo.list.length) lboNew(Object.keys(S.an.assets).map(k => 'an:' + k)[0]); ui.tab = 'lbo'; renderAll();
+  if (!document.querySelector('#p-lbo .rsbar [data-act=rslbo]')) throw new Error('bouton LBO absent');
+  const d = lboCur(); AI.mcp = null; AI.sample = null; FLUX.on = true; let sent = null;
+  liveApi = async (path, o) => { sent = { path, body: o.body }; return { record: { payload: { euribor_3m_pct: 2.051, euribor_date: '2026-11-11', sector_label: 'Luxe', sector_ev_ebitda: 13.5, sector_source: 'Étude test', sources: [{ url: 'https://x', quote: 'q' }] } }, cached: false, tokens: 900 }; };
+  await rsLbo(); FLUX.on = false;
+  if (!sent || sent.path !== '/api/v1/ai/ingest' || sent.body.module !== 'lbo' || sent.body.trigger !== 'recalc') throw new Error('appel API ' + JSON.stringify(sent));
+  if (d.p.euribor !== 2.051 || d.p.entryMult !== 13.5 || d.rsAI.how !== 'api') throw new Error('LBO non alimenté ' + d.p.euribor + ' ' + d.p.entryMult);
+  const e0 = d.p.euribor; await rsLbo(); if (d.p.euribor !== e0) throw new Error('sans moteur, rien ne doit changer');
+}));
 await b.close();
 if (errs.length) { console.error(errs.join('\n')); process.exit(1); }
 console.log('Test de bout en bout : aucune erreur');

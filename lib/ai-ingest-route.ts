@@ -5,9 +5,9 @@
         sert le cache s'il est valide ; sinon lit la source, appelle Claude avec un schéma JSON strict (outil forcé),
         vérifie les extraits cités et stocke le résultat (horodatage, indice de confiance, jetons consommés). */
 import { body, send, q, HttpError, type Req, type Res } from './http.js';
-import { db, check, requireUser } from './supabase.js';
+import { db, check, requireUser, requireUserInfo } from './supabase.js';
 import { htmlToText } from './html.js';
-import { validateIngest, cacheKey, cacheDecision, buildRequest, parseResponse, verifyQuotes, companyPages, MODULES, type Module } from './ai-ingest.js';
+import { validateIngest, cacheKey, cacheDecision, buildRequest, parseResponse, verifyQuotes, companyPages, ddgLinks, aiAllowed, MODULES, type Module } from './ai-ingest.js';
 
 const fail = (e: unknown): never => { const x = e as { code?: number; message?: string }; throw new HttpError(x.code || 500, x.message || 'Erreur'); };
 async function latest(uid: string, key: string) {
@@ -27,12 +27,22 @@ export async function ingestRoute(req: Req, res: Res): Promise<void> {
   const key = cacheKey(v.module, v.subject), rec = await latest(uid, key), d = cacheDecision(rec as { timestamp_retrieved: string } | null, v.module, v.trigger, v.force);
   if (d.serve) return send(res, 200, { ok: true, cached: true, stale: d.stale, age_h: d.ageH, record: rec, tokens: 0 });
   const apiKey = process.env.ANTHROPIC_API_KEY; if (!apiKey) throw new HttpError(503, 'ANTHROPIC_API_KEY non configurée (mode simulation)');
+  /* Jetons Anthropic réservés au(x) compte(s) propriétaire(s) */
+  const who = await requireUserInfo(req);
+  if (!aiAllowed(who.email, process.env.AI_OWNER_EMAILS)) throw new HttpError(403, "Recherche IA serveur réservée au compte propriétaire : utilisez l'application Claude");
   /* Société : sans URL fournie, les pages publiques (cours, comptes, ratios) sont déduites du ticker */
   if (!v.urls.length && v.module === 'an') {
     v.urls = companyPages(v.subject).urls;
     /* MarketScreener (comptes et EBITDA les plus complets) : adresse trouvée sur sa page de recherche */
     try { const sr = await fetch('https://www.marketscreener.com/search/?q=' + encodeURIComponent(v.subject.replace(/[.:].*$/, '')), { headers: { 'User-Agent': 'Mozilla/5.0 OVERRIDE.DESK ingest' } });
       const m = sr.ok ? (await sr.text()).match(/\/quote\/stock\/[A-Z0-9\-]+-\d+\//) : null; if (m) v.urls.push('https://www.marketscreener.com' + m[0] + 'finances/'); } catch { /* source facultative */ }
+  }
+  /* Étude de marché, paramètres LBO : sans adresse fournie, recherche web (DuckDuckGo) puis lecture des trois premiers résultats */
+  if (!v.urls.length && (v.module === 'bp' || v.module === 'lbo')) {
+    const qy = v.query || (v.module === 'lbo' ? `Euribor 3 mois taux actuel ; multiple EV/EBITDA secteur ${v.subject}` : `taille du marché ${v.subject} chiffre d'affaires croissance`);
+    const sr = await fetch('https://html.duckduckgo.com/html/?q=' + encodeURIComponent(qy), { headers: { 'User-Agent': 'Mozilla/5.0 OVERRIDE.DESK research' } });
+    if (sr.ok) v.urls = ddgLinks(await sr.text(), 3);
+    if (v.module === 'lbo') v.urls = ['https://www.euribor-rates.eu/fr/taux-euribor-actuels/2/euribor-taux-3-mois/', ...v.urls].slice(0, 4);
   }
   if (!v.urls.length) throw new HttpError(400, 'url source requise pour une nouvelle extraction');
   v.url = v.urls[0];

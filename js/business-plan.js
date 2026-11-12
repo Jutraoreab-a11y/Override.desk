@@ -440,8 +440,8 @@ function renderBP(){
         <tr><td>Marché sectoriel mondial</td><td class="n">${big(r.s.tam)}</td><td>${esc(r.s.src)}</td><td><span class="tag am">Ordre de grandeur à confirmer</span></td></tr>
         <tr><td>Part de la zone ${esc(r.z.l)}</td><td class="n">${pct(r.z.s*100)}</td><td>${esc(r.z.src)}</td><td><span class="tag am">Ordre de grandeur à confirmer</span></td></tr>
         <tr><td>Marge brute de référence du secteur</td><td class="n">${pct(r.s.gm,0)}</td><td>${esc(r.s.src)}</td><td><span class="tag am">Ordre de grandeur à confirmer</span></td></tr>
-        <tr><td>TAM retenu</td><td class="n">${big(r.tam)}</td><td>${b.tamOv>0?'Saisie analyste':'Marché sectoriel × part de zone'}</td><td><span class="tag ${b.tamOv>0?'am':'ok'}">${b.tamOv>0?'Forcé':'Calculé'}</span></td></tr>
-        <tr><td>CAGR sectoriel</td><td class="n">${pct(r.cagr)}</td><td>${b.cagrOv>0?'Saisie analyste':esc(r.s.src)}</td><td><span class="tag ${b.cagrOv>0?'am':'ok'}">${b.cagrOv>0?'Forcé':'Calculé'}</span></td></tr>
+        <tr><td>TAM retenu</td><td class="n">${big(r.tam)}</td><td>${b.tamOv>0?(b.tamAI?'Recherche '+(b.mktAI&&b.mktAI.how==='claude'?'Claude':'IA')+' : '+esc((b.mkt.src||'').split(' ; ')[0]||'source citée'):'Saisie analyste'):'Marché sectoriel × part de zone'}</td><td><span class="tag ${b.tamOv>0?(b.tamAI?'ok':'am'):'ok'}">${b.tamOv>0?(b.tamAI?'Sourcé':'Forcé'):'Calculé'}</span></td></tr>
+        <tr><td>CAGR sectoriel</td><td class="n">${pct(r.cagr)}</td><td>${b.cagrOv>0?(b.cagrAI?'Recherche '+(b.mktAI&&b.mktAI.how==='claude'?'Claude':'IA')+' : '+esc((b.mkt.src||'').split(' ; ')[0]||'source citée'):'Saisie analyste'):esc(r.s.src)}</td><td><span class="tag ${b.cagrOv>0?(b.cagrAI?'ok':'am'):'ok'}">${b.cagrOv>0?(b.cagrAI?'Sourcé':'Forcé'):'Calculé'}</span></td></tr>
       </tbody></table></div>
       ${true?`<div class="fields" style="margin-top:10px;max-width:320px">${F('Date de consultation','bp.srcDate','t')}</div>`:''}
       <p class="note">Les références sectorielles intégrées sont des ordres de grandeur. Avant diffusion, remplacez-les par les chiffres exacts de l'étude citée via Override.</p></div>`)}

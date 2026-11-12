@@ -204,3 +204,10 @@ Sources des données livrées (collecte du 10/11/2026) : FRED (CPIAUCSL, PPIFIS,
 - **Comptes** : MarketScreener (CA, EBITDA, résultat net, BPA, FCF, dette nette ; liens déjà présents pour les 11 sociétés) recoupé avec stockanalysis.com à 3 % près sur le chiffre d'affaires ; les lignes manquantes d'une source sont complétées par l'autre ; Yahoo Finance en dernier recours. Un désaccord laisse les comptes inchangés. Bouton « Comptes de … » du panneau Collecte IA.
 - **Nouvelle société** : après stockanalysis, recoupement du CA avec MarketScreener ou Yahoo et du cours avec Google Finance / TradingView. Côté serveur, MarketScreener est trouvé par sa page de recherche et ajouté aux pages lues.
 - Constat des tests de lecture (12/11/2026, LVMH) : Google Finance, TradingView, Investing.com, MarketScreener et stockanalysis lisibles ; Yahoo Finance bloqué par son mur de consentement en Europe (gardé en secours).
+
+## Version 8.6 : Claude d'abord, jetons Anthropic ensuite (compte propriétaire)
+- Bouton **Lancer la recherche** en tête du Business plan (étude de marché : taille, historique, croissance projetée), du Dossier LBO (Euribor 3 mois, multiple VE/EBITDA du secteur) et de l'Analyse financière (comptes et cours recoupés).
+- Ordre des moteurs : 1) Claude dans l'application Claude (navigateur intégré + modèle de l'abonnement, aucune clé) ; 2) le serveur avec `ANTHROPIC_API_KEY`, réservé aux comptes de `AI_OWNER_EMAILS` ; 3) saisie au crayon. Le moteur utilisé est affiché et mémorisé avec la date.
+- Chaque chiffre retenu doit être cité par un extrait retrouvé dans la page lue ; sinon la recherche est rejetée et rien n'est modifié. Les valeurs sourcées apparaissent « Sourcé » (et non « Forcé ») dans le tableau des hypothèses.
+- Aucun appel au chargement : uniquement au clic. Migration `20261112180000_ai_lbo_module.sql`.
+

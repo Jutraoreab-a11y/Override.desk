@@ -43,7 +43,7 @@ async function liveRefresh(silent,mod){
   finally{FLUX.busy=false;}
 }
 /* Ingestion IA explicite (Recalculer ou initialisation d'un dossier) : le serveur sert le cache s'il est valide, sinon appelle Claude en JSON strict */
-async function liveIngest(mod,trigger){mod=mod||LIVE_MOD[ui.tab];if(!FLUX.on||!['bp','an','cm'].includes(mod))return null;
+async function liveIngest(mod,trigger){mod=mod||LIVE_MOD[ui.tab];if(!FLUX.on||!['bp','an','cm','lbo'].includes(mod))return null;
   const url=(S.aiSrc||{})[liveSrcKey(mod)];if(!url){if(trigger!=='init')toast('Aucune source IA renseignée pour ce volet : lecture des données en cache uniquement');return null;}
   try{const r=await liveApi('/api/v1/ai/ingest',{method:'POST',body:{module:mod,subject:liveSubj(mod),trigger:trigger||'recalc',url}});FLUX.ai=FLUX.ai||{};FLUX.ai[mod+':'+liveSubj(mod)]=r;
     toast(r.cached?'Extraction IA servie depuis la base (0 jeton)':`Extraction IA stockée (${r.tokens} jetons, extraits vérifiés ${r.verified})`);renderAll();return r;}

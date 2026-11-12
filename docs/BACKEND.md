@@ -10,7 +10,7 @@ OVERRIDE.DESK s'alimente en faisant lire les pages publiques par l'IA (cours rec
 
 ## 1. Mise en service
 
-1. **Supabase** : créer un projet, puis exécuter dans l'ordre les scripts de `supabase/migrations/` (éditeur SQL ou `supabase db push`) : `20261103000000_override_desk.sql`, puis `20261103180000_instruments_universe.sql` (instruments du sélecteur universel), puis `20261103200000_team_versions_nav.sql` (espaces partagés, rôles, versions signées, journal d'audit, valorisations quotidiennes), puis `20261110000000_ai_cache_v8.sql` (cache IA par module, vues `ai_cache_latest` et `ai_usage_monthly` pour suivre les jetons), puis `20261112000000_prices_v83.sql` (cours des cryptos). Les scripts sont rejouables.
+1. **Supabase** : créer un projet, puis exécuter dans l'ordre les scripts de `supabase/migrations/` (éditeur SQL ou `supabase db push`) : `20261103000000_override_desk.sql`, puis `20261103180000_instruments_universe.sql` (instruments du sélecteur universel), puis `20261103200000_team_versions_nav.sql` (espaces partagés, rôles, versions signées, journal d'audit, valorisations quotidiennes), puis `20261110000000_ai_cache_v8.sql` (cache IA par module, vues `ai_cache_latest` et `ai_usage_monthly` pour suivre les jetons), puis `20261112000000_prices_v83.sql` (cours des cryptos), puis `20261112180000_ai_lbo_module.sql` (module « lbo » du cache IA). Les scripts sont rejouables.
 2. **Auth** : Supabase > Authentication > Providers > Email activé (connexion par lien magique). Ajouter l'URL du site dans *Redirect URLs*.
 3. **Vercel** : importer le dépôt GitHub, framework « Other », aucune commande de build. Renseigner les variables d'environnement ci-dessous, puis déployer.
 4. **Front** : ouvrir le site déployé, cliquer sur le badge en haut à droite, saisir son e-mail, suivre le lien reçu. Si le front est hébergé ailleurs que le backend, renseigner « Adresse du backend » dans ce même panneau et définir `ALLOWED_ORIGIN` côté Vercel.
@@ -30,6 +30,7 @@ En local : `npm install`, `npm run typecheck`, `npm test`.
 | `ANTHROPIC_API_KEY`, `ANTHROPIC_MODEL` | Parseur IA et ingestion modulaire (`claude-haiku-5-5` par défaut pour l'ingestion en JSON strict) | pour l'IA |
 | `STT_API_BASE`, `STT_API_TOKEN` | API SocialTraderTools (mode « pull ») | optionnel |
 | `IBKR_FLEX_BASE` | Hôte du Flex Web Service IBKR | optionnel |
+| `AI_OWNER_EMAILS` | Comptes autorisés à consommer les jetons Anthropic du serveur (adresses séparées par des virgules). Vide = tout compte connecté. Les autres reçoivent 403 et passent par l'application Claude | recommandé |
 | `SEC_USER_AGENT` | Identification exigée par la SEC (« Nom email ») : voie de secours sans IA pour les comptes des sociétés américaines | facultatif |
 | `ALLOWED_ORIGIN` | Origine autorisée en CORS si le front est servi ailleurs | optionnel |
 

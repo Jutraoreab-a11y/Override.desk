@@ -609,3 +609,5 @@ svg.gauge{width:100%;max-width:260px;height:auto}svg.gauge .gv{fill:var(--hi);fo
 .card.fold>*:not(h2){display:none!important}.card.fold>h2{cursor:pointer;margin-bottom:0}.card.fold>h2::after{content:'Afficher le détail ▾';margin-left:auto;font-size:11px;color:var(--mute);font-weight:400}
 .ai-box.uxonb{max-width:480px;width:100%}.ai-box.uxonb p{color:var(--fg);line-height:1.55;margin:0}
 @media (max-width:1600px){#uxSearch .lbl,#uxMode .lbl,#uxBell .lbl{display:none}}
+.rsbar{display:flex;align-items:center;gap:10px;padding:10px 14px;margin:0 0 12px;border:1px solid var(--line);border-radius:6px;background:var(--pane)}.rsbar>div{display:flex;flex-direction:column;gap:2px;flex:1;min-width:0}.rsbar b{color:var(--hi);font-size:13px}.rsbar .meta{font-size:11px}
+@media (max-width:700px){.rsbar{flex-wrap:wrap}}
