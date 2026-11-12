@@ -226,3 +226,11 @@ Sources des données livrées (collecte du 10/11/2026) : FRED (CPIAUCSL, PPIFIS,
 - Instruments du sélecteur à jour au 12/11 (devises, indices, gaz, actions AAPL, TTE, MC, INTC) ; cuivre en moyenne mensuelle FMI (octobre non publié).
 - Test de bout en bout : aucune case vide dans les six vues du volet.
 
+## Version 8.9 : mapping visible, horodatage de chaque volet, spread corrigé
+- **Mapping des sociétés cotées** affiché directement en tête d'Analyse financière (quadrant, surperformeurs, alerte anti-FOMO, titres hors quadrant avec la raison) ; le mapping complet (filtres, ETF, cryptos, commodities) s'ouvre depuis la carte.
+- **Bandeau « Mise à jour : JJ/MM/AAAA à HH:MM »** en tête de chaque volet, avec la nature des données (`js/maj.js`).
+- **Commodities à la minute** : appel du 12/11/2026 à 20:17 (heure de Paris) ; la ligne du jour porte l'heure du cours.
+- **Spread Brent − WTI** calculé sur les deux contrats M1 (ICE Brent − NYMEX WTI, Yahoo Finance depuis janvier 2025) au lieu du Brent daté physique moins le WTI Cushing, qui donnait 19 à 37 $ en septembre-octobre ; l'écart physique reste visible dans le basis.
+- ETF (Yahoo Finance) et cryptos (CoinGecko) du mapping à jour au 12/11/2026 à 20:17 (`js/live-1112.js`).
+- Plus aucun tiret : une valeur absente s'affiche « non renseigné », « non publié », « base » ou « non calculable » avec une infobulle.
+

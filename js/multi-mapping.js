@@ -111,7 +111,7 @@ function mmCmdTable(){const C=cmCalc(),r=C.R[C.N-1],E=gsEngine(C),last=k=>{for(l
 function mmHTML(){const M=mmS(),cls=M.cls,Q=mmQuad(cls),ax=MM_AX[cls],h=M.h[cls];
   const out=Q.In.filter(r=>r.q==='out'),hot=Q.In.filter(r=>r.hot),ex=Q.pass.filter(x=>!x.ok[0]).length,na=Q.rows.length-Q.In.length-ex;
   const hl=cls==='stk'?`croissance sur ${h} an${h>1?'s':''}`:cls==='cry'?`période ${h}`:h==='max'?'historique complet':`${h} an${h>1?'s':''}`;
-  const quad=`<div class="card s12 mmq"><h2><span>Quadrant dynamique : ${esc(Q.yl)} × ${esc(Q.xl)} <span class="meta">${hl} · ${Q.In.length} actif${Q.In.length>1?'s':''} affiché${Q.In.length>1?'s':''}${ex?` · ${ex} écarté${ex>1?'s':''} par les filtres`:''}${na>0?` · ${na} sans donnée`:''}</span></span></h2>
+  const quad=`<div class="card s12 mmq"><h2><span>Quadrant dynamique : ${esc(Q.yl)} × ${esc(Q.xl)} <span class="meta">${hl} · ${Q.In.length} actif${Q.In.length>1?'s':''} affiché${Q.In.length>1?'s':''}${ex?` · ${ex} écarté${ex>1?'s':''} par les filtres`:''}${na>0?` · hors quadrant : ${Q.rows.filter(r=>!Q.In.includes(r)&&mmPass(r,cls)[0]).map(r=>r.l+(!isFinite(r.m[Q.xk])?' ('+Q.xl+' non significatif'+(cls==='stk'&&/PER/.test(Q.xl)?' : résultat négatif':'')+')':' ('+Q.yl+' non calculable)')).join(', ')}`:''}</span></span></h2>
     <div class="mmwrap">${mmScatter(Q.pts,{title:'Quadrant '+Q.yl+' / '+Q.xl,xl:Q.xl+(Q.inv?' (inversé : plus faible à droite)':'')+' · '+Q.xu,yl:Q.yl+' · '+Q.yu,inv:Q.inv,tx:Q.tx,ty:Q.ty})}${mmSide(cls,Q)}</div>
     <div class="dec" style="grid-template-columns:1fr 1fr">
       <div class="dc"><span class="dot ok"></span><div><b>Surperformeurs (quadrant supérieur droit)</b><span>${out.length?out.map(r=>esc(r.l)).join(', '):'aucun avec ces filtres'}</span></div></div>

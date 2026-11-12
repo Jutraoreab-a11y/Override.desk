@@ -22,6 +22,11 @@ await step('commodities : aucune case vide, séries jusqu\'au 12/11/2026', () =>
       if ((e.tagName === 'TD' && t === '') || /^(—|NO DATA|NaN|undefined|n\.d\.)$/.test(t) || /pas de donnée/.test(t)) bad.push(T + '/' + a + ' : ' + (e.closest('tr') || e).textContent.replace(/\s+/g, ' ').slice(0, 60)); }); }
   if (bad.length) throw new Error(bad.length + ' case(s) vide(s) : ' + bad.slice(0, 3).join(' | '));
 }));
+await step('mapping visible dans Analyse financière, date de mise à jour sur chaque volet, spread sur contrats M1', () => p.evaluate(() => {
+  ui.tab = 'an'; renderAll(); if (!document.querySelector('#p-an .anmm svg') || !document.querySelector('#p-an .anmm [data-act=anmopen]')) throw new Error('mapping des sociétés cotées absent');
+  for (const t of ['bp', 'an', 'sc', 'lbo', 'pf', 'cm', 'pc']) { ui.tab = t; renderAll(); const m = document.querySelector('#p-' + t + ' .majbar'); if (!m || !/Mise à jour : \d{2}\/\d{2}\/\d{4} à \d{2}:\d{2}/.test(m.textContent)) throw new Error('date de mise à jour absente : ' + t); }
+  const C = cmCalc(), s = C.s, i = s.d.indexOf('2026-10-02'); if (Math.abs(C.R[i].spread - (s.brentS[i] - s.wtiF[i])) > 1e-9 || C.R[i].spread > 12) throw new Error('spread Brent − WTI ' + C.R[i].spread);
+}));
 await step('mapping multi-actifs', async () => { await p.evaluate(() => { ui.tab = 'an'; renderAll(); }); await p.click('[data-act=anmopen]');
   for (const c of ['stk', 'etf', 'cry', 'cmd']) await p.evaluate(c => { S.mm.cls = c; renderAnMap(); if (!document.querySelectorAll('#anmap svg.mm .pt').length) throw new Error('quadrant vide ' + c); }, c); });
 await step('clic ETF vers analyse', async () => { await p.evaluate(() => { S.mm.cls = 'etf'; renderAnMap(); }); await p.click('#anmap svg.mm .pt[data-id="SPY"]');
