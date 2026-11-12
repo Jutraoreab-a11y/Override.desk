@@ -13,7 +13,7 @@ function anCalc(id){
   const sub=anSub(id),peers=Object.keys(A).filter(k=>k!==id&&anSub(k).key===sub.key),PB=peers.map(k=>anBase(A[k]));
   const UP=(a.peers||[]).filter(p=>p&&String(p.n||'').trim()),pE=PB.map(p=>p.evE).filter(v=>v>0).concat(UP.map(p=>+p.evE).filter(v=>v>0)),pP=PB.map(p=>p.per).filter(v=>v>0).concat(UP.map(p=>+p.pe).filter(v=>v>0));
   const DI=AN_DAMO[sub.damo]||null,fbE=pE.length<2&&DI,fbP=pP.length<2&&DI;
-  const medEvE=fbE?median(pE.concat([DI.eve])):median(pE),medPE=fbP?median(pP.concat([DI.pe])):median(pP),medEm=median(PB.map(p=>p.em[p.L]));
+  const medEvE=fbE?median(pE.concat([DI.eve])):median(pE),medPE=fbP?median(pP.concat([DI.pe])):median(pP),medEm0=median(PB.map(p=>p.em[p.L])),secPeers=PB.length?[]:Object.keys(A).filter(k=>k!==id&&A[k].sec===a.sec),medEm=isFinite(medEm0)?medEm0:median(secPeers.map(k=>{const b=anBase(A[k]);return b.em[b.L];}));
   const peerSrc={sub,n:pE.length,user:UP.length,fbE:!!fbE,fbP:!!fbP,DI};
   /* DCF sur FCF normalisé (moyenne 3 ans) */
   const base=avg(a.fcf.slice(-3)),w=a.wacc/100,g=a.g/100,tg=a.tg/100;let pv=0,f=base;
@@ -44,7 +44,7 @@ function anCalc(id){
   const filt=[
     ['Liquidité',liq,`Capitalisation de ${mm(B.capEUR*1,'')}€ : titre ${liq>=8?'très liquide, entrée et sortie sans décote':liq>=6?'liquide':'peu liquide, risque de décote à la revente'}.`,'auto'],
     ['Catalyseur',+a.cat,a.catTxt,'an.assets.'+id+'.cat'],
-    ['Concurrence',conc,`${isLead?'Leader de son groupe de comparables par le chiffre d\'affaires':'Leader du groupe : '+leadName}. Marge EBITDA ${pct(B.em[L],1)} contre ${pct(medEm,1)} en médiane des pairs.`,'auto'],
+    ['Concurrence',conc,`${isLead?'Leader de son groupe de comparables par le chiffre d\'affaires':'Leader du groupe : '+leadName}. Marge EBITDA ${pct(B.em[L],1)} ${isFinite(medEm)?`contre ${pct(medEm,1)} en médiane ${PB.length?'des pairs':'du secteur '+a.sec}`:': aucun comparable pour situer la marge'}.`,'auto'],
     ['Taille de marché',+a.tamS,a.tamTxt,'an.assets.'+id+'.tamS']
   ];
   const fPass=filt.filter(f=>f[1]>=c.fmin).length;
@@ -58,7 +58,7 @@ function anCalc(id){
   let concl;
   if(positive)concl=`Prendre position : qualité validée, tamis franchi et cours sous le prix d'achat cible. Stop-loss à ${nf(sl,2)}, objectif à ${nf(tp,2)} ${a.cur}.`;
   else if(!checks[0][1])concl=`S'abstenir : le titre ne respecte pas vos critères de qualité (${score}/100).`;
-  else if(!checks[1][1])concl=`S'abstenir : le titre ne franchit pas le tamis (${filt.filter(f=>f[1]<c.fmin).map(f=>f[0].toLowerCase()).join(', ')}).`;
+  else if(!checks[1][1])concl=`S'abstenir : le titre ne franchit pas le tamis (${filt.filter(f=>!(f[1]>=c.fmin)).map(f=>f[0].toLowerCase()+(isFinite(f[1])?'':' non évaluée, aucun comparable')).join(', ')}).`;
   else if(!checks[2][1])concl=`S'abstenir : valorisation intrinsèque non calculable avec les données publiées.`;
   else concl=`S'abstenir au cours actuel : qualité validée mais prix au-dessus de la cible. Placer un ordre limite à ${nf(buy,2)} ${a.cur} (${sgn((buy/a.price-1)*100)}).`;
   return{a,B,peers,peerSrc,medEvE,medPE,medEm,base,iv,impEv,impPe,meth,ref,buy,sl,tp,up,tvw:pvtv/ev,rows,score,filt,fPass,checks,positive,concl};

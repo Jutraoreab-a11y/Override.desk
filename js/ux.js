@@ -67,7 +67,9 @@ if(typeof liveMerge==='function'){const _lm=liveMerge;liveMerge=function(tr,br,c
 /* ---- Centre d'alertes ---- */
 function uxAlerts(){const o=[],today=new Date().toISOString().slice(0,10),pd=s=>{const m=String(s||'').match(/(\d{2})\/(\d{2})\/(\d{4})/);return m?`${m[3]}-${m[2]}-${m[1]}`:'';};
   Object.entries(S.an.assets).forEach(([k,a])=>{let R;try{R=anCalc(k);}catch(e){return;}
-    if(isFinite(R.buy)&&+a.price>0&&+a.price<=R.buy)o.push({id:'buy:'+k+':'+a.pxDate,lv:'ok',t:`${a.t} au prix d'achat cible`,d:`Cours ${nf(+a.price,2)} ≤ cible ${nf(R.buy,2)} ${a.cur}`,go:{tab:'an',tk:k}});
+    if(isFinite(R.buy)&&+a.price>0&&+a.price<=R.buy){const okQ=R.checks&&R.checks[0]&&R.checks[0][1],okT=R.checks&&R.checks[1]&&R.checks[1][1];
+      o.push(okQ&&okT?{id:'buy:'+k+':'+a.pxDate,lv:'ok',t:`${a.t} au prix d'achat cible`,d:`Cours ${nf(+a.price,2)} ≤ cible ${nf(R.buy,2)} ${a.cur} · qualité et tamis validés`,go:{tab:'an',tk:k}}
+        :{id:'trap:'+k+':'+a.pxDate,lv:'am',t:`${a.t} sous son prix cible, mais rejeté`,d:`Cours ${nf(+a.price,2)} ≤ cible ${nf(R.buy,2)} ${a.cur}, ${okQ?'tamis non franchi':'qualité '+R.score+'/100 insuffisante'} : pas un signal d'achat`,go:{tab:'an',tk:k}});}
     const age=(Date.parse(today)-Date.parse(pd(a.pxDate)))/864e5;if(a.pxDate&&age>7)o.push({id:'old:'+k+':'+a.pxDate,lv:'am',t:`Cours de ${a.t} daté`,d:`Dernier cours du ${a.pxDate} (${Math.round(age)} jours)`,go:{tab:'an',tk:k}});});
   try{const E=gsEngine(cmCalc());if(E.flag[0]==='ko')o.push({id:'fomo:'+E.L.d,lv:'ko',t:'Or / argent : mouvement FOMO',d:E.flag[2],go:{tab:'cm'}});
     if(isFinite(E.L.lead)&&Math.abs(E.L.lead)>E.th)o.push({id:'lead:'+E.L.d,lv:'am',t:'Signal lead / lag or-argent',d:E.lag[1],go:{tab:'cm'}});}catch(e){}
