@@ -91,7 +91,7 @@ function renderAll(){
   $('#editBtn').innerHTML=`${ic(ui.edit?'lock':'pen')}<span class="lbl">${ui.edit?'Verrouiller':'Override'}</span>`;
   $('#pdfBtn').innerHTML=`${ic('dl')}<span class="lbl">Exporter PDF</span>`;
   {const st=typeof aiState==='function'?aiState():['ko','Passerelles IA indisponibles'];$('#aiBtn').innerHTML=`<span class="dot ${st[0]}"></span><span class="lbl">Collecte IA</span>`;$('#aiBtn').title=st[1]+' · lecture des données en cache : 0 jeton';}
-  if($('#mmBtn'))$('#mmBtn').innerHTML=`${ic('sc')}<span class="lbl">Mapping</span>`;renderAI();
+  renderAI();
   $('#liveBtn').innerHTML=liveBadge();renderFlux();
   updBar();
   const t={lbo:'Dossier d\'acquisition LBO',pc:'Calculateur de position',jr:'Journal de trading',bp:'Business plan',an:"Rapport d'analyse financière",sc:"Sélecteur d'entreprises & double mapping",pf:'Suivi des actifs et placements',cm:'Commodities & flows : '+((ui.cmT||'t')==='t'?'pression et approvisionnement':'confirmation et corrélations'),ab:'Abonnement'}[ui.tab],sub=ui.tab==='bp'?S.bp.name:ui.tab==='an'?(S.an.assets[ui.tk]||{}).n:ui.tab==='cm'?CM_ASSETS[ui.cmA||'brent']:ui.tab==='sc'?('zone '+geoAgg(ui.geo).lab+', '+((S.sc.list.find(c=>c.id===ui.sel)||{}).n||'')):'';

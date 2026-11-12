@@ -156,7 +156,7 @@ Version 7.3 :
 
 ## Version 8.0 / 8.1 : mapping multi-actifs, moteur anti-FOMO, cache IA, macro et or / argent
 
-**Mapping multi-actifs** (bouton « Mapping » de l'en-tête, ou « Mapping sectoriel & stock » dans l'analyse financière) : barre `Actions · ETF · Cryptos · Commodities / Macro`.
+**Mapping multi-actifs** (bouton « Mapping sectoriel & stock » du volet Analyse financière, seul point d'accès) : barre `Actions · ETF · Cryptos · Commodities / Macro`.
 - Panneau de filtres : VE/EBITDA, PER, cours / actif net, VE/CA, croissance du CA (1 ou 3 ans ; 5 ans demande six exercices), marges EBITDA et nette, rendement FCF, capitalisation, volume moyen quotidien (saisi au crayon, non publié dans les comptes), bornage 1 / 2 / 5 / 10 / 20 / 30 ans pour les ETF.
 - Quadrant dynamique en unités réelles, axes au choix. Le risque ou la cherté se lit à gauche, de sorte que le quadrant supérieur droit regroupe les surperformeurs ; seuils à la médiane de l'univers filtré ou saisis. Alerte anti-FOMO (⚠) : performance du quartier haut obtenue dans la zone risquée.
 - Clic : une action ouvre son analyse financière, fondamentaux chargés ; un ETF, une crypto ou une commodity ouvre une fiche latérale. Le double mapping (secteur puis titre) reste sous le screener actions.

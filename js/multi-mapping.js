@@ -125,7 +125,8 @@ function mmHTML(){const M=mmS(),cls=M.cls,Q=mmQuad(cls),ax=MM_AX[cls],h=M.h[cls]
   return`<div class="ai-box anm mm" role="dialog" aria-label="Mapping multi-actifs"><div class="ai-h"><b>Mapping multi-actifs</b>${mmBar()}<button class="btn sm" data-act="anmclose">Fermer</button></div>
     <div class="mmgrid">${mmFilters(cls)}<div class="mmmain"><div class="grid">${quad}${cls==='cmd'?mmCmdTable():''}${tbl}</div>${dm}</div></div></div>`;}
 /* Remplace le rendu de l'overlay : accessible depuis tous les volets */
-renderAnMap=function(){const el=document.getElementById('anmap');if(!el)return;if(!ui.anmOpen){el.hidden=true;return;}el.hidden=false;
+/* Le mapping n'existe que dans le volet Analyse financière (bouton « Mapping sectoriel & stock ») */
+renderAnMap=function(){const el=document.getElementById('anmap');if(!el)return;if(ui.tab!=='an')ui.anmOpen=false;if(!ui.anmOpen){el.hidden=true;return;}el.hidden=false;
   const sc=el.scrollTop,fk=document.activeElement&&el.contains(document.activeElement)?document.activeElement.dataset.k||document.activeElement.dataset.w:null;
   if(fk!==null&&document.activeElement)document.activeElement.blur();try{el.innerHTML=mmHTML();}catch(e){console.error('mm',e);el.innerHTML=anMapHTML();}el.scrollTop=sc;};
 document.addEventListener('click',e=>{const b=e.target.closest&&e.target.closest('[data-act]');if(!b)return;const a=b.dataset.act,M=mmS(),cls=b.dataset.cls||M.cls;
