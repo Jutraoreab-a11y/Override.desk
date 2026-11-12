@@ -246,3 +246,13 @@ Sources des données livrées (collecte du 10/11/2026) : FRED (CPIAUCSL, PPIFIS,
 - Mapping par secteur : 46 072 sociétés actives (cotation principale, doublons de places secondaires retirés), 111 pays, 80 places de cotation, au niveau 11 secteurs, 26 groupes ou 75 industries (GICS). Filtres pays, place et taille.
 - Clic sur un secteur : la liste complète de ses sociétés (paginée, recherche par nom ou ticker) et le quadrant des titres déjà analysés. Clic sur une société : l'analyse financière s'ouvre ; si le titre n'est pas encore couvert, Claude lit ses comptes et crée l'analyse.
 - Sources : FinanceDatabase (Jeroen Bouma, données ouvertes, v2.5.1) pour l'univers ; Aswath Damodaran (NYU Stern, janvier 2026, sociétés américaines) pour les repères VE / EBITDA, PER, marges et croissance du BPA attendue à 5 ans. Banques et assurances : VE / EBITDA non pertinent, hors quadrant.
+
+## Version 8.12 : fiche complète en cache et analyse institutionnelle
+
+- Mapping simplifié : plus de « niveaux ». Le graphique montre les 75 industries ; des boutons de secteur (11, GICS) filtrent les industries d'un secteur. Clic sur une industrie : ses sociétés ; clic sur une société : son analyse financière.
+- Fiche complète en cache : comptes 5 ans (CA, EBITDA, EBIT, intérêts, impôt, résultat, BPA, FCF, capex, capitaux propres, actif, dette nette), consensus N+1 à N+3, cours 12 mois, agenda et objectifs des analystes. 80 fiches livrées (méga-capitalisations et titres couverts) ; toute autre société est lue une fois en entier (données JSON publiques de stockanalysis.com, sans IA) puis gardée en cache ; bouton « Précharger 10 fiches » dans la liste des sociétés.
+- Section 3 : colonnes FY+1 à FY+3 (E) et lignes EBIT, Capex (% du CA), Conversion FCF, Couverture des intérêts, ROIC calculé (NOPAT / (capitaux propres + dette nette)) et Création de valeur (ROIC − WACC) ; bloc DuPont du ROE.
+- Section 5 : VE/EBITDA et PER prospectifs N+1 / N+2, objectifs Bear / Base / Bull à 12 mois (paramètres modifiables), table de sensibilité 5×5 WACC × croissance terminale.
+- Section 6 : trajectoire prévisionnelle sur 24 mois (12 mois de cours, cône vers les trois scénarios, niveaux d'exécution).
+- Calendrier des catalyseurs (résultats, dividende, consensus, objectifs) et trois risques d'invalidation déduits des chiffres.
+- Sources : S&P Global Market Intelligence via stockanalysis.com (comptes, consensus N+1, cours, agenda) ; MarketScreener (consensus N+2 et N+3 quand publié, sinon extrapolation signalée) ; BCE (changes du 12/11/2026).

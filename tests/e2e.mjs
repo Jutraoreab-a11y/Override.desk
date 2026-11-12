@@ -29,19 +29,39 @@ await step('mapping visible dans Analyse financière, date de mise à jour sur c
 }));
 await step('mapping multi-actifs', async () => { await p.evaluate(() => { ui.tab = 'an'; renderAll(); }); await p.click('[data-act=anmopen]');
   for (const c of ['stk', 'etf', 'cry', 'cmd']) await p.evaluate(c => { S.mm.cls = c; renderAnMap(); if (!document.querySelectorAll('#anmap svg.mm .pt').length) throw new Error('quadrant vide ' + c); }, c); });
-await step('mapping par secteur sur l\'univers coté, puis sociétés du secteur, puis analyse financière', async () => {
-  await p.evaluate(() => { ui.tab = 'an'; ui.anX = null; S.mm.cls = 'stk'; S.uv = { view: 'sec', lvl: 'sec' }; ui.anmOpen = true; renderAnMap();
-    if (UNIV.rows.length < 45000 || UNIV.cty.length < 100) throw new Error('univers incomplet ' + UNIV.rows.length);
-    if (document.querySelectorAll('#anmap svg.mm .pt').length !== 11) throw new Error('11 secteurs attendus, ' + document.querySelectorAll('#anmap svg.mm .pt').length);
-    S.uv.lvl = 'ind'; renderAnMap(); if (document.querySelectorAll('#anmap tr.uvr').length < 70) throw new Error('industries manquantes');
-    const semi = UNIV.ind.findIndex(d => d.i === 'Semiconductors & Chip Equipment'); const el = document.querySelector(`#anmap [data-act=uvsec][data-id="${semi}"]`); if (!el) throw new Error("point Semiconducteurs absent"); el.dispatchEvent(new MouseEvent("click", { bubbles: true })); });
-  await p.evaluate(() => { const rows = [...document.querySelectorAll('#anmap tr.uvr')]; if (rows.length < 100) throw new Error('sociétés du secteur ' + rows.length);
-    const nv = [...document.querySelectorAll('#anmap tr.uvr')].find(r => r.dataset.id === 'NVDA'); if (!nv || !/Analysée/.test(nv.textContent)) throw new Error('NVDA non reconnue comme analysée');
+await step('mapping : secteurs puis industries, sociétés, fiche en cache et analyse financière', async () => {
+  await p.evaluate(() => { ui.tab = 'an'; ui.anX = null; S.mm.cls = 'stk'; S.uv = { view: 'sec' }; ui.anmOpen = true; renderAnMap();
+    if (UNIV.rows.length < 40000 || UNIV.cty.length < 100) throw new Error('univers incomplet ' + UNIV.rows.length);
+    if (document.querySelectorAll('#anmap .uvchips button').length !== 12) throw new Error('11 secteurs + Tous attendus');
+    if (document.querySelector('#anmap [data-act=uvlvl]')) throw new Error('le sélecteur de niveau doit avoir disparu');
+    const all = document.querySelectorAll('#anmap tr.uvr').length; if (all < 70) throw new Error('industries manquantes ' + all);
+    document.querySelector('#anmap .uvchips [data-id="Information Technology"]').click();
+    const it = document.querySelectorAll('#anmap tr.uvr').length; if (!(it > 3 && it < 15)) throw new Error('filtre secteur ' + it);
+    const semi = UNIV.ind.findIndex(d => d.i === 'Semiconductors & Chip Equipment'); const el = document.querySelector(`#anmap [data-act=uvsec][data-id="${semi}"]`); if (!el) throw new Error('industrie Semi-conducteurs absente'); el.dispatchEvent(new MouseEvent('click', { bubbles: true })); });
+  await p.evaluate(() => { const rows = [...document.querySelectorAll('#anmap tr.uvr')]; if (rows.length < 100) throw new Error('sociétés de l\'industrie ' + rows.length);
+    const nv = rows.find(r => r.dataset.id === 'NVDA'); if (!nv || !/Analysée/.test(nv.textContent)) throw new Error('NVDA non reconnue comme analysée');
     nv.click(); if (ui.tk !== 'NVDA' || ui.tab !== 'an' || ui.anmOpen) throw new Error('ouverture analyse ' + ui.tk); });
-  await p.evaluate(async () => { let got = null; const _u = uxCreate; uxCreate = async q => { got = q; }; S.uv.view = 'cos'; S.uv.cty = 'Taiwan'; ui.anmOpen = true; renderAnMap();
-    const r = [...document.querySelectorAll('#anmap tr.uvr')].find(x => !/Analysée/.test(x.textContent)); r.click(); await new Promise(z => setTimeout(z, 20)); uxCreate = _u;
-    if (!got || got !== r.dataset.id) throw new Error('lancement analyse Claude ' + got); S.uv = { view: 'sec' }; ui.tab = 'an'; ui.anmOpen = true; renderAnMap(); });
+  await p.evaluate(async () => { S.uv.view = 'cos'; S.uv.cty = 'Taiwan'; ui.anmOpen = true; renderAnMap();
+    const ts = [...document.querySelectorAll('#anmap tr.uvr')].find(x => x.dataset.id === '2330.TW'); if (!ts || !/Fiche prête/.test(ts.textContent)) throw new Error('TSMC : fiche en cache attendue');
+    ts.click(); await new Promise(z => setTimeout(z, 30)); const a = S.an.assets[ui.tk]; if (!a || a.t !== '2330.TW' || ui.tab !== 'an' || !(a.rev[4] > 0) || !a.est || !(a.hist.length > 40)) throw new Error('fiche TSMC non ouverte instantanément');
+    if (!document.querySelector('#p-an .fi-fan svg') || !document.querySelector('#p-an .fi-cr')) throw new Error('analyse TSMC incomplète');
+    let got = null; const _u = uxCreate; uxCreate = async q => { got = q; }; ui.anmOpen = true; renderAnMap();
+    const r = [...document.querySelectorAll('#anmap tr.uvr')].find(x => /Lancer/.test(x.textContent)); r.click(); await new Promise(z => setTimeout(z, 20)); uxCreate = _u;
+    if (!got || got !== r.dataset.id) throw new Error('lancement lecture ' + got); S.uv = { view: 'sec' }; ui.tab = 'an'; ui.anmOpen = true; renderAnMap(); });
 });
+await step('analyse institutionnelle : ROIC, création de valeur, DuPont, N+1 à N+3, multiples prospectifs, scénarios, sensibilité, trajectoire, catalyseurs', () => p.evaluate(() => {
+  ui.anmOpen = false; ui.anX = null; ui.tk = 'MC'; ui.tab = 'an'; renderAll(); const P = document.getElementById('p-an'), a = S.an.assets.MC;
+  if (!(isFinite(+a.roic) && a.roicAuto)) throw new Error('ROIC non calculé');
+  const th = [...P.querySelectorAll('table.fin thead th.est')]; if (th.length !== 3) throw new Error('colonnes N+1 à N+3 : ' + th.length);
+  for (const lab of ['Capex (% du CA)', 'Conversion FCF (FCF / EBITDA)', 'Couverture des intérêts (EBIT / intérêts)', 'ROIC (NOPAT / (capitaux propres + dette nette))', 'Création de valeur (ROIC − WACC)'])
+    if (![...P.querySelectorAll('table.fin tr')].some(tr => tr.cells[0].textContent === lab)) throw new Error('ligne absente : ' + lab);
+  if (!P.querySelector('.fi-vc') || !P.querySelector('.fi-eq')) throw new Error('bloc création de valeur / DuPont absent');
+  if (![...P.querySelectorAll('td')].some(td => /^VE \/ EBITDA \d{4} \(E\)$/.test(td.textContent))) throw new Error('multiples prospectifs absents');
+  if (P.querySelectorAll('.fi-3 .fi-s').length !== 3) throw new Error('3 scénarios attendus');
+  if (P.querySelectorAll('.fi-sens tbody tr').length !== 5 || P.querySelectorAll('.fi-sens tbody tr:first-child td').length !== 6) throw new Error('table de sensibilité 5×5');
+  if (!P.querySelector('.fi-fan svg polyline') || P.querySelector('svg.lv')) throw new Error('trajectoire prévisionnelle absente');
+  if (P.querySelectorAll('.fi-rk li').length !== 3) throw new Error('3 risques attendus');
+  if (/NaN|undefined/.test(P.textContent)) throw new Error('valeur NaN ou undefined affichée'); ui.anmOpen = true; renderAnMap(); }));
 await step('clic ETF vers analyse', async () => { await p.evaluate(() => { S.mm.cls = 'etf'; renderAnMap(); }); await p.click('#anmap svg.mm .pt[data-id="SPY"]');
   if (await p.evaluate(() => document.querySelector('#p-an .sh-t')?.textContent) !== 'SPY') throw new Error('slide ETF absente'); });
 await step('recherche universelle', async () => { await p.keyboard.press('Control+k'); await p.keyboard.type('bitc'); await p.keyboard.press('Enter');
