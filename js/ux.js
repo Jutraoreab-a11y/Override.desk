@@ -52,7 +52,7 @@ async function uxCreate(q){ui.uxQ=null;uxPalette();const t=q.toUpperCase().repla
       try{const r=await liveApi('/api/v1/fundamentals?ticker='+encodeURIComponent(t)),st=r.statements;
         return done(anApply(a,{name:r.title,currency:st.currency,fiscal_years:st.years.map(y=>+y.slice(2)),revenue:st.rev,ebitda:st.ebitda,net_income:st.ni,eps:st.eps,fcf:st.fcf,net_debt:st.nd,roe_pct:st.roe,shares:st.shares},r.source_url),'SEC EDGAR, sans IA');}
       catch(e2){toast(`Lecture impossible (${e.message}). Saisissez les comptes au crayon.`);return;}}}
-  toast("Fiche créée. Ouvrez OVERRIDE.DESK dans l'application Claude pour que l'IA lise les comptes, ou saisissez-les au crayon.");}
+  toast("Fiche créée. Ouvrez FOMO.DESK dans l'application Claude pour que l'IA lise les comptes, ou saisissez-les au crayon.");}
 
 /* ---- Cours du soir (backend) appliqués aux fiches et aux cryptos, sans écraser une saisie ---- */
 if(typeof liveMerge==='function'){const _lm=liveMerge;liveMerge=function(tr,br,cm){const r=_lm.apply(this,arguments);
@@ -81,7 +81,7 @@ function uxAlertPanel(){let el=document.getElementById('uxal');if(!ui.uxAl){if(e
     <p class="note">Alertes calculées dans le navigateur à chaque recalcul, sans appel réseau ni IA. Les notifications du système s'affichent quand une nouvelle alerte apparaît et que l'onglet est ouvert.</p></div>`;ui.uxAlL=A;}
 function uxNotify(){const A=uxAlerts(),U=UX(),seen=new Set(U.seen),fresh=A.filter(a=>!seen.has(a.id));
   const b=document.getElementById('uxBell');if(b)b.innerHTML=`${uxIc.bell}<span class="lbl">Alertes</span>${fresh.length?`<span class="cnt">${fresh.length}</span>`:''}`;
-  if(fresh.length&&U.notif&&'Notification' in window&&Notification.permission==='granted'&&!ui.uxNotified){ui.uxNotified=true;try{new Notification('OVERRIDE.DESK',{body:fresh.slice(0,3).map(a=>a.t).join(' · ')});}catch(e){}}}
+  if(fresh.length&&U.notif&&'Notification' in window&&Notification.permission==='granted'&&!ui.uxNotified){ui.uxNotified=true;try{new Notification('FOMO.DESK',{body:fresh.slice(0,3).map(a=>a.t).join(' · ')});}catch(e){}}}
 
 /* ---- Mode simple : chaque volet montre d'abord sa synthèse, le détail se déplie ---- */
 function uxFold(){const simple=UX().mode==='simple';document.body.classList.toggle('ux-simple',simple);if(!simple)return;ui.uxOpen=ui.uxOpen||{};
@@ -90,7 +90,7 @@ function uxFold(){const simple=UX().mode==='simple';document.body.classList.togg
     if(!ui.uxOpen[key]){c.classList.add('fold');h.setAttribute('data-act','uxunfold');h.dataset.id=key;h.setAttribute('role','button');h.setAttribute('tabindex','0');h.title='Afficher le détail';}});}
 
 /* ---- Guide de premier lancement ---- */
-const UX_ONB=[['Bienvenue dans OVERRIDE.DESK','Un poste de travail pour décider : business plan, analyse financière, mapping multi-actifs, LBO, portefeuille, commodities et macro. Chaque chiffre est sourcé et daté ; une donnée absente reste vide plutôt que d\'être inventée.'],
+const UX_ONB=[['Bienvenue dans FOMO.DESK','Un poste de travail pour décider : business plan, analyse financière, mapping multi-actifs, LBO, portefeuille, commodities et macro. Chaque chiffre est sourcé et daté ; une donnée absente reste vide plutôt que d\'être inventée.'],
   ['Le crayon ✏️ force n\'importe quelle valeur','Cliquez sur un chiffre suivi d\'un crayon pour le remplacer : tout le dossier se recalcule en cascade et la valeur forcée reste signalée et tracée.'],
   ['Trouver un actif en une touche','Ctrl+K (ou /) ouvre la recherche universelle : action, ETF, crypto, matière première, dossier ou volet. Le mapping sectoriel & stock s\'ouvre depuis l\'Analyse financière. La cloche regroupe les alertes : prix d\'achat atteint, données périmées, mouvement spéculatif.']];
 function uxOnb(){let el=document.getElementById('uxonb');const U=UX();if(U.onb||navigator.webdriver){if(el)el.hidden=true;return;}

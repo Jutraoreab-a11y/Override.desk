@@ -51,7 +51,7 @@ async function rsRun(mod,subject,inapp,server,trigger){trigger=trigger==='init'?
       catch(e){err.push('Backend : '+e.message);
         /* Dernier recours : la dernière extraction stockée, même ancienne, signalée comme telle */
         try{const c=await liveApi(`/api/v1/ai/ingest?module=${mod}&subject=${encodeURIComponent(subject)}`);if(c&&c.record&&c.record.payload){out=c.record.payload;how='cache';err.push('extraction en base du '+fdate(String(c.record.timestamp_retrieved).slice(0,10))+' servie');}}catch(x){}}}
-    if(!out){if(trigger==='recalc')toast(err.length?`${RS_MOD[mod]} : recherche impossible (${err.join(' ; ')})`:`${RS_MOD[mod]} : aucun moteur disponible. Ouvrez OVERRIDE.DESK dans l'application Claude, ou connectez le backend.`);return null;}
+    if(!out){if(trigger==='recalc')toast(err.length?`${RS_MOD[mod]} : recherche impossible (${err.join(' ; ')})`:`${RS_MOD[mod]} : aucun moteur disponible. Ouvrez FOMO.DESK dans l'application Claude, ou connectez le backend.`);return null;}
     RS.last[mod]={how,at:new Date().toISOString(),err};return{p:out,how};}
   finally{RS.busy[mod]=false;rsBar();rsHdr();}}
 

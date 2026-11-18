@@ -29,7 +29,7 @@ async function srcPriceChecked(k){const a=S.an.assets[k],S0=srcOf(k),got=[],err=
   if(got.length>1)return{ok:false,conflict:got.map(g=>`${g.n} ${nf(g.v,2)}`),err};
   return{ok:false,err};}
 /* Actualisation des cours de toutes les fiches, recoupés entre sites */
-aiRefreshPrices=async function(){if(!AI.mcp||!AI.sample){toast("Lecture des cours par l'IA : ouvrez OVERRIDE.DESK dans l'application Claude (navigateur intégré)");return;}
+aiRefreshPrices=async function(){if(!AI.mcp||!AI.sample){toast("Lecture des cours par l'IA : ouvrez FOMO.DESK dans l'application Claude (navigateur intégré)");return;}
   const K=Object.keys(S.an.assets),rep={ok:[],one:[],ko:[]};AI.busy.prices=true;
   for(const [i,k] of K.entries()){const a=S.an.assets[k];AI.msg.prices=['am',`${a.t} : lecture et recoupement des sources (${i+1}/${K.length})…`];renderAI();
     if(a.pxManual){rep.ko.push(a.t+' (saisie conservée)');continue;}
@@ -50,7 +50,7 @@ async function srcFund(s,a){const txt=await aiPage(s.u),nt=normTxt(txt);if(txt.l
 function srcAgree(A,B){const y=(A.fiscal_years||[]).filter(x=>(B.fiscal_years||[]).includes(x)).pop();if(!y)return null;
   const a=A.revenue[A.fiscal_years.indexOf(y)],b=B.revenue[B.fiscal_years.indexOf(y)];return isFinite(+a)&&isFinite(+b)&&b?{y,ok:Math.abs(a/b-1)<=0.03,a,b}:null;}
 /* Actualisation des comptes d'une fiche : MarketScreener, recoupé avec stockanalysis ; les données manquantes d'une source sont complétées par l'autre */
-async function aiRefreshFund(k){if(!AI.mcp||!AI.sample){toast("Lecture des comptes par l'IA : ouvrez OVERRIDE.DESK dans l'application Claude");return;}
+async function aiRefreshFund(k){if(!AI.mcp||!AI.sample){toast("Lecture des comptes par l'IA : ouvrez FOMO.DESK dans l'application Claude");return;}
   const a=S.an.assets[k],F=srcOf(k).fund,got=[],err=[];toast(`${a.t} : lecture des comptes publiés…`);
   for(const s of F){if(got.length>=2)break;try{got.push(await srcFund(s,a));}catch(e){err.push(s.n+' : '+(e.message||aiErr(e)));}}
   if(!got.length){toast(`${a.t} : comptes non lus (${err.join(' ; ')})`);return;}

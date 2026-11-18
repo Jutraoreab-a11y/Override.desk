@@ -1,8 +1,8 @@
 {
   "name": "override-desk",
-  "version": "8.12.0",
+  "version": "8.13.0",
   "private": true,
-  "description": "OVERRIDE.DESK : station d'analyse institutionnelle (front statique + fonctions serveur Vercel + Supabase)",
+  "description": "FOMO.DESK : station d'analyse institutionnelle (front statique + fonctions serveur Vercel + Supabase)",
   "type": "module",
   "scripts": {
     "typecheck": "tsc --noEmit",

@@ -1,4 +1,4 @@
-/* OVERRIDE.DESK v8.2 : historiques quotidiens des instruments du sélecteur universel (collectés le 10/11/2026 via Firecrawl, lus à 0 jeton).
+/* FOMO.DESK v8.2 : historiques quotidiens des instruments du sélecteur universel (collectés le 10/11/2026 via Firecrawl, lus à 0 jeton).
    Devises : FRED (taux de midi de la Fed de New York, H.10). Gaz : FRED DHHNGSP (Henry Hub, EIA). Nasdaq 100 et Nikkei 225 : FRED.
    DAX, Dow Jones, S&P 500 et USD/CNH : EODHD. Cuivre : FRED PCOPPUSDM (FMI), moyenne mensuelle, aucune série quotidienne gratuite. CAC 40 : EODHD FCHI.INDX. */
 const MKT_SRC={eurusd:'FRED DEXUSEU',gbpusd:'FRED DEXUSUK',usdjpy:'FRED DEXJPUS',audusd:'FRED DEXUSAL',usdcad:'FRED DEXCAUS',natgas:'FRED DHHNGSP (Henry Hub, USD/MMBtu)',ndx:'FRED NASDAQ100',nkx:'FRED NIKKEI225',dax:'EODHD GDAXI.INDX',dji:'EODHD DJI.INDX',spx:'EODHD GSPC.INDX (depuis le 18/06/2026)',cnh:'EODHD USDCNH.FOREX (depuis le 18/06/2026)',copper:'FRED PCOPPUSDM (FMI, USD/t, moyenne mensuelle)',cac:'EODHD FCHI.INDX'};

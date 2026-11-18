@@ -80,6 +80,6 @@ let uvT=null;document.addEventListener('input',e=>{const t=e.target;if(!t.datase
 document.addEventListener('keydown',e=>{if(e.key!=='Enter')return;const r=e.target.closest&&e.target.closest('tr.uvr');if(r)r.click();});
 
 /* Préchargement explicite : comptes complets des 10 premières sociétés affichées, sans IA, mis en cache pour une ouverture instantanée */
-async function uvPrefetch(){if(typeof AI!=='object'||!AI.mcp){toast("Préchargement : ouvrez OVERRIDE.DESK dans l'application Claude (navigateur intégré)");return;}
+async function uvPrefetch(){if(typeof AI!=='object'||!AI.mcp){toast("Préchargement : ouvrez FOMO.DESK dans l'application Claude (navigateur intégré)");return;}
   const L=[...document.querySelectorAll('#anmap tr.uvr[data-act=uvco]')].map(r=>r.dataset.id).filter(t=>!ficheGet(t)).slice(0,10);if(!L.length){toast('Les sociétés affichées ont déjà leur fiche');return;}
   let ok=0;for(const t of L){toast(`Préchargement ${ok+1}/${L.length} : ${t}`);try{await ficheFetch(t);ok++;renderAnMap();}catch(e){}}toast(`${ok} fiche(s) complète(s) mise(s) en cache sur ${L.length}`);}

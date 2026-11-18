@@ -37,7 +37,7 @@ function sideHTML(){
   if(ui.tab==='bp'){const{r,ko,res,st}=bpState(),Hy=r.Y[r.H-1],k=r.mk;
     return`<div class="sideh">Synthèse du modèle</div>
     <div class="vbox ${st[0]}"><b><span class="dot ${st[0]}"></span>${st[1]}</b><span>${ko} point${ko>1?'s':''} bloquant${ko>1?'s':''}, ${res} réserve${res>1?'s':''}</span></div>
-    ${kv('CA année '+r.H,big(Hy.rev))}${kv('EBITDA année '+r.H,big(Hy.ebitda),Hy.ebitda<0)}${kv('Point mort EBITDA',r.be?'Année '+r.be.t:'Non atteint',!r.be)}${kv('Point bas de trésorerie',big(r.min.cash),r.min.cash<0)}${kv('LTV / CAC',nf(r.ratio,1)+'×',r.ratio<3)}${kv('Part de marché A'+r.H,pct(k.proj[k.proj.length-1].sv,2))}${kv('Tamis OVERRIDE',k.passN+'/4',k.passN<4)}${(()=>{const G=bpGo(r,bpAlerts(r),DAMO[S.bp.sector]||DAMO.saas);return kv('Verdict ('+G.score+'/100)',G.verdict[1],G.verdict[0]!=='ok');})()}
+    ${kv('CA année '+r.H,big(Hy.rev))}${kv('EBITDA année '+r.H,big(Hy.ebitda),Hy.ebitda<0)}${kv('Point mort EBITDA',r.be?'Année '+r.be.t:'Non atteint',!r.be)}${kv('Point bas de trésorerie',big(r.min.cash),r.min.cash<0)}${kv('LTV / CAC',nf(r.ratio,1)+'×',r.ratio<3)}${kv('Part de marché A'+r.H,pct(k.proj[k.proj.length-1].sv,2))}${kv('Tamis FOMO.DESK',k.passN+'/4',k.passN<4)}${(()=>{const G=bpGo(r,bpAlerts(r),DAMO[S.bp.sector]||DAMO.saas);return kv('Verdict ('+G.score+'/100)',G.verdict[1],G.verdict[0]!=='ok');})()}
     <div class="sideh" style="margin-top:8px">Sections</div>
     <div class="secl">${BPSEC.map((t,i)=>`<button data-act="goto" data-id="bp-s${i}"><span>${String(i).padStart(2,'0')}</span>${t}</button>`).join('')}</div>`;}
   if(ui.tab==='an'){const A=S.an.assets,R=Object.keys(A).map(k=>[k,anCalc(k)]),np=R.filter(x=>x[1].positive).length;
@@ -101,7 +101,7 @@ function renderAll(){
     pf:["Cours et résultats : MarketScreener, 19-20/10/2026",S.mt5.linked?"Compte MT5 : "+(S.mt5.mode==='metaapi'?'MetaApi':'rapport '+esc(S.mt5.file||''))+", synchronisé le "+(S.mt5.lastSync?new Date(S.mt5.lastSync).toLocaleDateString('fr-FR'):'—'):"Compte MT5 non lié"],
     cm:["Cours quotidiens : exports Investing.com consolidés dans le classeur TRADING_Dashboard (01/2025 à 06/2026)","Seuils et signaux : formules du même classeur"],
     pc:["Leviers : ESMA, décision (UE) 2018/796","EUR/USD 1,1219 au 20/10/2026"],jr:["Saisie manuelle et rapports MT5 importés"]}[ui.tab]||[];
-  $('#printHead').innerHTML=`<h1>OVERRIDE.DESK : ${esc(t)}${sub?', '+esc(sub):''}</h1>${SRC.length?`<p><b>Sources et dates de consultation :</b> ${SRC.join(' ; ')}.</p>`:''}<p>Édité le ${new Date().toLocaleDateString('fr-FR',{day:'numeric',month:'long',year:'numeric'})}. ${document.querySelectorAll('#p-'+ui.tab+' .ovr').length} valeur(s) forcée(s) par l'analyste, signalées par *. Rapport d'aide à la décision, ne constitue pas un conseil en investissement.</p>`;
+  $('#printHead').innerHTML=`<h1>FOMO.DESK : ${esc(t)}${sub?', '+esc(sub):''}</h1>${SRC.length?`<p><b>Sources et dates de consultation :</b> ${SRC.join(' ; ')}.</p>`:''}<p>Édité le ${new Date().toLocaleDateString('fr-FR',{day:'numeric',month:'long',year:'numeric'})}. ${document.querySelectorAll('#p-'+ui.tab+' .ovr').length} valeur(s) forcée(s) par l'analyste, signalées par *. Rapport d'aide à la décision, ne constitue pas un conseil en investissement.</p>`;
 }
 function updBar(){
   $('#recalcBtn').innerHTML=`${ic('calc')}<span class="lbl">Recalculer</span>${pending.size?`<span class="pend">${pending.size}</span>`:''}`;

@@ -62,6 +62,14 @@ await step('analyse institutionnelle : ROIC, création de valeur, DuPont, N+1 à
   if (!P.querySelector('.fi-fan svg polyline') || P.querySelector('svg.lv')) throw new Error('trajectoire prévisionnelle absente');
   if (P.querySelectorAll('.fi-rk li').length !== 3) throw new Error('3 risques attendus');
   if (/NaN|undefined/.test(P.textContent)) throw new Error('valeur NaN ou undefined affichée'); ui.anmOpen = true; renderAnMap(); }));
+await step('marque FOMO.DESK et stocks de brut API / EIA sur 5 semaines', () => p.evaluate(() => {
+  if (!/FOMO/.test(document.querySelector('.brand').textContent) || !/^FOMO\.DESK/.test(document.title)) throw new Error('marque');
+  ui.tab = 'cm'; renderAll(); const c = document.getElementById('oilk'); if (!c) throw new Error('carte stocks absente');
+  if (c.querySelectorAll('svg.oilc rect[fill]').length < 10) throw new Error('graphique 5 semaines incomplet');
+  if (c.querySelectorAll('tbody tr').length !== 5) throw new Error('5 semaines attendues');
+  if (!/\+3,38 Mb/.test(c.textContent) || !/\+5,30 Mb/.test(c.textContent)) throw new Error('chiffres EIA / API du 17-18/11 absents');
+  const rows = oilParse('Nov 18, 2026 10:30 3.380M 0.400M 4.657M Nov 12, 2026 12:00 4.657M -0.600M -0.865M'); if (rows.length !== 2 || rows[0].a !== 3.38 || oilWk(rows[0].d) !== '2026-11-13' || oilWk('2026-11-17') !== '2026-11-13') throw new Error('analyse du calendrier');
+  if (/NaN|undefined/.test(c.textContent)) throw new Error('NaN'); ui.tab = 'an'; renderAll(); ui.anmOpen = true; renderAnMap(); }));
 await step('clic ETF vers analyse', async () => { await p.evaluate(() => { S.mm.cls = 'etf'; renderAnMap(); }); await p.click('#anmap svg.mm .pt[data-id="SPY"]');
   if (await p.evaluate(() => document.querySelector('#p-an .sh-t')?.textContent) !== 'SPY') throw new Error('slide ETF absente'); });
 await step('recherche universelle', async () => { await p.keyboard.press('Control+k'); await p.keyboard.type('bitc'); await p.keyboard.press('Enter');

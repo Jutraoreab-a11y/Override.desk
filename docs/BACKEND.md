@@ -1,4 +1,4 @@
-# OVERRIDE.DESK : backend « Plug & Play » (v7)
+# FOMO.DESK : backend « Plug & Play » (v7)
 
 Le front reste une page statique. Sans backend joignable, il tourne en **mode simulation** (badge 🔴 « Déconnecté (mode simulation) ») avec les données d'exemple et les saisies locales. Dès qu'un backend répond et qu'une session est ouverte, il passe en **flux live** (badge 🟢 « Connecté (flux live) »). Stratégie cache-first (v8) : à l'ouverture d'un volet, seules ses données déjà en base sont lues (aucune synchronisation courtier, aucun appel IA) ; « Recalculer » resynchronise le seul volet affiché et ne déclenche l'IA que si l'extraction stockée est périmée.
 
@@ -6,7 +6,7 @@ Architecture : fonctions serveur Vercel (Node 20, TypeScript) dans `api/v1/`, ba
 
 ## 0. Principe : pas de clé de fournisseur de données
 
-OVERRIDE.DESK s'alimente en faisant lire les pages publiques par l'IA (cours recoupés entre Google Finance, TradingView, stockanalysis.com et Investing.com ; comptes MarketScreener recoupés avec stockanalysis.com, Yahoo Finance en secours ; Investing.com pour les matières premières, BCE, euribor-rates.eu…). Dans l'application Claude, la lecture passe par le navigateur intégré et ne demande **aucune clé**. Sur le web, le serveur lit les mêmes pages avec la seule clé Anthropic (`POST /api/v1/ai/ingest`, module `an`, pages déduites du ticker : `RMS.PA`, `EPA:RMS` ou `COST`). Chaque montant extrait est recherché dans le texte des pages avant d'être accepté. Seules sources sans IA conservées, toutes sans clé : CoinGecko (cryptos), BCE (devises), SEC EDGAR (secours pour les sociétés américaines).
+FOMO.DESK s'alimente en faisant lire les pages publiques par l'IA (cours recoupés entre Google Finance, TradingView, stockanalysis.com et Investing.com ; comptes MarketScreener recoupés avec stockanalysis.com, Yahoo Finance en secours ; Investing.com pour les matières premières, BCE, euribor-rates.eu…). Dans l'application Claude, la lecture passe par le navigateur intégré et ne demande **aucune clé**. Sur le web, le serveur lit les mêmes pages avec la seule clé Anthropic (`POST /api/v1/ai/ingest`, module `an`, pages déduites du ticker : `RMS.PA`, `EPA:RMS` ou `COST`). Chaque montant extrait est recherché dans le texte des pages avant d'être accepté. Seules sources sans IA conservées, toutes sans clé : CoinGecko (cryptos), BCE (devises), SEC EDGAR (secours pour les sociétés américaines).
 
 ## 1. Mise en service
 
@@ -66,7 +66,7 @@ Tâches planifiées (`vercel.json`, en-tête `Authorization: Bearer $CRON_SECRET
 
 ## 4. MetaTrader 4 et 5
 
-1. Dans OVERRIDE.DESK, volet Suivi > Comptes de trading > « Lier mon compte de trading » : saisir le numéro de compte et le serveur, puis « Générer la clé d'EA ». Copier la clé (elle ne sera plus affichée).
+1. Dans FOMO.DESK, volet Suivi > Comptes de trading > « Lier mon compte de trading » : saisir le numéro de compte et le serveur, puis « Générer la clé d'EA ». Copier la clé (elle ne sera plus affichée).
 2. Télécharger `mt/OverrideSync.mq5` (ou `.mq4`), le copier dans `MQL5/Experts` (ou `MQL4/Experts`) et le compiler dans MetaEditor.
 3. MetaTrader > Outils > Options > Expert Advisors : cocher « Autoriser WebRequest » et ajouter l'adresse du site.
 4. Attacher l'EA à n'importe quel graphique, renseigner `InpUrl` (`https://<site>/api/v1/trading/mt-sync`) et `InpKey`. L'EA envoie le compte, les positions et l'historique récent toutes les 30 s (`InpIntervalSec`), avec 30 jours d'historique (`InpHistoryDays`).

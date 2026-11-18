@@ -638,3 +638,8 @@ table.fin th.est,table.fin td.est{background:rgba(255,255,255,.03)}table.fin td.
 .fi-pp{grid-template-columns:repeat(4,1fr);margin-top:8px}.fi-sens td.hl,.fi-sens th.hl{outline:1px solid #FAFAFA;outline-offset:-1px}.fi-fan svg{width:100%;height:auto;display:block}
 .fi-cr-g{display:grid;grid-template-columns:1fr 1fr;gap:14px}.fi-rk{margin:0;padding-left:18px}.fi-rk li{margin:0 0 8px;line-height:1.45}
 @media(max-width:800px){.fi-du,.fi-cr-g,.fi-3{grid-template-columns:1fr}.fi-pp{grid-template-columns:1fr 1fr}}
+
+/* v8.13 : stocks de brut API / EIA */
+.oil-k{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:10px}.oil-k .x.up{color:#10B981}.oil-k .x.down{color:#DC2626}
+.oil-g{display:grid;grid-template-columns:minmax(300px,1fr) 1.2fr;gap:12px;align-items:start}.oilc{width:100%;height:auto;display:block}
+@media(max-width:900px){.oil-k{grid-template-columns:1fr 1fr}.oil-g{grid-template-columns:1fr}}

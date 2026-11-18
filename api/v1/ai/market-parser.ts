@@ -25,7 +25,7 @@ export default handler(async (req: Req, res: Res) => {
   const b = body<{ url: string; metric: string; question: string }>(req);
   if (!/^https:\/\//.test(b.url ?? '') || !b.metric || !b.question) throw new HttpError(400, 'url (https), metric et question requis');
   const key = process.env.ANTHROPIC_API_KEY; if (!key) throw new HttpError(503, 'ANTHROPIC_API_KEY non configurée (mode simulation)');
-  const page = await fetch(b.url, { headers: { 'User-Agent': 'OVERRIDE.DESK market-parser' } });
+  const page = await fetch(b.url, { headers: { 'User-Agent': 'FOMO.DESK market-parser' } });
   if (!page.ok) throw new HttpError(502, `Source HTTP ${page.status}`);
   const text = htmlToText(await page.text()).slice(0, 60000);
   const model = process.env.ANTHROPIC_MODEL || 'claude-sonnet-5-5';

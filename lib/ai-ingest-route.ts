@@ -35,13 +35,13 @@ export async function ingestRoute(req: Req, res: Res): Promise<void> {
   if (!v.urls.length && v.module === 'an') {
     v.urls = companyPages(v.subject).urls;
     /* MarketScreener (comptes et EBITDA les plus complets) : adresse trouvée sur sa page de recherche */
-    try { const sr = await fetch('https://www.marketscreener.com/search/?q=' + encodeURIComponent(v.subject.replace(/[.:].*$/, '')), { headers: { 'User-Agent': 'Mozilla/5.0 OVERRIDE.DESK ingest' } });
+    try { const sr = await fetch('https://www.marketscreener.com/search/?q=' + encodeURIComponent(v.subject.replace(/[.:].*$/, '')), { headers: { 'User-Agent': 'Mozilla/5.0 FOMO.DESK ingest' } });
       const m = sr.ok ? (await sr.text()).match(/\/quote\/stock\/[A-Z0-9\-]+-\d+\//) : null; if (m) v.urls.push('https://www.marketscreener.com' + m[0] + 'finances/'); } catch { /* source facultative */ }
   }
   /* Étude de marché, paramètres LBO : sans adresse fournie, recherche web (DuckDuckGo) puis lecture des trois premiers résultats */
   if (!v.urls.length && (v.module === 'bp' || v.module === 'lbo')) {
     const qy = v.query || (v.module === 'lbo' ? `Euribor 3 mois taux actuel ; multiple EV/EBITDA secteur ${v.subject}` : `taille du marché ${v.subject} chiffre d'affaires croissance`);
-    const sr = await fetch('https://html.duckduckgo.com/html/?q=' + encodeURIComponent(qy), { headers: { 'User-Agent': 'Mozilla/5.0 OVERRIDE.DESK research' } });
+    const sr = await fetch('https://html.duckduckgo.com/html/?q=' + encodeURIComponent(qy), { headers: { 'User-Agent': 'Mozilla/5.0 FOMO.DESK research' } });
     if (sr.ok) v.urls = ddgLinks(await sr.text(), 3);
     if (v.module === 'lbo') v.urls = ['https://www.euribor-rates.eu/fr/taux-euribor-actuels/2/euribor-taux-3-mois/', ...v.urls].slice(0, 4);
   }
@@ -49,7 +49,7 @@ export async function ingestRoute(req: Req, res: Res): Promise<void> {
   if (!v.urls.length) throw new HttpError(400, 'url source requise pour une nouvelle extraction');
   v.url = v.urls[0];
   const parts: string[] = [];
-  for (const u of v.urls) { const page = await fetch(u, { headers: { 'User-Agent': 'Mozilla/5.0 OVERRIDE.DESK ingest' } }); if (!page.ok) throw new HttpError(502, `Source HTTP ${page.status} (${u})`); parts.push(`=== PAGE ${u} ===\n` + htmlToText(await page.text()).slice(0, 20000)); }
+  for (const u of v.urls) { const page = await fetch(u, { headers: { 'User-Agent': 'Mozilla/5.0 FOMO.DESK ingest' } }); if (!page.ok) throw new HttpError(502, `Source HTTP ${page.status} (${u})`); parts.push(`=== PAGE ${u} ===\n` + htmlToText(await page.text()).slice(0, 20000)); }
   const text = parts.join('\n\n');
   const model = process.env.ANTHROPIC_MODEL || 'claude-haiku-5-5';
   const r = await fetch('https://api.anthropic.com/v1/messages', { method: 'POST', headers: { 'x-api-key': apiKey, 'anthropic-version': '2023-06-01', 'content-type': 'application/json' },

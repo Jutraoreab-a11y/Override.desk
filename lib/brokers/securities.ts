@@ -45,7 +45,7 @@ export const ibkrFlex: BrokerAdapter = {
   },
 };
 
-/** Passerelle personnalisée : votre propre service renvoie {positions, cash, realized} au format OVERRIDE.DESK. */
+/** Passerelle personnalisée : votre propre service renvoie {positions, cash, realized} au format FOMO.DESK. */
 export const gateway: BrokerAdapter = {
   id: 'gateway', label: 'Passerelle personnalisée', required: ['url'],
   async fetchSnapshot(c, f = fetch) {

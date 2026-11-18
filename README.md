@@ -1,4 +1,4 @@
-# OVERRIDE.DESK
+# FOMO.DESK
 
 Station d'analyse institutionnelle en 8 volets, en une seule page HTML autonome (`index.html`). Version 7.2.
 
@@ -256,3 +256,9 @@ Sources des données livrées (collecte du 10/11/2026) : FRED (CPIAUCSL, PPIFIS,
 - Section 6 : trajectoire prévisionnelle sur 24 mois (12 mois de cours, cône vers les trois scénarios, niveaux d'exécution).
 - Calendrier des catalyseurs (résultats, dividende, consensus, objectifs) et trois risques d'invalidation déduits des chiffres.
 - Sources : S&P Global Market Intelligence via stockanalysis.com (comptes, consensus N+1, cours, agenda) ; MarketScreener (consensus N+2 et N+3 quand publié, sinon extrapolation signalée) ; BCE (changes du 12/11/2026).
+
+## Version 8.13 : FOMO.DESK et stocks de brut API / EIA
+
+- Le SaaS s'appelle désormais FOMO.DESK (titre, logo, exports PDF, documentation). Le bouton crayon « Override » reste inchangé.
+- Commodities : carte « Stocks de brut US : API puis EIA ». Variation hebdomadaire des stocks commerciaux (hors réserve stratégique) publiée par l'API le mardi soir et par l'EIA le mercredi à 16 h 30, comparée au consensus ; écart EIA − API ; stock commercial ; petit graphique et tableau sur les 5 dernières semaines ; date des prochaines publications ; bouton « Mettre à jour » qui relit les calendriers dans le navigateur, sans IA.
+- Sources : EIA (Weekly Petroleum Status Report, stocks hebdomadaires), API et consensus via le calendrier économique Investing.com.

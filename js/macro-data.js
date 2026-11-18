@@ -1,4 +1,4 @@
-/* OVERRIDE.DESK v8 : données macro, métaux, ETF et cryptos (collectées le 10/11/2026, 0 jeton IA à la lecture).
+/* FOMO.DESK v8 : données macro, métaux, ETF et cryptos (collectées le 10/11/2026, 0 jeton IA à la lecture).
    Chaque bloc porte sa source et sa date. Aucune valeur n'est estimée : une donnée absente reste vide. */
 const MACRO={asof:'2026-11-12',
   src:{cpi:'FRED, St. Louis Fed · CPIAUCSL (BLS), glissement annuel',ppi:'FRED · PPIFIS (BLS, demande finale), glissement annuel',ff:'FRED · FEDFUNDS (taux effectif mensuel)',ry:'FRED · DFII10 (taux réel 10 ans, TIPS)',cu:'FRED · PCOPPUSDM (FMI, cuivre USD/t)'},

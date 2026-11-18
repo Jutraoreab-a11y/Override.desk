@@ -1,4 +1,4 @@
-/* OVERRIDE.DESK : modèles de données partagés (base Supabase, API et adaptateurs). */
+/* FOMO.DESK : modèles de données partagés (base Supabase, API et adaptateurs). */
 
 export type ConnStatus = 'simulation' | 'live' | 'error';
 export type Platform = 'MT4' | 'MT5' | 'STT';

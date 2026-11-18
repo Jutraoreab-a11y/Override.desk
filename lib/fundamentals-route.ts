@@ -7,7 +7,7 @@ import { db, check, requireUser } from './supabase.js';
 import { toStatements, findCik, type CompanyFacts } from './sec.js';
 import { cacheKey } from './ai-ingest.js';
 
-const UA = () => process.env.SEC_USER_AGENT || 'OVERRIDE.DESK contact@override-desk.app';
+const UA = () => process.env.SEC_USER_AGENT || 'FOMO.DESK contact@override-desk.app';
 export async function fundamentalsRoute(req: Req, res: Res): Promise<void> {
   const uid = await requireUser(req);
   const t = String(q(req, 'ticker') || '').trim().toUpperCase();

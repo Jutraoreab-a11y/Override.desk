@@ -1,5 +1,5 @@
 /* POST /api/v1/trading/mt-sync : réception des données envoyées par l'EA MetaTrader (MT4/MT5).
-   Authentification par compte : en-tête X-Override-Key (clé générée dans OVERRIDE.DESK, stockée hachée). */
+   Authentification par compte : en-tête X-Override-Key (clé générée dans FOMO.DESK, stockée hachée). */
 import { handler, header, body, send, HttpError, type Req, type Res } from '../../../lib/http.js';
 import { db, check } from '../../../lib/supabase.js';
 import { sha256, sameHash } from '../../../lib/crypto.js';

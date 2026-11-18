@@ -31,7 +31,7 @@ async function aiPageBrowser(url){
   if(!txt&&p&&typeof p==='object')txt=JSON.stringify(p);
   return String(txt||'');}
 async function aiPageFC(url){
-  const r=await AI.mcp.callTool(AI_FC,'firecrawl_scrape',{url,formats:['markdown'],onlyMainContent:true,maxAge:0,objective:'Lire cette page publique pour alimenter le terminal OVERRIDE.DESK (cours, comptes, études de marché).'},{cache:false});
+  const r=await AI.mcp.callTool(AI_FC,'firecrawl_scrape',{url,formats:['markdown'],onlyMainContent:true,maxAge:0,objective:'Lire cette page publique pour alimenter le terminal FOMO.DESK (cours, comptes, études de marché).'},{cache:false});
   const pick=o=>o&&typeof o==='object'?(o.markdown||o.rawHtml||(o.data&&(o.data.markdown||o.data.rawHtml))||''):'';
   let t=pick(r.payload);
   if(!t){t=(r.content||[]).filter(c=>c.type==='text').map(c=>c.text).join('\n');try{const j=JSON.parse(t);t=pick(j)||t;}catch(e){}}
@@ -121,7 +121,7 @@ async function aiCompany(q,a){
   if(isFinite(+p.price)&&!aiNumIn(+p.price,normTxt(quote)))p.price=null;
   a.sa=path;return anApply(a,p,U.join(' ; '));}
 /* Actualisation des cours de toutes les fiches : une page de cotation par titre, valeur vérifiée dans le texte */
-async function aiRefreshPrices(){if(!AI.mcp||!AI.sample){toast("Lecture des cours par l'IA : ouvrez OVERRIDE.DESK dans l'application Claude (navigateur intégré)");return;}
+async function aiRefreshPrices(){if(!AI.mcp||!AI.sample){toast("Lecture des cours par l'IA : ouvrez FOMO.DESK dans l'application Claude (navigateur intégré)");return;}
   const K=Object.keys(S.an.assets).filter(k=>S.an.assets[k].sa||SA_PATH[k]);let ok=0,ko=[];AI.busy.prices=true;renderAI();
   for(const k of K){const a=S.an.assets[k],u=`https://stockanalysis.com/${a.sa||SA_PATH[k]}/`;AI.msg.prices=['am',`Lecture du cours de ${a.t} (${ok+ko.length+1}/${K.length})…`];renderAI();
     try{const txt=await aiPage(u),nt=normTxt(txt);const j=await AI.sample.json(`Page de cotation de ${a.n} (${u}). Donne le dernier cours affiché et sa date.\nJSON : {"price":nombre|null,"date":"AAAA-MM-JJ"|null,"currency":"EUR"|"USD"|...}\n\n${txt.slice(0,6000)}`,{modelTier:'quick',cache:false});
