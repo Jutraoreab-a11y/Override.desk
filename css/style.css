@@ -643,3 +643,8 @@ table.fin th.est,table.fin td.est{background:rgba(255,255,255,.03)}table.fin td.
 .oil-k{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:10px}.oil-k .x.up{color:#10B981}.oil-k .x.down{color:#DC2626}
 .oil-g{display:grid;grid-template-columns:minmax(300px,1fr) 1.2fr;gap:12px;align-items:start}.oilc{width:100%;height:auto;display:block}
 @media(max-width:900px){.oil-k{grid-template-columns:1fr 1fr}.oil-g{grid-template-columns:1fr}}
+
+/* v8.14 : alimentation automatique */
+.afbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:6px 12px;margin:0 0 10px;border:1px solid var(--line,#27272A);border-radius:6px;background:#0C0C0E;font-size:12px;position:sticky;top:0;z-index:5}
+.afbar .aft{flex:1;min-width:220px}.afbar .afb{display:flex;align-items:center;gap:8px}.afsw{display:flex;align-items:center;gap:4px;color:var(--mute,#A1A1AA);cursor:pointer}
+.afd summary{cursor:pointer;color:var(--mute,#A1A1AA)}.afd ul{margin:6px 0 0;padding-left:16px;max-width:720px}.afd li{margin:2px 0}

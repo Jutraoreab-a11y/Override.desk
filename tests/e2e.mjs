@@ -70,6 +70,7 @@ await step('marque FOMO.DESK et stocks de brut API / EIA sur 5 semaines', () => 
   if (!/\+3,38 Mb/.test(c.textContent) || !/\+5,30 Mb/.test(c.textContent)) throw new Error('chiffres EIA / API du 17-18/11 absents');
   const rows = oilParse('Nov 18, 2026 10:30 3.380M 0.400M 4.657M Nov 12, 2026 12:00 4.657M -0.600M -0.865M'); if (rows.length !== 2 || rows[0].a !== 3.38 || oilWk(rows[0].d) !== '2026-11-13' || oilWk('2026-11-17') !== '2026-11-13') throw new Error('analyse du calendrier');
   if (/NaN|undefined/.test(c.textContent)) throw new Error('NaN'); ui.tab = 'an'; renderAll(); ui.anmOpen = true; renderAnMap(); }));
+await step('bandeau d\'alimentation automatique', () => p.evaluate(() => { const b = document.getElementById('afbar'); if (!b || !/Alimentation automatique/.test(b.textContent) || !b.querySelector('[data-act=afall]') || !b.querySelector('[data-af=on]')) throw new Error('bandeau absent'); if (!b.querySelector('[data-act=afall]').disabled) throw new Error('hors Claude, le bouton doit être grisé'); }));
 await step('clic ETF vers analyse', async () => { await p.evaluate(() => { S.mm.cls = 'etf'; renderAnMap(); }); await p.click('#anmap svg.mm .pt[data-id="SPY"]');
   if (await p.evaluate(() => document.querySelector('#p-an .sh-t')?.textContent) !== 'SPY') throw new Error('slide ETF absente'); });
 await step('recherche universelle', async () => { await p.keyboard.press('Control+k'); await p.keyboard.type('bitc'); await p.keyboard.press('Enter');

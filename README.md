@@ -262,3 +262,11 @@ Sources des données livrées (collecte du 10/11/2026) : FRED (CPIAUCSL, PPIFIS,
 - Le SaaS s'appelle désormais FOMO.DESK (titre, logo, exports PDF, documentation). Le bouton crayon « Override » reste inchangé.
 - Commodities : carte « Stocks de brut US : API puis EIA ». Variation hebdomadaire des stocks commerciaux (hors réserve stratégique) publiée par l'API le mardi soir et par l'EIA le mercredi à 16 h 30, comparée au consensus ; écart EIA − API ; stock commercial ; petit graphique et tableau sur les 5 dernières semaines ; date des prochaines publications ; bouton « Mettre à jour » qui relit les calendriers dans le navigateur, sans IA.
 - Sources : EIA (Weekly Petroleum Status Report, stocks hebdomadaires), API et consensus via le calendrier économique Investing.com.
+
+## Version 8.14 : alimentation automatique au chargement
+
+- À l'ouverture dans l'application Claude, FOMO.DESK se met à jour seul, une source après l'autre : EUR/USD (BCE) et Euribor, cours de clôture de tous les titres analysés (pages publiques stockanalysis.com, sans IA), cours quotidiens des commodities, stocks de brut API / EIA quand une publication est passée, fiche complète du titre ouvert si elle a plus de 7 jours, puis la recherche du volet affiché. Ouvrir un autre volet lance sa recherche si elle date de plus de 24 h.
+- Chaque source a une durée de validité (de 30 min pour les cours à 24 h pour les recherches) : une donnée fraîche n'est pas relue. Une source en échec n'est pas marquée à jour et sera retentée.
+- Bandeau en tête de page : étape en cours, détail des résultats, « Tout mettre à jour » (ignore les durées de validité), « Arrêter », et interrupteur « au chargement ».
+- Hors de l'application Claude (site Vercel), le backend sert les extractions stockées si l'utilisateur est connecté ; sinon les données en cache restent affichées.
+- Audit des boutons : 127 actions, toutes reliées à un gestionnaire ; aucun bouton sans effet hors ceux qui exigent Claude ou un fichier.
