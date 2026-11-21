@@ -2,7 +2,8 @@
   "rewrites": [
     { "source": "/api/v1/ai/ingest", "destination": "/api/v1/ai/market-parser?op=ingest" },
     { "source": "/api/v1/ai/key", "destination": "/api/v1/ai/market-parser?op=key" },
-    { "source": "/api/v1/fundamentals", "destination": "/api/v1/ai/market-parser?op=fundamentals" }
+    { "source": "/api/v1/fundamentals", "destination": "/api/v1/ai/market-parser?op=fundamentals" },
+    { "source": "/api/v1/refresh", "destination": "/api/v1/ai/market-parser?op=refresh" }
   ],
   "crons": [
     { "path": "/api/v1/macro/commodities?action=ingest", "schedule": "30 21 * * 1-5" },

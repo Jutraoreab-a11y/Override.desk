@@ -13,7 +13,7 @@ const OIL_STK={at:'2026-11-18T20:40:00+01:00',
     {wk:'2026-11-06',api:['2026-11-10','22:30',9.000,-1.000],eia:['2026-11-12','18:00',4.657,-0.600],lvl:414.417},
     {wk:'2026-11-13',api:['2026-11-17','22:30',5.300,-0.500],eia:['2026-11-18','16:30',3.380,0.400],lvl:417.797}],
   next:{api:'2026-11-24T22:30:00+01:00',eia:'2026-11-25T16:30:00+01:00'}};
-const oilFd=d=>{const x=new Date(d+'T12:00:00');return isNaN(x)?d:x.toLocaleDateString('fr-FR',{weekday:'short',day:'2-digit',month:'2-digit'});};
+const oilFd=d=>{if(!d)return 'date non publiée';const x=new Date(d+'T12:00:00');return isNaN(x)?d:x.toLocaleDateString('fr-FR',{weekday:'short',day:'2-digit',month:'2-digit'});};
 const oilM=v=>v===null||v===undefined||!isFinite(v)?'non publié':(v>0?'+':'')+nf(v,2)+' Mb';
 /* lecture du chiffre : un stock qui monte plus que prévu pèse sur le prix du brut, une baisse plus forte que prévu le soutient */
 function oilRead(r){if(!r||!isFinite(r[2]))return['','en attente'];const s=isFinite(r[3])?r[2]-r[3]:NaN;

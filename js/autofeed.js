@@ -16,6 +16,22 @@ const afSet=(k,v)=>{const o=afGet();o[k]=v;try{localStorage.setItem(AF_K,JSON.st
 const afFresh=(k,ttl)=>Date.now()-(afGet()[k]||0)<ttl;
 function afEnabled(){try{return localStorage.getItem(AF_ON)!=='0';}catch(e){return true;}}
 async function afCol(t){if(!t)throw new Error('source inconnue');await aiCollect(t);const m=AI.msg[t.k]||['ko','sans réponse'];if(m[0]!=='ok')throw new Error(m[1]);return m[1]||'à jour';}
+
+/* hors application Claude : le serveur FOMO.DESK relit les sources publiques (BCE, stockanalysis, EIA, Investing.com), sans IA */
+const afSrvOk=()=>typeof liveReachable==='function'&&liveReachable();
+async function afSrv(){const A=S.an.assets,px=[...new Set(Object.keys(A).map(k=>A[k].sa).filter(Boolean).map(x=>String(x).replace(/^\/|\/$/g,'')))];
+  const j=await liveApi('/api/v1/refresh?px='+encodeURIComponent(px.join(','))),done=[];
+  if(j.fx&&j.fx.rates&&j.fx.rates.USD){S.live=S.live||{};S.live.eurusd={v:j.fx.rates.USD,d:j.fx.date,at:j.at,url:j.fx.src};if(typeof aiApplyLive==='function')aiApplyLive();
+    if(typeof FX_ECB==='object'){Object.assign(FX_ECB.r,j.fx.rates);FX_ECB.d=fdate(j.fx.date);FX_ECB.s='BCE, taux de change de référence du '+fdate(j.fx.date);}done.push('EUR/USD '+nf(j.fx.rates.USD,4)+' (BCE du '+fdate(j.fx.date)+')');}
+  let np=0;Object.keys(A).forEach(k=>{const a=A[k],key=a.sa&&String(a.sa).replace(/^\/|\/$/g,''),p=j.prices&&j.prices[key];if(!p||a.pxManual)return;const cent=(typeof FI_CENT==='object'&&typeof fiSfx==='function'&&FI_CENT[fiSfx(a.t||k)])||1;
+    a.price=Math.round(p.c/cent*100)/100;a.pxDate=fdate(p.t);a.pxSrc=`stockanalysis.com, clôture du ${fdate(p.t)} (mise à jour par le serveur)`;np++;});if(np)done.push(np+' cours');
+  if(typeof OIL_STK==='object'){const map=new Map(OIL_STK.w.map(x=>[x.wk,x]));let no=0;
+    if(j.eia&&Array.isArray(j.eia.w)){j.eia.w.forEach((w,i,arr)=>{const prev=arr[i-1];let x=map.get(w.wk);if(!x){if(!prev||w.wk<=OIL_STK.w[OIL_STK.w.length-1].wk)return;const dd=n=>{const t=new Date(w.wk+'T12:00:00');t.setDate(t.getDate()+n);return t.toISOString().slice(0,10);};x={wk:w.wk,api:[dd(4),'22:30',NaN,NaN],eia:[dd(5),'16:30',NaN,NaN],lvl:NaN};map.set(w.wk,x);no++;}
+      x.lvl=w.lvl;if(prev&&!isFinite(x.eia[2]))x.eia[2]=Math.round((w.lvl-prev.lvl)*1000)/1000;});}
+    if(j.cal){(j.cal.eia||[]).forEach(r=>{const x=map.get(oilWk(r.d));if(x){x.eia[0]=r.d;x.eia[2]=r.a;x.eia[3]=r.f;}});(j.cal.api||[]).forEach(r=>{const x=map.get(oilWk(r.d));if(x){x.api[0]=r.d;x.api[2]=r.a;x.api[3]=r.f;}});}
+    OIL_STK.w=[...map.values()].sort((p,q)=>p.wk<q.wk?-1:1);OIL_STK.at=j.at;try{localStorage.setItem('fomo.oil',JSON.stringify(OIL_STK));}catch(e){}if(j.eia||j.cal)done.push('stocks de brut'+(no?' (+'+no+' semaine)':''));}
+  save();recalc();const ko=Object.keys(j.err||{});if(!done.length)throw new Error(ko.length?Object.values(j.err).slice(0,2).join(' ; '):'aucune donnée renvoyée');
+  return done.join(', ')+(ko.length?' ; non lus : '+ko.map(k=>k.replace(/^px:/,'')).join(', '):'');}
 const afClaude=()=>typeof AI==='object'&&!!AI.mcp&&!!AI.sample;
 
 /* cours de clôture d'un titre : données JSON publiques de stockanalysis.com, sans IA */
@@ -30,6 +46,7 @@ async function afPx(k){const a=S.an.assets[k];if(!a||a.pxManual)return false;con
 /* liste des étapes ; chacune renvoie un court compte rendu */
 function afSteps(force){const T=typeof aiTargets==='function'?aiTargets():[],tg=k=>T.find(t=>t.k===k),st=[];
   const add=(k,l,ttl,fn,need)=>{if(need&&!need())return;if(!force&&afFresh(k,ttl))return;st.push({k,l,fn});};
+  add('srv','Sources publiques relues par le serveur (BCE, cours, stocks de brut)',0.25*AF_H,afSrv,()=>!afClaude()&&afSrvOk());
   add('eurusd','EUR/USD (BCE)',12*AF_H,async()=>afCol(tg('eurusd')),afClaude);
   add('euribor','Euribor 3 mois',12*AF_H,async()=>afCol(tg('euribor')),afClaude);
   add('prices','Cours des titres analysés',0.5*AF_H,async()=>{const K=Object.keys(S.an.assets);let ok=0,ko=[];
@@ -48,7 +65,7 @@ function afResearchStep(tab,force,add){const F={bp:()=>rsMarket('init'),lbo:()=>
   add(key,'Recherche : '+(RS_MOD[tab]||tab),24*AF_H,async()=>{const r=await F();if(r===null)throw new Error('aucun moteur n\'a répondu');return 'recherche terminée';},()=>afClaude()||(typeof FLUX==='object'&&FLUX.on));}
 
 async function afRun(force){if(AF.run)return;if(!force&&!afEnabled()){afBar();return;}
-  const st=afSteps(force);if(!st.length){AF.at=new Date().toISOString();afBar();return;}
+  const st=afSteps(force);if(!st.length){AF.at=new Date().toISOString();afBar();if(force)toast('Tout est déjà à jour');return;}
   AF.run=true;AF.stop=false;AF.n=st.length;AF.i=0;AF.log=[];afBar();
   for(const s of st){if(AF.stop)break;AF.i++;AF.step=s.l;afBar();let r='';try{r=await s.fn()||'fait';afSet(s.k,Date.now());}catch(e){r='échec : '+(e&&(e.message||aiErr(e))||e);}
     AF.log.push([s.l,r]);try{renderAll();}catch(e){}}
@@ -57,15 +74,15 @@ async function afRun(force){if(AF.run)return;if(!force&&!afEnabled()){afBar();re
 
 /* bandeau d'état sous l'en-tête */
 function afBar(){let el=document.getElementById('afbar');if(!el){const m=document.getElementById('main')||document.querySelector('main');if(!m)return;el=document.createElement('div');el.id='afbar';el.className='afbar noprint';m.prepend(el);}
-  const on=afEnabled(),env=afClaude()?'Claude (navigateur et modèle de votre abonnement)':typeof AI==='object'&&AI.mcp===undefined?'connexion à Claude…':(typeof FLUX==='object'&&FLUX.on)?'backend (extractions stockées)':'hors application Claude : données en cache';
+  const on=afEnabled(),env=afClaude()?'Claude (navigateur et modèle de votre abonnement)':typeof AI==='object'&&AI.mcp===undefined?'connexion à Claude…':afSrvOk()?'serveur FOMO.DESK (sources publiques, sans IA)'+((typeof FLUX==='object'&&FLUX.on)?' et recherches stockées':''):'aperçu sans Claude ni serveur : données en cache';
   const last=AF.at?new Date(AF.at).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'}):null;
-  el.innerHTML=`<span class="dot ${AF.run?'am pulse':afClaude()||(typeof FLUX==='object'&&FLUX.on)?'ok':'ko'}"></span>
+  el.innerHTML=`<span class="dot ${AF.run?'am pulse':afClaude()||afSrvOk()?'ok':'ko'}"></span>
     <span class="aft">${AF.run?`<b>Mise à jour ${AF.i}/${AF.n}</b> ${esc(AF.step)}`:`<b>Alimentation automatique ${on?'active':'coupée'}</b> ${last?'· dernière passe à '+last:''}`}<span class="meta"> · ${env}</span></span>
     ${AF.log.length&&!AF.run?`<details class="afd"><summary>Détail</summary><ul>${AF.log.map(([l,r])=>`<li><b>${esc(l)}</b> : ${esc(r)}</li>`).join('')}</ul></details>`:''}
-    <span class="afb">${AF.run?'<button class="btn sm" data-act="afstop">Arrêter</button>':`<button class="btn sm pri" data-act="afall" ${afClaude()||(typeof FLUX==='object'&&FLUX.on)?'':'disabled title="Ouvrez FOMO.DESK dans l\'application Claude"'}>Tout mettre à jour</button>`}
+    <span class="afb">${AF.run?'<button class="btn sm" data-act="afstop">Arrêter</button>':`<button class="btn sm pri" data-act="afall" >Tout mettre à jour</button>`}
     <label class="afsw" title="Mettre à jour automatiquement à chaque ouverture"><input type="checkbox" data-af="on" ${on?'checked':''}> au chargement</label></span>`;}
 document.addEventListener('click',e=>{const b=e.target.closest&&e.target.closest('[data-act]');if(!b)return;const a=b.dataset.act;
-  if(a==='afall')afRun(true);else if(a==='afstop'){AF.stop=true;afBar();}
+  if(a==='afall'){if(!afClaude()&&!afSrvOk()){toast("Mise à jour impossible ici : ouvrez FOMO.DESK dans l'application Claude ou sur override-desk.vercel.app");return;}afRun(true);}else if(a==='afstop'){AF.stop=true;afBar();}
   else if(a==='tab'&&afEnabled())setTimeout(()=>{if(AF.run)return;const st=[];afResearchStep(ui.tab,false,(k,l,ttl,fn,need)=>{if(need&&!need())return;if(afFresh(k,ttl))return;st.push({k,l,fn});});if(st.length)afRun(false);},400);});
 document.addEventListener('change',e=>{const c=e.target.closest&&e.target.closest('[data-af=on]');if(!c)return;try{localStorage.setItem(AF_ON,c.checked?'1':'0');}catch(x){}toast(c.checked?'Mise à jour automatique au chargement activée':'Mise à jour automatique coupée : utilisez « Tout mettre à jour »');afBar();});
 {const _r=renderAll;renderAll=function(){_r.apply(this,arguments);try{afBar();}catch(e){}};}

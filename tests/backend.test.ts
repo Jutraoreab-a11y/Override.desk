@@ -180,3 +180,13 @@ test('moteur hybride : clé personnelle (BYOK) d\'abord, clé infrastructure ré
   const v = AI.validateIngest({ module: 'cm', subject: 'brent', trigger: 'recalc', force: true }); assert.equal(v.force, true);
   assert.throws(() => AI.validateIngest({ module: 'all', subject: 'x', trigger: 'recalc' }));
 });
+test('rafraîchissement public : BCE, EIA, stockanalysis, Investing.com', async () => {
+  const R = await import('../lib/public-refresh.ts');
+  const x = R.ecbRates(`<Cube time='2026-11-20'><Cube currency='USD' rate='1.1050'/><Cube currency='GBP' rate='0.8361'/></Cube>`);
+  assert.equal(x?.date, '2026-11-20'); assert.equal(x?.rates.USD, 1.105);
+  const html = `<tr>\n <td class="B6">&nbsp;&nbsp;2026-Nov</td>\n <td class="B5">11/06&nbsp;</td>\n <td class="B3">414,417&nbsp;&nbsp;&nbsp;</td>\n <td class="B5">11/13&nbsp;</td>\n <td class="B3">417,797&nbsp;&nbsp;&nbsp;</td>\n <td class="B5">&nbsp;</td>\n <td class="B3">&nbsp;</td></tr><tr>\n <td class="B6">&nbsp;&nbsp;2026-Oct</td>\n <td class="B5">10/30&nbsp;</td>\n <td class="B3">409,760&nbsp;</td></tr>`;
+  assert.deepEqual(R.eiaWeekly(html), [{ wk: '2026-10-30', lvl: 409.76 }, { wk: '2026-11-06', lvl: 414.417 }, { wk: '2026-11-13', lvl: 417.797 }]);
+  const j = { type: 'data', nodes: [{ type: 'skip' }, { type: 'data', data: [{ data: 1 }, { data: 2 }, [3, 6], { t: 4, c: 5 }, '2026-11-19', 120.5, { t: 7, c: 8 }, '2026-11-20', 121.25] }] };
+  assert.deepEqual(R.lastClose(R.devalue(j)), { c: 121.25, t: '2026-11-20' });
+  assert.deepEqual(R.investingRows('Nov 18, 2026 10:30 3.380M 0.400M 4.657M Nov 12, 2026 12:00 4.657M -0.600M -0.865M'), [{ d: '2026-11-18', a: 3.38, f: 0.4 }, { d: '2026-11-12', a: 4.657, f: -0.6 }]);
+});

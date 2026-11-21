@@ -275,3 +275,9 @@ Sources des données livrées (collecte du 10/11/2026) : FRED (CPIAUCSL, PPIFIS,
 
 - Business plan : nouvelle section « Dossier sourcing » tout en bas de l'étude. Pour chaque chiffre (étude de marché, TAM, CAGR, historique, saisonnalité, géographie, prix de la concurrence, références sectorielles, hypothèses du modèle) : valeur, source avec lien, extrait cité, date de consultation, nature (publié, calcul, référence, hypothèse, saisie) et statut (vérifié, à confirmer, non sourcé), plus la bibliographie. Le dossier s'imprime avec l'export PDF.
 - La recherche Claude de l'étude de marché conserve désormais tous les extraits cités (30 au plus, contre 4) et le chiffre que chacun justifie.
+
+## Version 8.16 : « Tout mettre à jour » fonctionne aussi sur le site Vercel
+
+- Sur override-desk.vercel.app (hors application Claude), le bouton n'est plus grisé : il appelle `/api/v1/refresh` (réécrit vers la fonction `market-parser`, toujours 12 fonctions), qui relit sans IA ni compte les changes de la BCE, les cours de clôture des titres (stockanalysis.com), les stocks commerciaux de brut de l'EIA (série officielle WCESTUS1) et, si le site répond au serveur, les chiffres API et EIA avec consensus d'Investing.com. Réponse mise en cache 15 minutes.
+- Dans l'application Claude, le fonctionnement ne change pas (navigateur intégré et modèle de l'abonnement).
+- Sans Claude ni serveur (aperçu de fichier), le clic explique pourquoi rien ne peut être relu.
