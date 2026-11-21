@@ -648,3 +648,6 @@ table.fin th.est,table.fin td.est{background:rgba(255,255,255,.03)}table.fin td.
 .afbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:6px 12px;margin:0 0 10px;border:1px solid var(--line,#27272A);border-radius:6px;background:#0C0C0E;font-size:12px;position:sticky;top:0;z-index:5}
 .afbar .aft{flex:1;min-width:220px}.afbar .afb{display:flex;align-items:center;gap:8px}.afsw{display:flex;align-items:center;gap:4px;color:var(--mute,#A1A1AA);cursor:pointer}
 .afd summary{cursor:pointer;color:var(--mute,#A1A1AA)}.afd ul{margin:6px 0 0;padding-left:16px;max-width:720px}.afd li{margin:2px 0}
+
+/* v8.15 : dossier sourcing */
+.src-k{display:flex;gap:6px;margin:4px 0 8px}.src-t td{vertical-align:top}.src-q{max-width:340px;font-size:11.5px;color:var(--mute,#A1A1AA)}.src-b{margin:0;padding-left:18px;font-size:12px}.src-b li{margin:2px 0;word-break:break-all}

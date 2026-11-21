@@ -270,3 +270,8 @@ Sources des données livrées (collecte du 10/11/2026) : FRED (CPIAUCSL, PPIFIS,
 - Bandeau en tête de page : étape en cours, détail des résultats, « Tout mettre à jour » (ignore les durées de validité), « Arrêter », et interrupteur « au chargement ».
 - Hors de l'application Claude (site Vercel), le backend sert les extractions stockées si l'utilisateur est connecté ; sinon les données en cache restent affichées.
 - Audit des boutons : 127 actions, toutes reliées à un gestionnaire ; aucun bouton sans effet hors ceux qui exigent Claude ou un fichier.
+
+## Version 8.15 : dossier sourcing
+
+- Business plan : nouvelle section « Dossier sourcing » tout en bas de l'étude. Pour chaque chiffre (étude de marché, TAM, CAGR, historique, saisonnalité, géographie, prix de la concurrence, références sectorielles, hypothèses du modèle) : valeur, source avec lien, extrait cité, date de consultation, nature (publié, calcul, référence, hypothèse, saisie) et statut (vérifié, à confirmer, non sourcé), plus la bibliographie. Le dossier s'imprime avec l'export PDF.
+- La recherche Claude de l'étude de marché conserve désormais tous les extraits cités (30 au plus, contre 4) et le chiffre que chacun justifie.

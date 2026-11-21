@@ -61,12 +61,12 @@ async function rsMarket(trigger){const b=S.bp,Z={fr:'France',eu:'Europe',world:'
   if(!label){if(trigger!=='init')toast('Renseignez le secteur et la zone du dossier avant la recherche');return;}
   const r=await rsRun('bp',label,async()=>{const urls=await rsSearch(q);if(!urls.length)throw new Error('aucune source trouvée');
       return rsRead(urls,`Étude de marché pour : « ${label} ». Donne la taille du marché visé (montant, devise, unité, année), l'historique annuel si disponible et la croissance annuelle moyenne projetée avec son horizon. Un marché mondial ne vaut pas marché national : précise le périmètre.`,
-        `{"market_label":"","currency":"EUR","unit":"M","year":2025,"tam":nombre|null,"cagr_pct":nombre|null,"cagr_horizon":"2025-2030"|null,"hist":[{"year":2023,"value":nombre}],"sources":[{"url":"","quote":""}]}`);},{query:q},trigger);
+        `{"market_label":"","currency":"EUR","unit":"M","year":2025,"tam":nombre|null,"cagr_pct":nombre|null,"cagr_horizon":"2025-2030"|null,"hist":[{"year":2023,"value":nombre}],"sources":[{"url":"","quote":"","figure":"chiffre justifié par cet extrait (ex. taille du marché 2025, croissance annuelle, historique 2023)"}]}`);},{query:q},trigger);
   if(!r)return;const p=r.p,M=b.mkt,mul={Md:1000,B:1000,G:1000,M:1,k:0.001}[String(p.unit||'M').replace(/[^A-Za-z]/g,'').slice(0,2)]||1,cur=String(p.currency||'EUR').toUpperCase(),fx=cur==='USD'?1/(typeof FX_EURUSD==='number'?FX_EURUSD:1.1):1;
   const toM=v=>v!==null&&v!==undefined&&isFinite(+v)?+(v*mul*fx).toFixed(1):null;let n=0;
   (p.hist||[]).forEach(h=>{const v=toM(h.value);if(!v||!isFinite(+h.year))return;const e=M.hist.find(x=>x.y===+h.year);if(e)e.v=v;else M.hist.push({y:+h.year,v,q:null});n++;});M.hist.sort((a,c)=>a.y-c.y);
   if(toM(p.tam)){b.tamOv=toM(p.tam);b.tamAI=true;}if(p.cagr_pct!==null&&p.cagr_pct!==undefined&&isFinite(+p.cagr_pct)){b.cagrOv=+(+p.cagr_pct).toFixed(2);b.cagrAI=true;}
-  const urls=[...new Set((p.sources||[]).map(s=>s.url).filter(Boolean))];M.src=urls.join(' ; ');b.mktAI={how:r.how,at:new Date().toISOString(),label:p.market_label||label,quotes:(p.sources||[]).slice(0,4)};
+  const urls=[...new Set((p.sources||[]).map(s=>s.url).filter(Boolean))];M.src=urls.join(' ; ');b.mktAI={how:r.how,at:new Date().toISOString(),label:p.market_label||label,quotes:(p.sources||[]).slice(0,4),quotesAll:(p.sources||[]).slice(0,30)};
   save();recalc();renderAll();toast(`Étude de marché (${rsLabel(r.how)}) : ${toM(p.tam)?'TAM '+nf(toM(p.tam),0)+' M€':'taille non trouvée'}${b.cagrAI?' · TCAM '+nf(b.cagrOv,1)+' %':''}${n?' · '+n+' année(s) d\'historique':''} · ${urls.length} source(s) citée(s)`);}
 
 /* ---- Dossier LBO : Euribor 3 mois et multiple sectoriel ---- */
@@ -77,7 +77,7 @@ async function rsLbo(trigger){const d=typeof lboCur==='function'?lboCur():null;i
   if(!r)return;const p=r.p,P=d.p;let msg=[];
   if(p.euribor_3m_pct!==null&&isFinite(+p.euribor_3m_pct)&&+p.euribor_3m_pct>-1&&+p.euribor_3m_pct<15){P.euribor=+(+p.euribor_3m_pct).toFixed(3);LBO_SRC.euribor={v:P.euribor,d:fdate(/^\d{4}-\d{2}-\d{2}$/.test(String(p.euribor_date))?p.euribor_date:new Date().toISOString().slice(0,10)),s:'euribor-rates.eu (recherche '+rsShort(r.how)+')'};msg.push('Euribor 3 mois '+nf(P.euribor,3)+' %');}
   if(isFinite(+p.sector_ev_ebitda)&&+p.sector_ev_ebitda>1&&+p.sector_ev_ebitda<60){P.entryMult=+(+p.sector_ev_ebitda).toFixed(1);d.multSrc=`${p.sector_label||sec} : ${nf(P.entryMult,1)}× (${p.sector_source||'source citée'})`;msg.push('multiple d\'entrée '+nf(P.entryMult,1)+'×');}
-  d.rsAI={how:r.how,at:new Date().toISOString(),quotes:(p.sources||[]).slice(0,4)};save();recalc();renderAll();
+  d.rsAI={how:r.how,at:new Date().toISOString(),quotes:(p.sources||[]).slice(0,4),quotesAll:(p.sources||[]).slice(0,30)};save();recalc();renderAll();
   toast(msg.length?`Dossier LBO (${rsLabel(r.how)}) : ${msg.join(' · ')}. Multiple de sortie inchangé : à fixer au crayon.`:'Aucune valeur vérifiable trouvée : paramètres inchangés');}
 
 /* ---- Module 2 : analyse financière, comptes et cours de la fiche affichée ---- */
