@@ -317,3 +317,8 @@ Sources des données livrées (collecte du 10/11/2026) : FRED (CPIAUCSL, PPIFIS,
 - Analyse financière, bloc « 7. Valorisation multi-méthodes » (`js/valorisation.js`) : DCF, multiples des comparables (VE/EBITDA et PER), Gordon-Shapiro (dividendes), bénéfices résiduels (capitaux propres × (ROE − g) / (coût des fonds propres − g)).
 - Chaque méthode affiche ses métriques (modifiables, marquées « modifiée »), son résultat, l'écart au cours et son angle mort ; « Réinitialiser » revient aux valeurs publiées.
 - Prix unique = moyenne simple des méthodes applicables ; il devient la valeur de référence des zones d'intervention et de la décision.
+
+## Version 8.22 : accès contrôlé
+
+- Plus d'entrée « sans compte » : le bureau ne s'ouvre qu'avec une session Supabase valide ; à l'expiration de la session ou à la déconnexion, la page d'accueil revient.
+- Bouton « Paramètres » ajouté dans la barre du haut ; la barre latérale défile et se compacte sur les écrans peu hauts (Paramètres n'est plus coupé).

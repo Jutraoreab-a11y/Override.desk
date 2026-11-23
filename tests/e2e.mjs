@@ -17,8 +17,11 @@ await step('accueil : page affichée, fenêtre de connexion, entrée sans compte
   await p.click('#landing nav .lp-btn.lp-pri'); if (!(await p.isVisible('#lpr'))) throw new Error('formulaire de création absent');
   await p.click('#lmd .lp-tabs [data-tab="in"]'); if (await p.isVisible('#lpr')) throw new Error('prénom affiché à la connexion');
   await p.fill('#lem', 'test@exemple.fr'); await p.fill('#lpw', 'motdepasse123'); await p.click('#lgo');
-  const m = await p.textContent('#lmsg'); if (!/hors ligne/.test(m)) throw new Error('message sans base : ' + m);
-  await p.click('#lskip'); if (await p.isVisible('#landing')) throw new Error('accueil toujours visible');
+  const m = await p.textContent('#lmsg'); if (!/ne répond pas/.test(m)) throw new Error('message sans base : ' + m);
+  if (await p.$('#lskip')) throw new Error('entrée sans compte encore possible');
+  await p.evaluate(() => { FLUX.session = { access_token: 't', user: { email: 'test@exemple.fr', user_metadata: {} } }; renderAll(); });
+  if (await p.isVisible('#landing')) throw new Error('accueil toujours visible avec une session');
+  await p.evaluate(() => { FLUX.session = null; window.__landShow = landShow; landShow = () => {}; landHide(); renderAll(); }); /* suite des tests : bureau ouvert, sans appels serveur */
 });
 for (const t of ['bp', 'an', 'sc', 'lbo', 'pf', 'cm', 'pc', 'jr']) await step('volet ' + t, () => p.evaluate(t => { ui.tab = t; renderAll(); }, t));
 for (const a of ['brent', 'gold', 'silver']) await step('commodities ' + a, () => p.evaluate(a => { ui.tab = 'cm'; ui.cmA = a; ui.cmOv = { cpi: true, ff: true, wasde: true, gsb: true }; renderAll(); }, a));
@@ -159,8 +162,10 @@ await step('dossier LBO : Claude indisponible, repli sur l\'API (simulée)', () 
   const e0 = d.p.euribor; await rsLbo(); if (d.p.euribor !== e0) throw new Error('sans moteur, rien ne doit changer');
 }));
 await step('paramètres : déconnexion ramène à la page d\'accueil', async () => {
-  await p.evaluate(() => { ui.tab = 'set'; renderAll(); }); await p.evaluate(() => document.getElementById('setLogoutTop').click()); await p.waitForTimeout(300);
-  if (!(await p.isVisible('#landing'))) throw new Error('page d\'accueil non réaffichée'); await p.click('#landing nav .lp-btn.lp-pri'); await p.click('#lskip');
+  await p.evaluate(() => { landShow = window.__landShow; ui.tab = 'set'; renderAll(); landHide(); }); await p.evaluate(() => document.getElementById('setLogoutTop').click()); await p.waitForTimeout(300);
+  if (!(await p.isVisible('#landing'))) throw new Error('page d\'accueil non réaffichée');
+  if (!(await p.$('#setTopBtn'))) throw new Error('bouton Paramètres absent de la barre du haut');
+  await p.evaluate(() => { landShow = () => {}; landHide(); renderAll(); });
 });
 await step('lancement réel : aucune donnée fictive par défaut', () => p.evaluate(() => {
   if (DEF.bp.name || DEF.bp.team.length || DEF.sc.list.length || DEF.pf.positions.length) throw new Error('données d\'exemple encore présentes');

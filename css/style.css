@@ -675,3 +675,7 @@ table.fin th.est,table.fin td.est{background:rgba(255,255,255,.03)}table.fin td.
 .vl-m .lnk{align-self:flex-start;font-size:12px}
 @media (max-width:1100px){.vl-grid,.vl-sum{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media (max-width:640px){.vl-grid,.vl-sum{grid-template-columns:1fr}}
+/* v8.22 : barre latérale toujours entièrement accessible (Paramètres compris) sur les écrans peu hauts */
+.rail{overflow-y:auto;overflow-x:hidden;scrollbar-width:none}.rail::-webkit-scrollbar{display:none}
+@media (min-width:1101px) and (max-height:980px){.rb{padding:5px 0 4px;gap:2px}.rb svg.i{width:19px;height:19px}.rg-l{font-size:8.5px}}
+#setTopBtn svg.i{width:16px;height:16px}

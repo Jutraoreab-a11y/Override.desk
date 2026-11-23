@@ -76,7 +76,7 @@ document.addEventListener('click',async e=>{const b=e.target.closest&&e.target.c
   else if(a==='setacct'){if(!setSess())return;const em=v('setEm2'),pw=v('setPw2'),pw2=v('setPw3'),u={};if(em)u.email=em;
     if(pw){if(pw.length<10){toast('Mot de passe : 10 caractères au moins');return;}if(pw!==pw2){toast('Les deux mots de passe diffèrent');return;}u.password=pw;}
     if(!Object.keys(u).length){toast('Rien à modifier');return;}const r=await FLUX.sb.auth.updateUser(u);toast(r.error?'Mise à jour impossible : '+r.error.message:(u.email?'Lien de confirmation envoyé à '+u.email+(u.password?' ; mot de passe changé':''):'Mot de passe changé'));renderAll();}
-  else if(a==='setlogout'){if(setSess())await FLUX.sb.auth.signOut();FLUX.session=null;FLUX.on=false;SETK.keys=null;toast('Déconnecté');renderAll();}
+  else if(a==='setlogout'){if(setSess()&&FLUX.sb)await FLUX.sb.auth.signOut();FLUX.session=null;FLUX.on=false;SETK.keys=null;toast('Déconnecté');renderAll();}
   else if(a==='setnewkey'){if(!setSess())return;SETK.busy=true;renderAll();try{const r=await liveApi('/api/v1/keys',{method:'POST',body:{label:'Claude '+new Date().toLocaleDateString('fr-FR')}});SETK.newKey=r.key;try{localStorage.setItem('fomo.mcp','1');}catch(x){}toast('Clé créée : copiez l\'adresse du connecteur');}catch(x){toast('Création impossible : '+x.message);}SETK.busy=false;await setLoadKeys();renderAll();}
   else if(a==='setrevoke'){if(!confirm('Révoquer cette clé ? Claude ne pourra plus se connecter avec elle.'))return;try{await liveApi('/api/v1/keys?id='+encodeURIComponent(b.dataset.id),{method:'DELETE'});toast('Clé révoquée');}catch(x){toast('Révocation impossible : '+x.message);}setLoadKeys();}
   else if(a==='setcpurl')setCopy(v('setUrl'));else if(a==='setcpmsg')setCopy(((document.getElementById('setMsg')||{}).value)||'');
@@ -87,6 +87,7 @@ document.addEventListener('click',async e=>{const b=e.target.closest&&e.target.c
 {const _s=sideHTML;sideHTML=function(){if(ui.tab==='set')return'';return _s.apply(this,arguments);};}
 {const _r=renderAll;renderAll=function(){if(!document.getElementById('p-set')){const m=document.getElementById('main'),s=document.createElement('section');s.className='panel';s.id='p-set';(m||document.body).appendChild(s);}
   _r.apply(this,arguments);try{const R=document.getElementById('rail');if(R&&!R.querySelector('[data-id=set]')){const x=document.createElement('button');x.className='rb';x.dataset.act='tab';x.dataset.id='set';x.title='Paramètres';if(ui.tab==='set')x.setAttribute('aria-current','page');x.innerHTML=`${ic('set')}<span>Paramètres</span>`;R.appendChild(x);}
+    const pb=document.getElementById('pdfBtn');if(pb&&!document.getElementById('setTopBtn')){const t=document.createElement('button');t.className='btn';t.id='setTopBtn';t.dataset.act='tab';t.dataset.id='set';t.title='Paramètres : compte, déconnexion, connecteur Claude';t.innerHTML=`${ic('set')}<span class="lbl">Paramètres</span>`;pb.parentNode.insertBefore(t,pb);}
     renderSET();if(typeof afBar==='function')afBar();}catch(e){console.error('parametres',e);}};}
 
 /* accueil : « Bonjour Prénom » à l'arrivée */
