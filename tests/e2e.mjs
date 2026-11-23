@@ -75,6 +75,15 @@ await step('dossier sourcing en fin d\'étude de marché', () => p.evaluate(() =
   if (d.querySelectorAll('.src-t tbody tr').length < 10) throw new Error('lignes de sourcing'); if (!/Hypothèses du modèle/.test(d.textContent)) throw new Error('registre des hypothèses');
   S.bp.mktAI = { how: 'claude', at: new Date().toISOString(), quotes: [{ url: 'https://exemple.org/etude', quote: 'Le marché atteint 12 M€ en 2025', figure: 'Taille du marché 2025' }] }; renderAll();
   const t = document.getElementById('bp-sourcing').textContent; if (!/Le marché atteint 12 M€ en 2025/.test(t) || !/exemple\.org/.test(t)) throw new Error('extrait cité absent'); delete S.bp.mktAI; renderAll(); ui.tab = 'an'; renderAll(); ui.anmOpen = true; renderAnMap(); }));
+await step('paramètres : profil, accueil Bonjour, connecteur Claude', () => p.evaluate(() => {
+  const btn = document.querySelector('#rail [data-id=set]'); if (!btn) throw new Error('bouton Paramètres absent de la barre latérale'); btn.click();
+  if (ui.tab !== 'set' || !document.getElementById('p-set').classList.contains('on')) throw new Error('panneau Paramètres');
+  document.getElementById('setPrenom').value = 'Abdoulaye'; document.querySelector('[data-act=setprof]').click();
+  if (S.profile.prenom !== 'Abdoulaye' || !/Bonjour Abdoulaye/.test(document.getElementById('afbar').textContent)) throw new Error('accueil Bonjour');
+  const m = document.getElementById('setMsg').value; if (!/fomo_next_job/.test(m) || !/fomo_submit_job/.test(m) || !/\/api\/v1\/mcp/.test(m)) throw new Error('message pour Claude');
+  if (!/Paramètres › Connecteurs/.test(document.getElementById('p-set').textContent)) throw new Error('marche à suivre');
+  if (/NaN|undefined/.test(document.getElementById('p-set').textContent)) throw new Error('NaN');
+  S.profile.prenom = ''; ui.tab = 'an'; renderAll(); ui.anmOpen = true; renderAnMap(); }));
 await step('clic ETF vers analyse', async () => { await p.evaluate(() => { S.mm.cls = 'etf'; renderAnMap(); }); await p.click('#anmap svg.mm .pt[data-id="SPY"]');
   if (await p.evaluate(() => document.querySelector('#p-an .sh-t')?.textContent) !== 'SPY') throw new Error('slide ETF absente'); });
 await step('recherche universelle', async () => { await p.keyboard.press('Control+k'); await p.keyboard.type('bitc'); await p.keyboard.press('Enter');

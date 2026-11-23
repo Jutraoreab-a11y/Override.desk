@@ -76,7 +76,7 @@ async function afRun(force){if(AF.run)return;if(!force&&!afEnabled()){afBar();re
 function afBar(){let el=document.getElementById('afbar');if(!el){const m=document.getElementById('main')||document.querySelector('main');if(!m)return;el=document.createElement('div');el.id='afbar';el.className='afbar noprint';m.prepend(el);}
   const on=afEnabled(),env=afClaude()?'Claude (navigateur et modèle de votre abonnement)':typeof AI==='object'&&AI.mcp===undefined?'connexion à Claude…':afSrvOk()?'serveur FOMO.DESK (sources publiques, sans IA)'+((typeof FLUX==='object'&&FLUX.on)?' et recherches stockées':''):'aperçu sans Claude ni serveur : données en cache';
   const last=AF.at?new Date(AF.at).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'}):null;
-  el.innerHTML=`<span class="dot ${AF.run?'am pulse':afClaude()||afSrvOk()?'ok':'ko'}"></span>
+  el.innerHTML=(typeof helloHTML==='function'?helloHTML():'')+`<span class="dot ${AF.run?'am pulse':afClaude()||afSrvOk()?'ok':'ko'}"></span>
     <span class="aft">${AF.run?`<b>Mise à jour ${AF.i}/${AF.n}</b> ${esc(AF.step)}`:`<b>Alimentation automatique ${on?'active':'coupée'}</b> ${last?'· dernière passe à '+last:''}`}<span class="meta"> · ${env}</span></span>
     ${AF.log.length&&!AF.run?`<details class="afd"><summary>Détail</summary><ul>${AF.log.map(([l,r])=>`<li><b>${esc(l)}</b> : ${esc(r)}</li>`).join('')}</ul></details>`:''}
     <span class="afb">${AF.run?'<button class="btn sm" data-act="afstop">Arrêter</button>':`<button class="btn sm pri" data-act="afall" >Tout mettre à jour</button>`}

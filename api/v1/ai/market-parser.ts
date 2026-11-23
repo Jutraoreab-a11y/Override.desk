@@ -8,6 +8,7 @@ import { q } from '../../../lib/http.js';
 import { ingestRoute, keyRoute } from '../../../lib/ai-ingest-route.js';
 import { fundamentalsRoute } from '../../../lib/fundamentals-route.js';
 import { refreshRoute } from '../../../lib/public-refresh.js';
+import { keysRoute, jobsRoute, deskRoute, mcpRoute } from '../../../lib/connector.js';
 
 export { htmlToText } from '../../../lib/html.js';
 import { htmlToText } from '../../../lib/html.js';
@@ -23,6 +24,10 @@ export default handler(async (req: Req, res: Res) => {
   if (q(req, 'op') === 'key') return keyRoute(req, res);
   if (q(req, 'op') === 'fundamentals') return fundamentalsRoute(req, res);
   if (q(req, 'op') === 'refresh') return refreshRoute(req, res);
+  if (q(req, 'op') === 'mcp') return mcpRoute(req, res);
+  if (q(req, 'op') === 'keys') return keysRoute(req, res);
+  if (q(req, 'op') === 'jobs') return jobsRoute(req, res);
+  if (q(req, 'op') === 'desk') return deskRoute(req, res);
   const uid = await requireUser(req);
   const b = body<{ url: string; metric: string; question: string }>(req);
   if (!/^https:\/\//.test(b.url ?? '') || !b.metric || !b.question) throw new HttpError(400, 'url (https), metric et question requis');

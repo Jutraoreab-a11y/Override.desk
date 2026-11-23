@@ -59,9 +59,10 @@ async function rsRun(mod,subject,inapp,server,trigger){trigger=trigger==='init'?
 async function rsMarket(trigger){const b=S.bp,Z={fr:'France',eu:'Europe',world:'monde'},sl=(typeof SECT==='object'&&SECT[b.sector]&&SECT[b.sector].l)||b.sector||'',
     label=((b.mkt&&b.mkt.label)||`${sl} ${Z[b.zone]||b.zone||''}`).trim(),q=`${label} taille du marché chiffre d'affaires croissance ${new Date().getFullYear()}`;
   if(!label){if(trigger!=='init')toast('Renseignez le secteur et la zone du dossier avant la recherche');return;}
+  const INS=`Étude de marché pour : « ${label} ». Donne la taille du marché visé (montant, devise, unité, année), l'historique annuel si disponible et la croissance annuelle moyenne projetée avec son horizon. Un marché mondial ne vaut pas marché national : précise le périmètre.`,
+    SCH=`{"market_label":"","currency":"EUR","unit":"M","year":2025,"tam":nombre|null,"cagr_pct":nombre|null,"cagr_horizon":"2025-2030"|null,"hist":[{"year":2023,"value":nombre}],"sources":[{"url":"","quote":"","figure":"chiffre justifié par cet extrait (ex. taille du marché 2025, croissance annuelle, historique 2023)"}]}`;
   const r=await rsRun('bp',label,async()=>{const urls=await rsSearch(q);if(!urls.length)throw new Error('aucune source trouvée');
-      return rsRead(urls,`Étude de marché pour : « ${label} ». Donne la taille du marché visé (montant, devise, unité, année), l'historique annuel si disponible et la croissance annuelle moyenne projetée avec son horizon. Un marché mondial ne vaut pas marché national : précise le périmètre.`,
-        `{"market_label":"","currency":"EUR","unit":"M","year":2025,"tam":nombre|null,"cagr_pct":nombre|null,"cagr_horizon":"2025-2030"|null,"hist":[{"year":2023,"value":nombre}],"sources":[{"url":"","quote":"","figure":"chiffre justifié par cet extrait (ex. taille du marché 2025, croissance annuelle, historique 2023)"}]}`);},{query:q},trigger);
+      return rsRead(urls,INS,SCH);},{query:q,instr:INS,schema:SCH},trigger);
   if(!r)return;const p=r.p,M=b.mkt,mul={Md:1000,B:1000,G:1000,M:1,k:0.001}[String(p.unit||'M').replace(/[^A-Za-z]/g,'').slice(0,2)]||1,cur=String(p.currency||'EUR').toUpperCase(),fx=cur==='USD'?1/(typeof FX_EURUSD==='number'?FX_EURUSD:1.1):1;
   const toM=v=>v!==null&&v!==undefined&&isFinite(+v)?+(v*mul*fx).toFixed(1):null;let n=0;
   (p.hist||[]).forEach(h=>{const v=toM(h.value);if(!v||!isFinite(+h.year))return;const e=M.hist.find(x=>x.y===+h.year);if(e)e.v=v;else M.hist.push({y:+h.year,v,q:null});n++;});M.hist.sort((a,c)=>a.y-c.y);
@@ -71,9 +72,10 @@ async function rsMarket(trigger){const b=S.bp,Z={fr:'France',eu:'Europe',world:'
 
 /* ---- Dossier LBO : Euribor 3 mois et multiple sectoriel ---- */
 async function rsLbo(trigger){const d=typeof lboCur==='function'?lboCur():null;if(!d){if(trigger!=='init')toast('Aucun dossier LBO ouvert');return;}const sec=d.sec||String(d.name||'secteur').replace(/^LBO /,''),q=`multiple VE/EBITDA médian secteur ${sec} Europe ${new Date().getFullYear()}`;
+  const INS=`Paramètres de marché d'un LBO dans le secteur « ${sec} » : dernier Euribor 3 mois publié (en %) et sa date ; multiple VE/EBITDA médian ou moyen du secteur, avec sa source.`,
+    SCH=`{"euribor_3m_pct":nombre|null,"euribor_date":"AAAA-MM-JJ"|null,"sector_label":"","sector_ev_ebitda":nombre|null,"sector_source":"","sources":[{"url":"","quote":""}]}`;
   const r=await rsRun('lbo',sec,async()=>{const urls=['https://www.euribor-rates.eu/fr/taux-euribor-actuels/2/euribor-taux-3-mois/',...await rsSearch(q,2)];
-      return rsRead(urls,`Paramètres de marché d'un LBO dans le secteur « ${sec} » : dernier Euribor 3 mois publié (en %) et sa date ; multiple VE/EBITDA médian ou moyen du secteur, avec sa source.`,
-        `{"euribor_3m_pct":nombre|null,"euribor_date":"AAAA-MM-JJ"|null,"sector_label":"","sector_ev_ebitda":nombre|null,"sector_source":"","sources":[{"url":"","quote":""}]}`);},{query:q},trigger);
+      return rsRead(urls,INS,SCH);},{query:q,instr:INS,schema:SCH},trigger);
   if(!r)return;const p=r.p,P=d.p;let msg=[];
   if(p.euribor_3m_pct!==null&&isFinite(+p.euribor_3m_pct)&&+p.euribor_3m_pct>-1&&+p.euribor_3m_pct<15){P.euribor=+(+p.euribor_3m_pct).toFixed(3);LBO_SRC.euribor={v:P.euribor,d:fdate(/^\d{4}-\d{2}-\d{2}$/.test(String(p.euribor_date))?p.euribor_date:new Date().toISOString().slice(0,10)),s:'euribor-rates.eu (recherche '+rsShort(r.how)+')'};msg.push('Euribor 3 mois '+nf(P.euribor,3)+' %');}
   if(isFinite(+p.sector_ev_ebitda)&&+p.sector_ev_ebitda>1&&+p.sector_ev_ebitda<60){P.entryMult=+(+p.sector_ev_ebitda).toFixed(1);d.multSrc=`${p.sector_label||sec} : ${nf(P.entryMult,1)}× (${p.sector_source||'source citée'})`;msg.push('multiple d\'entrée '+nf(P.entryMult,1)+'×');}

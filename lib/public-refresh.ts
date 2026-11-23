@@ -43,9 +43,12 @@ export function eiaWeekly(html: string): Array<{ wk: string; lvl: number }> {
   const out: Array<{ wk: string; lvl: number }> = [];
   for (const row of html.split(/<tr[\s>]/i)) {
     const ym = row.match(/(\d{4})-([A-Z][a-z]{2})/); if (!ym) continue;
-    for (const m of row.matchAll(/class="B5">(\d{2})\/(\d{2})(?:&nbsp;)?<\/td>\s*<td class="B3">([\d,]+)/g)) {
-      const mo = +m[1], y = +ym[1] + (ym[2] === 'Jan' && mo === 12 ? -1 : 0);
-      out.push({ wk: `${y}-${m[1]}-${m[2]}`, lvl: +m[3].replace(/,/g, '') / 1000 });
+    const cells = [...row.matchAll(/<td[^>]*>([\s\S]*?)<\/td>/gi)].map(m => m[1].replace(/<[^>]+>/g, '').replace(/&nbsp;/g, ' ').trim());
+    for (let i = 0; i < cells.length - 1; i++) {
+      const d = cells[i].match(/^(\d{2})\/(\d{2})$/), v = cells[i + 1].replace(/[,\s]/g, '');
+      if (!d || !/^\d+(\.\d+)?$/.test(v)) continue;
+      const mo = +d[1], y = +ym[1] + (ym[2] === 'Jan' && mo === 12 ? -1 : 0);
+      out.push({ wk: `${y}-${d[1]}-${d[2]}`, lvl: +v / 1000 }); i++;
     }
   }
   return out.sort((a, b) => (a.wk < b.wk ? -1 : 1));
@@ -59,13 +62,12 @@ export function investingRows(txt: string): Array<{ d: string; a: number; f: num
   return o;
 }
 const PX = /^(stocks\/[a-z0-9.\-]{1,12}|quote\/[a-z]{2,8}\/[A-Za-z0-9.\-]{1,14})$/;
-export async function refreshRoute(req: Req, res: Res): Promise<void> {
-  const px = String(q(req, 'px') || '').split(',').map(s => s.trim().replace(/^\/|\/$/g, '')).filter(s => PX.test(s)).slice(0, 20);
-  const want = new Set(String(q(req, 'only') || 'fx,px,eia,api').split(','));
+export async function refreshData(pxIn: string[], want: Set<string>): Promise<Record<string, unknown>> {
+  const px = pxIn.map(s => s.trim().replace(/^\/|\/$/g, '')).filter(s => PX.test(s)).slice(0, 20);
   const err: Record<string, string> = {}, out: Record<string, unknown> = { at: new Date().toISOString(), err };
   const tasks: Array<Promise<void>> = [];
   if (want.has('fx')) tasks.push(get('https://www.ecb.europa.eu/stats/eurofxref/eurofxref-daily.xml').then(x => { const r = ecbRates(x); if (r) out.fx = { ...r, src: 'https://www.ecb.europa.eu/stats/eurofxref/eurofxref-daily.xml' }; else err.fx = 'XML BCE illisible'; }).catch(e => { err.fx = String(e.message || e); }));
-  if (want.has('eia')) tasks.push(get('https://www.eia.gov/dnav/pet/hist/LeafHandler.ashx?n=PET&s=WCESTUS1&f=W').then(h => { const w = eiaWeekly(h).slice(-8); if (w.length) out.eia = { w, src: 'https://www.eia.gov/dnav/pet/hist/LeafHandler.ashx?n=PET&s=WCESTUS1&f=W' }; else err.eia = 'série EIA illisible'; }).catch(e => { err.eia = String(e.message || e); }));
+  if (want.has('eia')) tasks.push(get('https://www.eia.gov/dnav/pet/hist/LeafHandler.ashx?n=PET&s=WCESTUS1&f=W').then(h => { const w = eiaWeekly(h).slice(-8); if (w.length) out.eia = { w, src: 'https://www.eia.gov/dnav/pet/hist/LeafHandler.ashx?n=PET&s=WCESTUS1&f=W' }; else err.eia = 'série EIA illisible (' + h.length + ' octets)'; }).catch(e => { err.eia = String(e.message || e); }));
   if (want.has('api')) tasks.push(Promise.all([get('https://www.investing.com/economic-calendar/api-weekly-crude-stock-656'), get('https://www.investing.com/economic-calendar/eia-crude-oil-inventories-75')])
     .then(([a, e]) => { const A = investingRows(a), E = investingRows(e); if (A.length || E.length) out.cal = { api: A.slice(0, 8), eia: E.slice(0, 8), src: 'investing.com' }; else err.api = 'calendrier illisible'; })
     .catch(e => { err.api = 'calendrier Investing.com inaccessible depuis le serveur (' + String(e.message || e) + ')'; }));
@@ -76,6 +78,37 @@ export async function refreshRoute(req: Req, res: Res): Promise<void> {
       .catch(e => { err['px:' + p] = String(e.message || e); }))).then(() => undefined));
   }
   await Promise.all(tasks);
+  return out;
+}
+export async function refreshRoute(req: Req, res: Res): Promise<void> {
+  const out = await refreshData(String(q(req, 'px') || '').split(','), new Set(String(q(req, 'only') || 'fx,px,eia,api').split(',')));
   res.setHeader('Cache-Control', 's-maxage=900, stale-while-revalidate=600');
   send(res, 200, out);
+}
+/* Fiche d'une société : comptes, consensus N+1, agenda et cours, depuis les données publiques de stockanalysis.com */
+const EXM: Record<string, string> = { SS: 'sha', SZ: 'she', AS: 'ams', L: 'lon', MC: 'bme', AX: 'asx', PA: 'epa', TW: 'tpe', T: 'tyo', SW: 'swx', TO: 'tsx', KS: 'krx', KQ: 'kosdaq', SR: 'tadawul', F: 'etr', DE: 'etr', HK: 'hkg', MI: 'bit', BR: 'ebr', ST: 'sto', CO: 'cph', HE: 'hel', OL: 'osl', NS: 'nse', BO: 'bom', SA: 'bvmf', MX: 'bmv', JO: 'jse', SI: 'sgx', V: 'tsxv', VI: 'vie', WA: 'wse', IR: 'ise', NZ: 'nzx', IS: 'ist', TA: 'tase', JK: 'idx', BK: 'set', KL: 'klse', LS: 'eli', AT: 'athex' };
+export function saPath(tk: string): string | null {
+  const m = tk.match(/^(.+)\.([A-Z]+)$/); if (!m) return '/stocks/' + tk.toLowerCase().replace('-', '.');
+  const ex = EXM[m[2]]; if (!ex) return null; return `/quote/${ex}/${m[2] === 'HK' ? String(+m[1]) : m[1]}`;
+}
+type Fin = Record<string, unknown[]> & { fiscalYear: string[] };
+export async function companyFiche(tk: string): Promise<Record<string, unknown>> {
+  const p = saPath(tk.toUpperCase().replace(/^([A-Z0-9-]+)$/, s => s)); if (!p) throw new Error('place de cotation non couverte');
+  const J = async (s: string) => devalue(JSON.parse(await get(`https://stockanalysis.com${p}${s}/__data.json?x-sveltekit-invalidated=001`))) as Record<string, unknown>;
+  const M6 = (v: unknown) => typeof v === 'number' ? Math.round(v / 1e4) / 100 : null;
+  const inc = await J('/financials/income-statement'), f = inc.financialData as Fin; if (!f) throw new Error('comptes absents');
+  const fy = [...new Set(f.fiscalYear.slice(1))].sort().slice(-5);
+  const g = (F: Fin | undefined, k: string, cv: (v: number) => number | null = v => v) => fy.map(y => { const i = F && F.fiscalYear ? F.fiscalYear.lastIndexOf(y) : -1, v = i >= 0 && F && F[k] ? F[k][i] : null; return typeof v === 'number' ? cv(v) : null; });
+  const safe = async (s: string) => { try { return await J(s); } catch { return null; } };
+  const [bal, cf, ov, fc, st] = await Promise.all([safe('/financials/balance-sheet'), safe('/financials/cash-flow-statement'), safe('/financials'), safe('/forecast'), safe('/statistics')]);
+  const bf = bal?.financialData as Fin | undefined, cff = cf?.financialData as Fin | undefined;
+  const A = ((fc?.estimates as Record<string, unknown> | undefined)?.table as Record<string, unknown> | undefined)?.annual as Fin | undefined;
+  const nx = String(+fy[fy.length - 1] + 1), ia = A ? A.fiscalYear.indexOf(nx) : -1, ea = (k: string) => ia >= 0 && A && typeof A[k]?.[ia] === 'number' ? A[k][ia] as number : null;
+  const dates = ((st?.dates as Record<string, unknown> | undefined)?.data as Array<{ id: string; value: string }> | undefined) || [];
+  return { ticker: tk, source: `https://stockanalysis.com${p}/financials/`, devise_des_comptes: ((ov?.details as Record<string, string> | undefined)?.currency) || 'USD', unite: 'millions',
+    exercices: fy, chiffre_affaires: g(f, 'revenue', M6), ebitda: g(f, 'ebitda', M6), ebit: g(f, 'ebit', M6), interets: g(f, 'interestExpense', M6), taux_impot_pct: g(f, 'taxrate', v => Math.round(v * 1000) / 10),
+    resultat_net: g(f, 'netinc', M6), bpa_dilue: g(f, 'epsdil'), fcf: g(f, 'fcf', M6), actions_diluees_millions: g(f, 'sharesDiluted', M6),
+    actif_total: g(bf, 'assets', M6), capitaux_propres: g(bf, 'equity', M6), dette_nette: g(bf, 'netcash', v => -(M6(v) as number)), capex: g(cff, 'capex', v => -(M6(v) as number)),
+    consensus_n1: { exercice: nx, chiffre_affaires: M6(ea('revenue')), bpa: ea('eps'), resultat_operationnel: M6(ea('operatingIncome')), analystes: ea('analysts') },
+    objectifs_de_cours: (fc?.priceTargets as unknown) || null, prochaine_publication: dates.find(d => d.id === 'earningsdate')?.value || null };
 }

@@ -3,7 +3,11 @@
     { "source": "/api/v1/ai/ingest", "destination": "/api/v1/ai/market-parser?op=ingest" },
     { "source": "/api/v1/ai/key", "destination": "/api/v1/ai/market-parser?op=key" },
     { "source": "/api/v1/fundamentals", "destination": "/api/v1/ai/market-parser?op=fundamentals" },
-    { "source": "/api/v1/refresh", "destination": "/api/v1/ai/market-parser?op=refresh" }
+    { "source": "/api/v1/refresh", "destination": "/api/v1/ai/market-parser?op=refresh" },
+    { "source": "/api/v1/mcp", "destination": "/api/v1/ai/market-parser?op=mcp" },
+    { "source": "/api/v1/keys", "destination": "/api/v1/ai/market-parser?op=keys" },
+    { "source": "/api/v1/jobs", "destination": "/api/v1/ai/market-parser?op=jobs" },
+    { "source": "/api/v1/desk", "destination": "/api/v1/ai/market-parser?op=desk" }
   ],
   "crons": [
     { "path": "/api/v1/macro/commodities?action=ingest", "schedule": "30 21 * * 1-5" },

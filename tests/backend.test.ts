@@ -190,3 +190,19 @@ test('rafraîchissement public : BCE, EIA, stockanalysis, Investing.com', async 
   assert.deepEqual(R.lastClose(R.devalue(j)), { c: 121.25, t: '2026-11-20' });
   assert.deepEqual(R.investingRows('Nov 18, 2026 10:30 3.380M 0.400M 4.657M Nov 12, 2026 12:00 4.657M -0.600M -0.865M'), [{ d: '2026-11-18', a: 3.38, f: 0.4 }, { d: '2026-11-12', a: 4.657, f: -0.6 }]);
 });
+test('serveur MCP du connecteur Claude : protocole et outils publics', async () => {
+  const C = await import('../lib/connector.ts');
+  const init = await C.mcpHandle(null, { jsonrpc: '2.0', id: 1, method: 'initialize', params: { protocolVersion: '2025-06-18' } }) as { result: { serverInfo: { name: string }; capabilities: { tools: object }; protocolVersion: string } };
+  assert.equal(init.result.serverInfo.name, 'FOMO.DESK'); assert.ok(init.result.capabilities.tools); assert.equal(init.result.protocolVersion, '2025-06-18');
+  assert.equal(await C.mcpHandle(null, { jsonrpc: '2.0', method: 'notifications/initialized' }), undefined);
+  const pub = await C.mcpHandle(null, { jsonrpc: '2.0', id: 2, method: 'tools/list' }) as { result: { tools: Array<{ name: string }> } };
+  assert.deepEqual(pub.result.tools.map(t => t.name), ['fomo_public_data', 'fomo_company_fiche']);
+  const priv = await C.mcpHandle('u1', { jsonrpc: '2.0', id: 3, method: 'tools/list' }) as { result: { tools: Array<{ name: string }> } };
+  assert.ok(priv.result.tools.some(t => t.name === 'fomo_next_job') && priv.result.tools.some(t => t.name === 'fomo_submit_job'));
+  const denied = await C.mcpHandle(null, { jsonrpc: '2.0', id: 4, method: 'tools/call', params: { name: 'fomo_next_job', arguments: {} } }) as { result: { isError: boolean } };
+  assert.equal(denied.result.isError, true);
+  const unk = await C.mcpHandle(null, { jsonrpc: '2.0', id: 5, method: 'foo/bar' }) as { error: { code: number } }; assert.equal(unk.error.code, -32601);
+  const R = await import('../lib/public-refresh.ts');
+  assert.deepEqual(R.eiaWeekly('<tr><td class=B6>&nbsp;&nbsp;2026-Nov</td><td class=B5>11/13&nbsp;</td><td class=B3>417,797&nbsp;</td></tr>'), [{ wk: '2026-11-13', lvl: 417.797 }]);
+  assert.equal(R.saPath('MC.PA'), '/quote/epa/MC'); assert.equal(R.saPath('BRK-A'), '/stocks/brk.a'); assert.equal(R.saPath('0700.HK'), '/quote/hkg/700');
+});

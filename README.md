@@ -281,3 +281,13 @@ Sources des données livrées (collecte du 10/11/2026) : FRED (CPIAUCSL, PPIFIS,
 - Sur override-desk.vercel.app (hors application Claude), le bouton n'est plus grisé : il appelle `/api/v1/refresh` (réécrit vers la fonction `market-parser`, toujours 12 fonctions), qui relit sans IA ni compte les changes de la BCE, les cours de clôture des titres (stockanalysis.com), les stocks commerciaux de brut de l'EIA (série officielle WCESTUS1) et, si le site répond au serveur, les chiffres API et EIA avec consensus d'Investing.com. Réponse mise en cache 15 minutes.
 - Dans l'application Claude, le fonctionnement ne change pas (navigateur intégré et modèle de l'abonnement).
 - Sans Claude ni serveur (aperçu de fichier), le clic explique pourquoi rien ne peut être relu.
+
+## Version 8.17 : Paramètres, accueil et connecteur Claude (MCP)
+
+- Bouton « Paramètres » dans la barre latérale : profil (prénom, nom), compte (connexion, création, changement d'e-mail et de mot de passe via Supabase Auth), connecteur Claude, état des clés et connecteurs.
+- Accueil : « Bonjour Prénom » à l'ouverture et dans le bandeau.
+- Serveur MCP de FOMO.DESK : `https://override-desk.vercel.app/api/v1/mcp` (réécrit vers `market-parser`, toujours 12 fonctions). À ajouter dans Claude : Paramètres › Connecteurs › Ajouter un connecteur personnalisé.
+  - Sans clé : outils publics `fomo_public_data` (BCE, cours, stocks EIA) et `fomo_company_fiche` (comptes 5 ans, consensus, agenda).
+  - Avec une clé personnelle (`?key=fdk_…`, créée dans Paramètres) : `fomo_next_job`, `fomo_submit_job`, `fomo_list_jobs`, `fomo_desk`. Claude traite la file des demandes du site (études de marché, LBO, comptes, cours) avec l'abonnement de l'utilisateur, sans clé API Anthropic ; les résultats sont appliqués automatiquement par le site.
+- Activation des comptes, clés et file des demandes : base Supabase requise (`SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `SUPABASE_ANON_KEY` sur Vercel) et migration `supabase/migrations/20261123000000_connecteur_claude.sql`.
+- Correction : lecture de la série EIA côté serveur plus tolérante au format HTML.
