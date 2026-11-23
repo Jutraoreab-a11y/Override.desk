@@ -20,7 +20,7 @@ export default handler(async (req: Req, res: Res) => {
   if (!key) throw new HttpError(401, 'En-tête X-Override-Key manquant');
   const p = body<MtSyncPayload>(req), err = validate(p);
   if (err) throw new HttpError(400, err);
-  const rows = check(await db().from('trading_accounts').select('id,user_id,webhook_key_hash').eq('login', String(p.account.login)).eq('platform', p.account.platform));
+  const rows = check(await db().from('fomodesk_trading_accounts').select('id,user_id,webhook_key_hash').eq('login', String(p.account.login)).eq('platform', p.account.platform));
   const acc = (rows as Array<{ id: string; user_id: string; webhook_key_hash: string | null }>).find(r => r.webhook_key_hash && sameHash(r.webhook_key_hash, sha256(key)));
   if (!acc) throw new HttpError(403, 'Clé inconnue pour ce compte');
   const r = await ingestMt(acc.id, acc.user_id, p);

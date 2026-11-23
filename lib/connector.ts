@@ -16,35 +16,35 @@ type Job = { id: string; module: string; subject: string; query: string | null; 
 /* ---------------- clés du connecteur ---------------- */
 export async function keysRoute(req: Req, res: Res): Promise<void> {
   const uid = await requireUser(req), s = db();
-  if (req.method === 'GET') return send(res, 200, { keys: check(await s.from('fomo_keys').select('id,label,prefix,created_at,last_used_at,revoked_at').eq('user_id', uid).order('created_at', { ascending: false })) });
+  if (req.method === 'GET') return send(res, 200, { keys: check(await s.from('fomodesk_keys').select('id,label,prefix,created_at,last_used_at,revoked_at').eq('user_id', uid).order('created_at', { ascending: false })) });
   if (req.method === 'DELETE') {
     const id = q(req, 'id'); if (!id) throw new HttpError(400, 'id requis');
-    check(await s.from('fomo_keys').update({ revoked_at: new Date().toISOString() }).eq('id', id).eq('user_id', uid)); return send(res, 200, { ok: true });
+    check(await s.from('fomodesk_keys').update({ revoked_at: new Date().toISOString() }).eq('id', id).eq('user_id', uid)); return send(res, 200, { ok: true });
   }
   const b = body<{ label?: string }>(req), key = 'fdk_' + newKey(), label = String(b.label || 'Claude').slice(0, 60);
-  const row = check(await s.from('fomo_keys').insert({ user_id: uid, label, prefix: key.slice(0, 10), key_hash: sha256(key) }).select('id,label,prefix,created_at').single());
-  send(res, 201, { ...row, key }); /* la clé n'est montrée qu'une fois : seule son empreinte est conservée */
+  const row = check(await s.from('fomodesk_keys').insert({ user_id: uid, label, prefix: key.slice(0, 10), key_hash: sha256(key) }).select('id,label,prefix,created_at').single());
+  send(res, 201, { ...(row as unknown as Record<string, unknown>), key }); /* la clé n'est montrée qu'une fois : seule son empreinte est conservée */
 }
 /* ---------------- file des demandes ---------------- */
 export async function jobsRoute(req: Req, res: Res): Promise<void> {
   const uid = await requireUser(req), s = db();
   if (req.method === 'GET') {
     const st = q(req, 'status') || 'done';
-    return send(res, 200, { jobs: check(await s.from('fomo_jobs').select('id,module,subject,status,created_at,done_at,result,error').eq('user_id', uid).eq('status', st).order('created_at').limit(50)) });
+    return send(res, 200, { jobs: check(await s.from('fomodesk_jobs').select('id,module,subject,status,created_at,done_at,result,error').eq('user_id', uid).eq('status', st).order('created_at').limit(50)) });
   }
   const b = body<{ action?: string; ids?: string[]; module?: string; subject?: string; query?: string; instructions?: string; schema?: string }>(req);
-  if (b.action === 'ack') { check(await s.from('fomo_jobs').update({ status: 'applied' }).in('id', (b.ids || []).slice(0, 50)).eq('user_id', uid)); return send(res, 200, { ok: true }); }
+  if (b.action === 'ack') { check(await s.from('fomodesk_jobs').update({ status: 'applied' }).in('id', (b.ids || []).slice(0, 50)).eq('user_id', uid)); return send(res, 200, { ok: true }); }
   if (!b.module || !b.subject || !b.instructions) throw new HttpError(400, 'module, subject et instructions requis');
   /* une même demande en attente n'est pas dupliquée */
-  const open = check(await s.from('fomo_jobs').select('id').eq('user_id', uid).eq('module', b.module).eq('subject', b.subject).in('status', ['pending', 'claimed']).limit(1)) as Array<{ id: string }>;
+  const open = check(await s.from('fomodesk_jobs').select('id').eq('user_id', uid).eq('module', b.module).eq('subject', b.subject).in('status', ['pending', 'claimed']).limit(1)) as Array<{ id: string }>;
   if (open.length) return send(res, 200, { id: open[0].id, queued: false });
-  const row = check(await s.from('fomo_jobs').insert({ user_id: uid, module: b.module, subject: String(b.subject).slice(0, 200), query: b.query || null, instructions: String(b.instructions).slice(0, 4000), schema: b.schema ? String(b.schema).slice(0, 4000) : null, status: 'pending' }).select('id').single()) as { id: string };
+  const row = check(await s.from('fomodesk_jobs').insert({ user_id: uid, module: b.module, subject: String(b.subject).slice(0, 200), query: b.query || null, instructions: String(b.instructions).slice(0, 4000), schema: b.schema ? String(b.schema).slice(0, 4000) : null, status: 'pending' }).select('id').single()) as { id: string };
   send(res, 201, { id: row.id, queued: true });
 }
 export async function deskRoute(req: Req, res: Res): Promise<void> {
   const uid = await requireUser(req), b = body<{ state?: unknown }>(req), raw = JSON.stringify(b.state ?? null);
   if (raw.length > 900_000) throw new HttpError(413, 'Instantané trop volumineux');
-  check(await db().from('fomo_desk').upsert({ user_id: uid, state: b.state, updated_at: new Date().toISOString() }));
+  check(await db().from('fomodesk_desk').upsert({ user_id: uid, state: b.state, updated_at: new Date().toISOString() }));
   send(res, 200, { ok: true, bytes: raw.length });
 }
 
@@ -71,9 +71,9 @@ async function userFromKey(req: Req): Promise<string | null> {
   const auth = header(req, 'authorization'), k = q(req, 'key') || (auth.startsWith('Bearer fdk_') ? auth.slice(7) : '');
   if (!k) return null; if (!/^fdk_[A-Za-z0-9_-]{20,64}$/.test(k)) throw new HttpError(401, 'Clé de connecteur invalide');
   if (!configured()) return null;
-  const r = check(await db().from('fomo_keys').select('id,user_id').eq('key_hash', sha256(k)).is('revoked_at', null).limit(1)) as Array<{ id: string; user_id: string }>;
+  const r = check(await db().from('fomodesk_keys').select('id,user_id').eq('key_hash', sha256(k)).is('revoked_at', null).limit(1)) as Array<{ id: string; user_id: string }>;
   if (!r.length) throw new HttpError(401, 'Clé de connecteur révoquée ou inconnue : créez-en une dans Paramètres');
-  await db().from('fomo_keys').update({ last_used_at: new Date().toISOString() }).eq('id', r[0].id);
+  await db().from('fomodesk_keys').update({ last_used_at: new Date().toISOString() }).eq('id', r[0].id);
   return r[0].user_id;
 }
 const txt = (o: unknown, isError = false) => ({ content: [{ type: 'text', text: typeof o === 'string' ? o : JSON.stringify(o) }], ...(isError ? { isError: true } : {}) });
@@ -86,9 +86,9 @@ export async function callTool(uid: string | null, name: string, a: Record<strin
   if (!uid) return txt("Outil réservé aux comptes FOMO.DESK : ajoutez ?key=fdk_… (Paramètres > Connecteur Claude) à l'adresse du connecteur.", true);
   const s = db();
   if (name === 'fomo_next_job') {
-    const j = (check(await s.from('fomo_jobs').select('id,module,subject,query,instructions,schema,status,created_at').eq('user_id', uid).in('status', ['pending', 'claimed']).order('created_at').limit(1)) as Job[])[0];
+    const j = (check(await s.from('fomodesk_jobs').select('id,module,subject,query,instructions,schema,status,created_at').eq('user_id', uid).in('status', ['pending', 'claimed']).order('created_at').limit(1)) as Job[])[0];
     if (!j) return txt('aucune demande');
-    await s.from('fomo_jobs').update({ status: 'claimed', claimed_at: new Date().toISOString() }).eq('id', j.id);
+    await s.from('fomodesk_jobs').update({ status: 'claimed', claimed_at: new Date().toISOString() }).eq('id', j.id);
     return txt({ id: j.id, module: j.module, subject: j.subject, piste_de_recherche: j.query, instructions: j.instructions, format_json_attendu: j.schema,
       rappel: 'Ouvre les pages, cite les extraits mot pour mot, renvoie le JSON exact avec fomo_submit_job.' });
   }
@@ -96,12 +96,12 @@ export async function callTool(uid: string | null, name: string, a: Record<strin
     const id = String(a.id || ''); if (!id) return txt('id requis', true);
     const upd = a.error ? { status: 'error', error: String(a.error).slice(0, 1000), done_at: new Date().toISOString() } : { status: 'done', result: a.result ?? null, done_at: new Date().toISOString() };
     if (!a.error && (a.result === undefined || a.result === null)) return txt('result requis (objet JSON au format demandé)', true);
-    const r = check(await s.from('fomo_jobs').update(upd).eq('id', id).eq('user_id', uid).select('id')) as Array<{ id: string }>;
+    const r = check(await s.from('fomodesk_jobs').update(upd).eq('id', id).eq('user_id', uid).select('id')) as Array<{ id: string }>;
     return txt(r.length ? 'résultat enregistré : FOMO.DESK l\'appliquera à la prochaine ouverture ou mise à jour' : 'demande introuvable', !r.length);
   }
-  if (name === 'fomo_list_jobs') return txt(check(await s.from('fomo_jobs').select('id,module,subject,status,created_at,done_at,error').eq('user_id', uid).eq('status', String(a.status || 'pending')).order('created_at').limit(30)));
+  if (name === 'fomo_list_jobs') return txt(check(await s.from('fomodesk_jobs').select('id,module,subject,status,created_at,done_at,error').eq('user_id', uid).eq('status', String(a.status || 'pending')).order('created_at').limit(30)));
   if (name === 'fomo_desk') {
-    const d = (check(await s.from('fomo_desk').select('state,updated_at').eq('user_id', uid).limit(1)) as Array<{ state: Record<string, unknown>; updated_at: string }>)[0];
+    const d = (check(await s.from('fomodesk_desk').select('state,updated_at').eq('user_id', uid).limit(1)) as Array<{ state: Record<string, unknown>; updated_at: string }>)[0];
     if (!d) return txt("aucun instantané : ouvrez FOMO.DESK connecté à votre compte pour l'envoyer", true);
     return txt({ mis_a_jour_le: d.updated_at, donnees: pick(d.state || {}, String(a.section || 'all')) });
   }

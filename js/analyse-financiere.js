@@ -20,8 +20,10 @@ function anCalc(id){
   for(let t=1;t<=5;t++){f*=1+g;pv+=f/(1+w)**t;}
   const tv=w>tg?f*(1+tg)/(w-tg):NaN,pvtv=tv/(1+w)**5,ev=pv+pvtv,iv=base>0?(ev-a.nd[L])/a.shares*a.fx:NaN;
   const impEv=medEvE>0&&a.ebitda[L]>0?(medEvE*a.ebitda[L]-a.nd[L])/a.shares*a.fx:NaN,impPe=medPE>0&&a.eps[L]>0?medPE*a.eps[L]*a.fx:NaN;
-  const meth=[['DCF (FCF normalisé 3 ans)',iv,+c.wDcf],['VE/EBITDA médian des pairs',impEv,+c.wEv],['PER médian des pairs',impPe,+c.wPe]];
-  const okM=meth.filter(x=>isFinite(x[1])&&x[1]>0&&x[2]>0),wt=sum(okM.map(x=>x[2])),ref=wt?sum(okM.map(x=>x[1]*x[2]))/wt:NaN;
+  /* v8.21 : quatre méthodes, chacune avec ses métriques modifiables (a.val), et un prix unique = moyenne des méthodes applicables */
+  const VM=anVal(a,{base,iv,medEvE,medPE,L});
+  const meth=VM.m.map(m=>[m.l,m.v,1]);
+  const ref=VM.avg;
   const buy=ref*(1-c.mos/100),sl=buy*(1-c.sl/100),tp=ref*(1+c.tp/100),up=ref/a.price-1;
   /* Scoring vs seuils personnels */
   const pos5=a.fcf.filter(v=>v>0).length;
@@ -61,7 +63,7 @@ function anCalc(id){
   else if(!checks[1][1])concl=`S'abstenir : le titre ne franchit pas le tamis (${filt.filter(f=>!(f[1]>=c.fmin)).map(f=>f[0].toLowerCase()+(isFinite(f[1])?'':' non évaluée, aucun comparable')).join(', ')}).`;
   else if(!checks[2][1])concl=`S'abstenir : valorisation intrinsèque non calculable avec les données publiées.`;
   else concl=`S'abstenir au cours actuel : qualité validée mais prix au-dessus de la cible. Placer un ordre limite à ${nf(buy,2)} ${a.cur} (${sgn((buy/a.price-1)*100)}).`;
-  return{a,B,peers,peerSrc,medEvE,medPE,medEm,base,iv,impEv,impPe,meth,ref,buy,sl,tp,up,tvw:pvtv/ev,rows,score,filt,fPass,checks,positive,concl};
+  return{a,B,peers,peerSrc,medEvE,medPE,medEm,base,iv,impEv,impPe,meth,VM,ref,buy,sl,tp,up,tvw:pvtv/ev,rows,score,filt,fPass,checks,positive,concl};
 }
 function renderAN(){
   const A=S.an.assets;let id=ui.tk;if(!A[id]){id=ui.tk=Object.keys(A)[0];}
@@ -130,10 +132,8 @@ function renderAN(){
         <tr><td>PER sur BPA consensus N</td><td class="n">${isFinite(B.perF)?nf(B.perF,1)+'×':'n.s.'}</td><td class="n">—</td><td class="n">—</td></tr>
         <tr><td>Rendement FCF N-1</td><td class="n">${pct(B.fcfY,1)}</td><td class="n">—</td><td class="n">—</td></tr>
       </tbody></table></div>
-      <div class="tw" style="margin-top:8px"><table class="tbl"><thead><tr><th>Méthode</th><th class="n">Valeur par action</th><th class="n">Poids</th></tr></thead><tbody>
-        ${R.meth.map((x,i)=>`<tr><td>${x[0]}</td><td class="n">${isFinite(x[1])&&x[1]>0?nf(x[1],2)+' '+cur:'<span class="meta">non applicable</span>'}</td><td class="n">${fld(['an.crit.wDcf','an.crit.wEv','an.crit.wPe'][i])} %</td></tr>`).join('')}
-        <tr class="tot"><td>Valeur de référence</td><td class="n">${nf(R.ref,2)} ${cur}</td><td class="n">pondérée</td></tr>
-      </tbody></table></div></div>
+      <p class="note" style="margin-top:8px">Valeur de référence : <b style="color:var(--hi)">${nf(R.ref,2)} ${cur}</b>, moyenne des méthodes du bloc « Valorisation multi-méthodes ».</p></div>
+    ${anValHTML(a,R,cur)}
 
     <div class="card s8"><h2>6. Zones d'intervention</h2>${levelsChart(LV,cur)}
       <div class="legend">${LV.map(x=>`<span><i style="background:${x.c}"></i>${x.k} <b class="num" style="color:var(--hi);font-weight:500">${isFinite(x.v)?nf(x.v,2):'—'}</b></span>`).join('')}</div></div>

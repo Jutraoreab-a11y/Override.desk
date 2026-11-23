@@ -291,3 +291,29 @@ Sources des données livrées (collecte du 10/11/2026) : FRED (CPIAUCSL, PPIFIS,
   - Avec une clé personnelle (`?key=fdk_…`, créée dans Paramètres) : `fomo_next_job`, `fomo_submit_job`, `fomo_list_jobs`, `fomo_desk`. Claude traite la file des demandes du site (études de marché, LBO, comptes, cours) avec l'abonnement de l'utilisateur, sans clé API Anthropic ; les résultats sont appliqués automatiquement par le site.
 - Activation des comptes, clés et file des demandes : base Supabase requise (`SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `SUPABASE_ANON_KEY` sur Vercel) et migration `supabase/migrations/20261123000000_connecteur_claude.sql`.
 - Correction : lecture de la série EIA côté serveur plus tolérante au format HTML.
+
+## Base Supabase partagée avec jamsplans (phase de test)
+
+- Toutes les tables, vues et fonctions de FOMO.DESK sont préfixées `fomodesk_` (24 tables et vues, 5 fonctions) : aucune collision possible avec les tables de jamsplans, qui ne sont pas modifiées.
+- Script unique, rejouable sans erreur : `supabase/fomodesk/setup_fomodesk.sql` (SQL Editor de Supabase › coller › Run). Les fichiers de `supabase/migrations/` contiennent les mêmes noms préfixés.
+- Production : exécuter le même script sur un projet Supabase dédié, puis changer les trois variables sur Vercel.
+- Variables lues : `SUPABASE_URL` ou `NEXT_PUBLIC_SUPABASE_URL`, `SUPABASE_ANON_KEY` ou `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`.
+
+## Version 8.19 : page d'accueil
+
+- Page d'accueil affichée à l'arrivée tant qu'aucune session n'est ouverte (`js/accueil.js`) : boutons « Se connecter » et « Créer un compte » (prénom, e-mail, mot de passe de 10 caractères), lien de connexion par e-mail, entrée sans compte si la base de comptes est hors ligne.
+- Après connexion : retour au bureau avec « Bonjour Prénom ». Déconnexion : la page d'accueil revient.
+- Image du hero : capture réelle du bureau (`img/hero-desk.webp`). Logo Claude : déposer le fichier officiel en `img/claude-logo.webp` ; tant qu'il est absent, le titre s'affiche seul.
+
+## Version 8.20 : lancement réel
+
+- Plus aucune donnée fictive par défaut (`js/reel-def.js`, chargé avant `core.js`) : business plan vierge (l'exemple « Atelier Nova » est retiré), Sélecteur sans dossiers inventés, portefeuille vide. Les données déjà enregistrées dans un navigateur sont nettoyées au chargement, sans toucher aux saisies de l'utilisateur.
+- Restent : les données de marché réelles et sourcées, et les paramètres légaux ou de méthode (IS, TVA, durée d'amortissement, décote d'illiquidité, scénarios).
+- Libellés « mode simulation » et « données d'exemple » remplacés par « données locales ».
+- Paramètres : bouton « Se déconnecter » toujours visible en haut ; la déconnexion ramène à la page d'accueil.
+
+## Version 8.21 : valorisation multi-méthodes
+
+- Analyse financière, bloc « 7. Valorisation multi-méthodes » (`js/valorisation.js`) : DCF, multiples des comparables (VE/EBITDA et PER), Gordon-Shapiro (dividendes), bénéfices résiduels (capitaux propres × (ROE − g) / (coût des fonds propres − g)).
+- Chaque méthode affiche ses métriques (modifiables, marquées « modifiée »), son résultat, l'écart au cours et son angle mort ; « Réinitialiser » revient aux valeurs publiées.
+- Prix unique = moyenne simple des méthodes applicables ; il devient la valeur de référence des zones d'intervention et de la décision.

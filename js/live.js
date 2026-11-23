@@ -1,5 +1,5 @@
 /* ============ Couche « flux live » : backend Vercel + Supabase ============ */
-/* Sans backend configuré, l'application reste en mode simulation (données d'exemple, imports et override).
+/* Sans backend configuré, l'application reste en local (saisies, imports et override).
    Avec backend et session, chaque actualisation interroge les endpoints /api/v1/... et remplace les données. */
 const FLUX={on:false,status:null,sb:null,session:null,catalog:null,err:'',busy:false,at:null};
 const CRED_LABELS={apiKey:'Clé API',apiSecret:'Secret API',passphrase:'Passphrase',keyName:'Nom de la clé (CDP)',privateKey:'Clé privée EC (PEM)',accessToken:'Jeton d\'accès OAuth',flexToken:'Jeton Flex',flexQueryId:'N° de requête Flex',addresses:'Adresses publiques BTC (une par ligne)',url:'Adresse de la passerelle',token:'Jeton de la passerelle'};
@@ -21,7 +21,7 @@ async function liveInit(){
   }catch(e){FLUX.status=null;FLUX.on=false;FLUX.err='';}
   renderAll();if(FLUX.on)liveRefresh(true);
 }
-function liveBadge(){const on=FLUX.on;return`<span class="dot ${on?'ok':'ko'}"></span><span class="lbl">${on?'Connecté (flux live)':'Déconnecté (mode simulation)'}</span>`;}
+function liveBadge(){const on=FLUX.on;return`<span class="dot ${on?'ok':'ko'}"></span><span class="lbl">${on?'Connecté (flux live)':'Non connecté (données locales)'}</span>`;}
 /* Actualisation complète : synchronisation des courtiers, puis lecture des comptes, positions, liquidités et séries macro */
 /* v8 : actualisation modulaire. Un appel = un volet ; aucune synchronisation courtier ni appel IA au chargement.
    Au chargement et au changement d'onglet : lecture des données déjà en base (0 jeton). Sur « Recalculer » : resynchronisation du seul volet affiché. */
@@ -74,10 +74,10 @@ function liveMarkOverride(path){const m=String(path).match(/^hold\.(\d+)\.(\w+)$
 /* Panneau « Flux de données » */
 function renderFlux(){
   const el=document.getElementById('flux');if(!el)return;el.hidden=!ui.fluxOpen;if(!ui.fluxOpen)return;
-  const st=FLUX.status,c=st&&st.connectors||{},row=(l,ok,d)=>`<tr><td>${l}</td><td><span class="dot ${ok?'ok':'ko'}"></span> ${ok?'Connecté (flux live)':'Déconnecté (mode simulation)'}</td><td class="meta">${d}</td></tr>`;
+  const st=FLUX.status,c=st&&st.connectors||{},row=(l,ok,d)=>`<tr><td>${l}</td><td><span class="dot ${ok?'ok':'ko'}"></span> ${ok?'Connecté (flux live)':'Non connecté (données locales)'}</td><td class="meta">${d}</td></tr>`;
   el.innerHTML=`<div class="ai-box" role="dialog" aria-label="Flux de données"><div class="ai-h"><b>Flux de données et connecteurs</b><button class="btn sm" data-act="fluxclose">Fermer</button></div>
-    ${!st?`<p class="note">Aucun backend joignable depuis cette page${liveBase()?' ('+esc(liveBase())+')':''} : l'application fonctionne en <b>mode simulation</b> (données d'exemple, imports et override). Déployez le projet sur Vercel avec les variables du fichier .env.example, ou indiquez l'adresse du backend ci-dessous.</p>`
-      :!st.backend?'<p class="note">Backend joignable mais Supabase non configuré (SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY) : mode simulation.</p>'
+    ${!st?`<p class="note">Aucun backend joignable depuis cette page${liveBase()?' ('+esc(liveBase())+')':''} : l'application fonctionne en <b>local</b> (vos saisies, imports et override, enregistrés dans ce navigateur). Déployez le projet sur Vercel avec les variables du fichier .env.example, ou indiquez l'adresse du backend ci-dessous.</p>`
+      :!st.backend?'<p class="note">Backend joignable mais Supabase non configuré (SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY) : données locales.</p>'
       :FLUX.session?`<p class="note">Session ouverte : ${esc(FLUX.session.user.email||'')}. Dernière actualisation : ${FLUX.at?new Date(FLUX.at).toLocaleTimeString('fr-FR'):'—'}${FLUX.err?` · <span class="down">${esc(FLUX.err)}</span>`:''}</p><div class="row"><button class="btn pri sm" data-act="liverefresh">Actualiser les flux</button><button class="btn sm" data-act="logout">Se déconnecter</button></div>`
       :`<p class="note">Connectez-vous pour activer les flux live (lien de connexion envoyé par e-mail).</p><div class="row"><input class="f" id="liveEmail" type="email" placeholder="votre e-mail" style="max-width:260px"><button class="btn pri sm" data-act="login">Recevoir le lien</button></div>`}
     <div class="fields" style="margin-top:10px">${LF('Adresse du backend (vide = même site)','liveCfg.base','t',{ph:'https://override-desk.vercel.app'})}</div>${(()=>{const m=LIVE_MOD[ui.tab];if(!['bp','an','cm'].includes(m))return'';if(!S.aiSrc)S.aiSrc={};const c=(FLUX.ai||{})[m+':'+liveSubj(m)],r=c&&c.record;

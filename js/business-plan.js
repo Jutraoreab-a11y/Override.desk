@@ -28,6 +28,7 @@ function mkCalc(r){
   return{sc,h,n,last,yoyV,yoyQ,cagrV,cagrQ,unitP,W,proj,svT,sqT,leader,top,regT,opt,filt,sizeS,passN:filt.filter(f=>f[1]>=S.sc.min).length};
 }
 function vwChart(vw,marks){
+  if(!(+vw.te>0))return'<p class="note">Renseignez les quatre seuils de prix de votre enquête (trop bon marché, bon marché, cher, trop cher) pour afficher le mapping.</p>';
   const W=640,H=180,L=14,R=14,mx=(+vw.te)*1.25,X=v=>L+clamp(v/mx,0,1)*(W-L-R),y0=86,h=24,tx=x=>clamp(x,L+40,W-R-40);
   let s=`<svg class="sc" viewBox="0 0 ${W} ${H}" role="img" aria-label="Mapping du prix psychologique">`;
   const z=(a,b,f,lab)=>{s+=`<rect x="${X(a)}" y="${y0}" width="${Math.max(0,X(b)-X(a))}" height="${h}" fill="${f}"/>`;if(X(b)-X(a)>74)s+=`<text x="${(X(a)+X(b))/2}" y="${y0+h+16}" font-size="10.5" fill="#A1A1AA" text-anchor="middle">${lab}</text>`;};
@@ -276,7 +277,7 @@ function renderBP(){
           <tr><td>Prix moyen par unité</td>${k.h.map(x=>`<td class="n">${big(x.v*1e6/x.q)}</td>`).join('')}</tr>
         </tbody></table></div>
         <div class="fields" style="margin-top:12px">${F('Libellé du marché','bp.mkt.label','t')+F('Unité de volume','bp.mkt.unitQ','t')}${F('Source de l\'historique','bp.mkt.src','t',{ph:'Étude, base de données, date de consultation'})}</div></div>
-        <div class="s6" style="min-width:0">${colChart(k.h.map(x=>String(x.y)),k.h.map(x=>x.v),{h:200,fmt:v=>nf(v,0),title:'Valeur et volume du marché',vlab:v=>nf(v,0),line:{vals:k.h.map(x=>x.q),fmt:v=>nf(v,0)}})}
+        <div class="s6" style="min-width:0">${!k.h.length?'<p class="note">Ajoutez l\'historique du marché (valeur et volume par année, avec sa source) pour afficher le graphique.</p>':colChart(k.h.map(x=>String(x.y)),k.h.map(x=>x.v),{h:200,fmt:v=>nf(v,0),title:'Valeur et volume du marché',vlab:v=>nf(v,0),line:{vals:k.h.map(x=>x.q),fmt:v=>nf(v,0)}})}
           <div class="legend"><span><i style="background:var(--c-bar)"></i>Valeur (M€)</span><span><i style="background:var(--hi)"></i>Volume (${esc(m.unitQ)})</span></div></div>
       </div></div>
     <div class="card s7"><h2><span>Saisonnalité mensuelle <span class="meta">exercice ${k.last.y}</span></span>${srcTag(m.srcSeas)}</h2>

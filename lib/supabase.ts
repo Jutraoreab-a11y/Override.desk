@@ -3,10 +3,13 @@ import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import { HttpError, header, type Req } from './http.js';
 
 let admin: SupabaseClient | null = null;
-export function configured(): boolean { return !!(process.env.SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY); }
+/* Noms acceptés : SUPABASE_URL / SUPABASE_ANON_KEY ou leurs variantes NEXT_PUBLIC_ (base partagée avec jamsplans). */
+export const sbUrl = (): string => process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL || '';
+export const sbAnon = (): string => process.env.SUPABASE_ANON_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
+export function configured(): boolean { return !!(sbUrl() && process.env.SUPABASE_SERVICE_ROLE_KEY); }
 export function db(): SupabaseClient {
   if (!configured()) throw new HttpError(503, 'Backend non configuré : SUPABASE_URL et SUPABASE_SERVICE_ROLE_KEY manquants (mode simulation)');
-  admin ??= createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!, { auth: { persistSession: false } });
+  admin ??= createClient(sbUrl(), process.env.SUPABASE_SERVICE_ROLE_KEY!, { auth: { persistSession: false } });
   return admin;
 }
 /** Identifie l'utilisateur à partir du jeton Supabase envoyé par le navigateur (Authorization: Bearer <jwt>). */

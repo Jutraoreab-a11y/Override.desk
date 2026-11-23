@@ -659,3 +659,19 @@ table.fin th.est,table.fin td.est{background:rgba(255,255,255,.03)}table.fin td.
 #p-set .btns{display:flex;gap:6px;flex-wrap:wrap;margin:6px 0}#p-set .set-f{display:block;margin:10px 0}#p-set .set-f .lb{display:block;font-size:11px;color:var(--mute,#A1A1AA);margin-bottom:4px}
 #p-set .set-f input{width:100%;background:#0C0C0E;color:#E4E4E7;border:1px solid var(--line,#27272A);border-radius:6px;padding:6px 8px}
 #p-set .set-g{display:grid;grid-template-columns:1fr 1fr;gap:0 10px}@media(max-width:700px){#p-set .set-g{grid-template-columns:1fr}}
+/* v8.21 : valorisation multi-méthodes */
+.vl-card h2{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+.vl-sum{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:1px;background:var(--line);border:1px solid var(--line);border-radius:6px;overflow:hidden;margin-bottom:12px}
+.vl-sum .stat{background:var(--pane);padding:10px 12px}
+.vl-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+.vl-m{background:var(--raised);border:1px solid var(--line);border-radius:6px;padding:12px;min-width:0;display:flex;flex-direction:column;gap:6px}
+.vl-m.vl-na{opacity:.75}
+.vl-h{display:flex;justify-content:space-between;gap:8px;align-items:baseline}.vl-h b{color:var(--hi);font-size:13px}
+.vl-v{font:600 15px var(--mono);color:var(--hi);white-space:nowrap}.vl-na .vl-v{font:12px var(--sans);color:var(--mute)}
+.vl-fs{display:flex;flex-direction:column;gap:6px;margin-top:4px}
+.vl-f{display:grid;grid-template-columns:1fr;gap:2px}.vl-f .fv{display:flex;align-items:center;gap:6px}.vl-f input{width:100%;min-width:0;background:var(--shell);border:1px solid var(--line2);border-radius:4px;color:var(--hi);padding:4px 6px;font:12.5px var(--mono);text-align:right}
+.vl-f small{color:var(--mute);font-size:11px;min-width:34px}.vl-ov input{border-color:var(--amber)}.vl-d{font-size:11px}
+.vl-ang{margin:4px 0 0;font-size:12px;color:var(--mute);line-height:1.45}.vl-ang b{color:var(--text);font-weight:600}
+.vl-m .lnk{align-self:flex-start;font-size:12px}
+@media (max-width:1100px){.vl-grid,.vl-sum{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:640px){.vl-grid,.vl-sum{grid-template-columns:1fr}}

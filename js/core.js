@@ -2,7 +2,7 @@
 /* ============ État ============ */
 const clone=o=>JSON.parse(JSON.stringify(o));
 let S=clone(DEF);
-let ui={ty:1,tab:'bp',edit:false,tk:'MC',sel:'helio',secTarget:'energy',geo:'W',cmA:'brent',cmT:'t',cmAll:false,plan:'pack',qmsg:'',pfSel:0};
+let ui={ty:1,tab:'bp',edit:false,tk:'MC',sel:'',secTarget:'energy',geo:'W',cmA:'brent',cmT:'t',cmAll:false,plan:'pack',qmsg:'',pfSel:0};
 const pending=new Set();
 const LIVE={};
 const STORE='override-desk-v9';
@@ -16,6 +16,7 @@ if(!S.bp.fiche)S.bp.fiche=clone(DEF.bp.fiche);
 Object.keys(DEF.bp.fiche).forEach(k=>{if(S.bp.fiche[k]===undefined)S.bp.fiche[k]=DEF.bp.fiche[k];});
 S.sc.list.forEach(c=>{if(c.dt===undefined){const d=DEF.sc.list.find(x=>x.id===c.id);c.dt=d?d.dt:'';}});
 ['plan','mc'].forEach(k=>{if(!S.pc[k])S.pc[k]=clone(DEF.pc[k]);});
+if(typeof reelPurge==='function'&&reelPurge())try{localStorage.setItem(STORE,JSON.stringify({S,ui}))}catch(e){}
 if(!ui.geo)ui.geo='W';
 function save(){try{localStorage.setItem(STORE,JSON.stringify({S,ui}))}catch(e){}}
 

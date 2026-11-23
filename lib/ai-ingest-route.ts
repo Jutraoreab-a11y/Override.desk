@@ -12,7 +12,7 @@ import { encrypt, decrypt } from './crypto.js';
 
 const fail = (e: unknown): never => { const x = e as { code?: number; message?: string }; throw new HttpError(x.code || 500, x.message || 'Erreur'); };
 async function latest(uid: string, key: string) {
-  const r = await db().from('ai_sources').select('*').eq('user_id', uid).eq('cache_key', key).order('timestamp_retrieved', { ascending: false }).limit(1);
+  const r = await db().from('fomodesk_ai_sources').select('*').eq('user_id', uid).eq('cache_key', key).order('timestamp_retrieved', { ascending: false }).limit(1);
   return (check(r) as Array<Record<string, unknown>>)[0] ?? null;
 }
 export async function ingestRoute(req: Req, res: Res): Promise<void> {
@@ -60,13 +60,13 @@ export async function ingestRoute(req: Req, res: Res): Promise<void> {
   const row = { user_id: uid, metric: key, module: v.module, subject: v.subject, cache_key: key, payload: p.payload, value_numeric: null, value_text: null,
     source_url: v.url, source_name: new URL(v.url).hostname, quote: null, timestamp_retrieved: new Date().toISOString(), confidence_score: ver.confidence,
     model, trigger: v.trigger, engine: eng.engine, input_tokens: p.tokens.input, output_tokens: p.tokens.output };
-  check(await db().from('ai_sources').insert(row));
+  check(await db().from('fomodesk_ai_sources').insert(row));
   send(res, 200, { ok: true, cached: false, engine: eng.engine, record: row, verified: `${ver.verified}/${ver.total}`, tokens: p.tokens.input + p.tokens.output });
 }
 
 /* Clé Anthropic personnelle, chiffrée AES-256-GCM (ENCRYPTION_KEY) ; jamais renvoyée au navigateur. */
 async function userKey(uid: string): Promise<string | null> {
-  const r = await db().from('ai_user_keys').select('enc_key').eq('user_id', uid).limit(1);
+  const r = await db().from('fomodesk_ai_user_keys').select('enc_key').eq('user_id', uid).limit(1);
   const row = (check(r) as Array<{ enc_key: string }>)[0]; if (!row) return null;
   try { return decrypt(row.enc_key); } catch { return null; }
 }
@@ -74,14 +74,14 @@ async function userKey(uid: string): Promise<string | null> {
 export async function keyRoute(req: Req, res: Res): Promise<void> {
   const uid = await requireUser(req);
   if (req.method === 'GET') {
-    const r = await db().from('ai_user_keys').select('last4, updated_at').eq('user_id', uid).limit(1), row = (check(r) as Array<{ last4: string; updated_at: string }>)[0];
+    const r = await db().from('fomodesk_ai_user_keys').select('last4, updated_at').eq('user_id', uid).limit(1), row = (check(r) as Array<{ last4: string; updated_at: string }>)[0];
     return send(res, 200, { ok: true, has: !!row, last4: row?.last4 ?? null, updated_at: row?.updated_at ?? null, infra: !!process.env.ANTHROPIC_API_KEY });
   }
-  if (req.method === 'DELETE') { check(await db().from('ai_user_keys').delete().eq('user_id', uid)); return send(res, 200, { ok: true, has: false }); }
+  if (req.method === 'DELETE') { check(await db().from('fomodesk_ai_user_keys').delete().eq('user_id', uid)); return send(res, 200, { ok: true, has: false }); }
   if (req.method !== 'POST') throw new HttpError(405, 'GET, POST ou DELETE');
   const k = String(body<{ key?: string }>(req).key ?? '').trim();
   if (!validAnthropicKey(k)) throw new HttpError(400, 'Clé Anthropic attendue (sk-ant-…)');
   const row = { user_id: uid, enc_key: encrypt(k), last4: k.slice(-4), updated_at: new Date().toISOString() };
-  check(await db().from('ai_user_keys').upsert(row, { onConflict: 'user_id' }));
+  check(await db().from('fomodesk_ai_user_keys').upsert(row, { onConflict: 'user_id' }));
   send(res, 200, { ok: true, has: true, last4: row.last4, updated_at: row.updated_at });
 }

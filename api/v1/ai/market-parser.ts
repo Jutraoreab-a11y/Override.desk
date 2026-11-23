@@ -49,6 +49,6 @@ export default handler(async (req: Req, res: Res) => {
   const rec: AiSourceRecord = { metric: b.metric, value_numeric: v, value_text: o.text ?? null, source_url: b.url, source_name: o.source_name || new URL(b.url).hostname,
     quote: quote || null, timestamp_retrieved: new Date().toISOString(), confidence_score: confidence(Number(o.confidence) || 0, found, vIn), model };
   if (v == null && !o.text) throw new HttpError(422, 'Donnée absente de la page');
-  check(await db().from('ai_sources').insert({ ...rec, user_id: uid }));
+  check(await db().from('fomodesk_ai_sources').insert({ ...rec, user_id: uid }));
   send(res, 200, { ok: true, record: rec, verified: found });
 });

@@ -13,7 +13,7 @@ export async function fundamentalsRoute(req: Req, res: Res): Promise<void> {
   const t = String(q(req, 'ticker') || '').trim().toUpperCase();
   if (!/^[A-Z0-9.\-]{1,12}$/.test(t)) throw new HttpError(400, 'ticker invalide');
   const key = cacheKey('an', t);
-  const cached = (check(await db().from('ai_sources').select('payload,timestamp_retrieved,source_url').eq('user_id', uid).eq('cache_key', key).eq('source_name', 'SEC EDGAR')
+  const cached = (check(await db().from('fomodesk_ai_sources').select('payload,timestamp_retrieved,source_url').eq('user_id', uid).eq('cache_key', key).eq('source_name', 'SEC EDGAR')
     .order('timestamp_retrieved', { ascending: false }).limit(1)) as Array<{ payload: unknown; timestamp_retrieved: string; source_url: string }>)[0];
   if (cached && Date.now() - Date.parse(cached.timestamp_retrieved) < 7 * 864e5 && q(req, 'force') !== '1') return send(res, 200, { ok: true, cached: true, ...(cached.payload as object), tokens: 0 });
   const h = { 'User-Agent': UA(), Accept: 'application/json' };
@@ -25,7 +25,7 @@ export async function fundamentalsRoute(req: Req, res: Res): Promise<void> {
   const price: { close: number; date: string } | null = null; // le cours est relu par l'IA sur la page publique de la société
   const url = `https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&CIK=${c.cik}&type=10-K`;
   const payload = { ticker: t, title: c.title, cik: c.cik, statements: st, price, source: 'SEC EDGAR (XBRL companyfacts, rapports 10-K)', source_url: url };
-  check(await db().from('ai_sources').insert({ user_id: uid, metric: key, module: 'an', subject: t, cache_key: key, payload, source_url: url, source_name: 'SEC EDGAR',
+  check(await db().from('fomodesk_ai_sources').insert({ user_id: uid, metric: key, module: 'an', subject: t, cache_key: key, payload, source_url: url, source_name: 'SEC EDGAR',
     timestamp_retrieved: new Date().toISOString(), confidence_score: 1, trigger: 'init', input_tokens: 0, output_tokens: 0 }));
   send(res, 200, { ok: true, cached: false, ...payload, tokens: 0 });
 }

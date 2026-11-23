@@ -12,11 +12,11 @@ import { fetchDailyPrices } from '../../../lib/prices.js';
 const INSTR = /^(BRENT|WTI|GOLD|SILVER|COPPER|NATGAS|EURUSD|GBPUSD|USDJPY|USDCNH|AUDUSD|USDCAD|SPX|NDX|DJI|DAX|CAC|NKX|STK:[A-Z0-9.\-]{1,12}|CRY:[A-Z0-9]{1,10})$/;
 async function store(prices: PricePoint[]) {
   const s = db();
-  if (prices.length) check(await s.from('commodity_prices').upsert(prices.map(p => ({ ...p, retrieved_at: new Date().toISOString() })), { onConflict: 'instrument,contract,price_date' }));
+  if (prices.length) check(await s.from('fomodesk_commodity_prices').upsert(prices.map(p => ({ ...p, retrieved_at: new Date().toISOString() })), { onConflict: 'instrument,contract,price_date' }));
   const since = new Date(Date.now() - 400 * 864e5).toISOString().slice(0, 10);
-  const all = check(await s.from('commodity_prices').select('instrument,contract,price_date,close,source_name').gte('price_date', since).limit(20000)) as PricePoint[];
+  const all = check(await s.from('fomodesk_commodity_prices').select('instrument,contract,price_date,close,source_name').gte('price_date', since).limit(20000)) as PricePoint[];
   const series = computeSeries(all);
-  for (let i = 0; i < series.length; i += 1000) check(await s.from('commodity_series').upsert(series.slice(i, i + 1000).map(x => ({ ...x, computed_at: new Date().toISOString() })), { onConflict: 'series,price_date' }));
+  for (let i = 0; i < series.length; i += 1000) check(await s.from('fomodesk_commodity_series').upsert(series.slice(i, i + 1000).map(x => ({ ...x, computed_at: new Date().toISOString() })), { onConflict: 'series,price_date' }));
   return { prices: prices.length, series: series.length };
 }
 export default handler(async (req: Req, res: Res) => {
@@ -27,7 +27,7 @@ export default handler(async (req: Req, res: Res) => {
     const prices = key ? await fetchEia(key).catch(e => { errors.push('EIA ' + (e as Error).message); return []; }) : (errors.push('EIA_API_KEY absente : pétrole non actualisé'), []);
     const daily = await fetchDailyPrices(process.env); prices.push(...daily.prices); errors.push(...daily.errors);
     const fx = await fetchEcb().catch(() => []);
-    if (fx.length) check(await db().from('fx_rates').upsert(fx.map(r => ({ ...r, source: 'BCE' })), { onConflict: 'currency,rate_date' }));
+    if (fx.length) check(await db().from('fomodesk_fx_rates').upsert(fx.map(r => ({ ...r, source: 'BCE' })), { onConflict: 'currency,rate_date' }));
     send(res, 200, { ok: true, fx: fx.length, errors, ...(await store([...prices, ...ecbCrosses(fx)])) }); return;
   }
   await requireUser(req);
@@ -38,10 +38,10 @@ export default handler(async (req: Req, res: Res) => {
   }
   const from = q(req, 'from') || new Date(Date.now() - 365 * 864e5).toISOString().slice(0, 10), to = q(req, 'to') || '9999-12-31';
   const names = (q(req, 'series') || '').split(',').filter(Boolean);
-  let sq = db().from('commodity_series').select('series,price_date,value').gte('price_date', from).lte('price_date', to).order('price_date');
+  let sq = db().from('fomodesk_commodity_series').select('series,price_date,value').gte('price_date', from).lte('price_date', to).order('price_date');
   if (names.length) sq = sq.in('series', names);
   const series = check(await sq.limit(20000)) as Array<{ series: string; price_date: string; value: number }>;
-  const prices = check(await db().from('commodity_prices').select('instrument,contract,price_date,open,close,source_name,source_url,retrieved_at').gte('price_date', from).lte('price_date', to).order('price_date').limit(20000));
+  const prices = check(await db().from('fomodesk_commodity_prices').select('instrument,contract,price_date,open,close,source_name,source_url,retrieved_at').gte('price_date', from).lte('price_date', to).order('price_date').limit(20000));
   // Format multi-tracé : une colonne par série, alignée sur les dates
   const dates = [...new Set(series.map(x => x.price_date))].sort(), cols: Record<string, Array<number | null>> = {};
   const idx = new Map(dates.map((d, i) => [d, i]));

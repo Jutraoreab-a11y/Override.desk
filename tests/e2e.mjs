@@ -12,6 +12,14 @@ await p.route('**/*', r => { const u = r.request().url(); if (u.startsWith('file
   if (/lightweight-charts/.test(u) && fs.existsSync(lw)) return r.fulfill({ path: lw, contentType: 'application/javascript' }); return r.fulfill({ status: 200, body: '' }); });
 await p.goto('file://' + path.join(root, 'index.html')); await p.waitForTimeout(1000);
 const step = async (name, fn) => { try { await fn(); console.log('ok   ' + name); } catch (e) { errs.push(name + ' : ' + e.message); console.log('FAIL ' + name); } };
+await step('accueil : page affichée, fenêtre de connexion, entrée sans compte', async () => {
+  if (!(await p.isVisible('#landing'))) throw new Error('page d\'accueil absente');
+  await p.click('#landing nav .lp-btn.lp-pri'); if (!(await p.isVisible('#lpr'))) throw new Error('formulaire de création absent');
+  await p.click('#lmd .lp-tabs [data-tab="in"]'); if (await p.isVisible('#lpr')) throw new Error('prénom affiché à la connexion');
+  await p.fill('#lem', 'test@exemple.fr'); await p.fill('#lpw', 'motdepasse123'); await p.click('#lgo');
+  const m = await p.textContent('#lmsg'); if (!/hors ligne/.test(m)) throw new Error('message sans base : ' + m);
+  await p.click('#lskip'); if (await p.isVisible('#landing')) throw new Error('accueil toujours visible');
+});
 for (const t of ['bp', 'an', 'sc', 'lbo', 'pf', 'cm', 'pc', 'jr']) await step('volet ' + t, () => p.evaluate(t => { ui.tab = t; renderAll(); }, t));
 for (const a of ['brent', 'gold', 'silver']) await step('commodities ' + a, () => p.evaluate(a => { ui.tab = 'cm'; ui.cmA = a; ui.cmOv = { cpi: true, ff: true, wasde: true, gsb: true }; renderAll(); }, a));
 await step('commodities : aucune case vide, séries jusqu\'au 12/11/2026', () => p.evaluate(() => {
@@ -149,6 +157,21 @@ await step('dossier LBO : Claude indisponible, repli sur l\'API (simulée)', () 
   if (!sent || sent.path !== '/api/v1/ai/ingest' || sent.body.module !== 'lbo' || sent.body.trigger !== 'recalc') throw new Error('appel API ' + JSON.stringify(sent));
   if (d.p.euribor !== 2.051 || d.p.entryMult !== 13.5 || !['infra', 'byok'].includes(d.rsAI.how)) throw new Error('LBO non alimenté ' + d.p.euribor + ' ' + d.p.entryMult);
   const e0 = d.p.euribor; await rsLbo(); if (d.p.euribor !== e0) throw new Error('sans moteur, rien ne doit changer');
+}));
+await step('paramètres : déconnexion ramène à la page d\'accueil', async () => {
+  await p.evaluate(() => { ui.tab = 'set'; renderAll(); }); await p.evaluate(() => document.getElementById('setLogoutTop').click()); await p.waitForTimeout(300);
+  if (!(await p.isVisible('#landing'))) throw new Error('page d\'accueil non réaffichée'); await p.click('#landing nav .lp-btn.lp-pri'); await p.click('#lskip');
+});
+await step('lancement réel : aucune donnée fictive par défaut', () => p.evaluate(() => {
+  if (DEF.bp.name || DEF.bp.team.length || DEF.sc.list.length || DEF.pf.positions.length) throw new Error('données d\'exemple encore présentes');
+}));
+await step('valorisation multi-méthodes : 4 méthodes, moyenne, métrique modifiable et réinitialisation', () => p.evaluate(() => {
+  const tk = Object.keys(S.an.assets).includes('MC') ? 'MC' : Object.keys(S.an.assets)[0]; ui.tab = 'an'; ui.tk = tk; renderAll();
+  const R = anCalc(tk); if (R.VM.m.length !== 4) throw new Error('méthodes : ' + R.VM.m.length);
+  const ok = R.VM.m.filter(m => m.ok).map(m => m.v); if (ok.length && Math.abs(R.ref - ok.reduce((x, y) => x + y, 0) / ok.length) > 1e-6) throw new Error('moyenne fausse');
+  if (!document.querySelector('.vl-card')) throw new Error('bloc absent');
+  const a = S.an.assets[tk], v0 = R.VM.m[0].v; a.val = { wacc: +a.wacc + 2 }; const v1 = anCalc(tk).VM.m[0].v; if (!(v1 < v0)) throw new Error('WACC sans effet');
+  a.val = {}; if (Math.abs(anCalc(tk).VM.m[0].v - v0) > 1e-6) throw new Error('réinitialisation');
 }));
 await step('Recalculer : volet affiché seulement, Claude puis repli sur votre clé après délai dépassé', () => p.evaluate(async () => {
   ui.tab = 'cm'; ui.cmA = 'gold'; renderAll(); if (!document.querySelector('#p-cm .rsbar [data-act=rscm]')) throw new Error('bouton commodities absent');

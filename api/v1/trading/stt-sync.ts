@@ -23,7 +23,7 @@ export function mapStt(a: Record<string, any>): MtSyncPayload {
   };
 }
 async function accountFor(login: string, key?: string, uid?: string) {
-  let sel = db().from('trading_accounts').select('id,user_id,webhook_key_hash').eq('platform', 'STT').eq('login', login);
+  let sel = db().from('fomodesk_trading_accounts').select('id,user_id,webhook_key_hash').eq('platform', 'STT').eq('login', login);
   if (uid) sel = sel.eq('user_id', uid);
   const rows = check(await sel) as Array<{ id: string; user_id: string; webhook_key_hash: string | null }>;
   return key ? rows.find(r => r.webhook_key_hash && sameHash(r.webhook_key_hash, sha256(key))) : rows[0];

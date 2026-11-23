@@ -7,7 +7,7 @@ function prjApply(mod,data){if(mod==='bp'){S.bp=clone(data);}else{S.an.assets[da
 function prjInit(){
   if(!S.prj)S.prj={bp:[],an:[]};
   if(!S.prj.bp.length){const v={id:uid('v'),label:'Version A',date:new Date().toISOString(),note:'Scénario de référence',data:clone(S.bp)};
-    S.prj.bp.push({id:uid('p'),name:S.bp.name||'Projet',folder:'Industrie',created:today(),versions:[v],cur:v.id});}
+    S.prj.bp.push({id:uid('p'),name:S.bp.name||'Mon projet',folder:'',created:today(),versions:[v],cur:v.id});}
   if(!S.prj.an.length){const tk=S.an.assets[ui.tk]?ui.tk:Object.keys(S.an.assets)[0];
     const v={id:uid('v'),label:'Analyse '+(S.an.assets[tk].t||tk),date:new Date().toISOString(),note:'Première analyse',data:{tk,asset:clone(S.an.assets[tk]),crit:clone(S.an.crit)}};
     S.prj.an.push({id:uid('p'),name:'Analyses '+new Date().getFullYear(),folder:'Titres cotés',created:today(),versions:[v],cur:v.id});}

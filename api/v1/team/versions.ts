@@ -12,7 +12,7 @@ import { sameHash } from '../../../lib/crypto.js';
 
 type V = { id: string; workspace_id: string; module: string; project: string; label: string; data?: unknown; content_hash: string; status: string; author_id: string; validated_by: string | null; validated_at: string | null; signature: string | null };
 async function load(id: string, withData = false): Promise<V> {
-  const v = check(await db().from('plan_versions').select(withData ? '*' : 'id,workspace_id,module,project,label,content_hash,status,author_id,created_at,submitted_at,validated_by,validated_at,signature,comment').eq('id', id).maybeSingle()) as V | null;
+  const v = check(await db().from('fomodesk_plan_versions').select(withData ? '*' : 'id,workspace_id,module,project,label,content_hash,status,author_id,created_at,submitted_at,validated_by,validated_at,signature,comment').eq('id', id).maybeSingle()) as V | null;
   if (!v) throw new HttpError(404, 'Version introuvable'); return v;
 }
 export function verifyVersion(v: V): { intact: boolean; signed: boolean } {
@@ -27,7 +27,7 @@ export default handler(async (req: Req, res: Res) => {
     if (id) { const v = await load(id, true); if (!(await roleOf(v.workspace_id, uid))) throw new HttpError(403, 'Accès refusé');
       send(res, 200, q(req, 'action') === 'verify' ? { id, ...verifyVersion(v), status: v.status } : v); return; }
     const ws = q(req, 'workspace_id'); if (!ws) throw new HttpError(400, 'workspace_id requis'); await requireRole(ws, uid, ['admin', 'analyste', 'valideur', 'lecteur']);
-    let sq = s.from('plan_versions').select('id,module,project,label,content_hash,status,author_id,created_at,submitted_at,validated_by,validated_at,comment').eq('workspace_id', ws).order('created_at', { ascending: false }).limit(500);
+    let sq = s.from('fomodesk_plan_versions').select('id,module,project,label,content_hash,status,author_id,created_at,submitted_at,validated_by,validated_at,comment').eq('workspace_id', ws).order('created_at', { ascending: false }).limit(500);
     if (q(req, 'module')) sq = sq.eq('module', q(req, 'module')); if (q(req, 'project')) sq = sq.eq('project', q(req, 'project'));
     send(res, 200, { versions: check(await sq) }); return;
   }
@@ -38,7 +38,7 @@ export default handler(async (req: Req, res: Res) => {
     if (!['bp', 'an', 'lbo'].includes(String(b.module))) throw new HttpError(400, 'Module inconnu');
     if (b.data === undefined || b.data === null) throw new HttpError(400, 'Données de la version requises');
     const row = { workspace_id: ws, module: b.module, project: String(b.project || 'Projet'), label: String(b.label || 'Version'), data: b.data, content_hash: contentHash(b.data), author_id: uid };
-    const v = check(await s.from('plan_versions').insert(row).select('id,content_hash').single()) as { id: string; content_hash: string };
+    const v = check(await s.from('fomodesk_plan_versions').insert(row).select('id,content_hash').single()) as { id: string; content_hash: string };
     await audit({ workspace_id: ws, user_id: uid, module: b.module, path: 'version', new_value: { label: row.label, hash: v.content_hash }, mode: 'création', version_id: v.id });
     send(res, 200, v); return;
   }
@@ -47,7 +47,7 @@ export default handler(async (req: Req, res: Res) => {
     const r = await requireRole(v.workspace_id, uid, ['admin', 'analyste']);
     if (v.author_id !== uid && r !== 'admin') throw new HttpError(403, 'Seul l\'auteur ou un administrateur soumet une version');
     if (!['brouillon', 'rejetee'].includes(v.status)) throw new HttpError(409, `Version ${v.status} : soumission impossible`);
-    check(await s.from('plan_versions').update({ status: 'soumise', submitted_at: now }).eq('id', v.id));
+    check(await s.from('fomodesk_plan_versions').update({ status: 'soumise', submitted_at: now }).eq('id', v.id));
     await audit({ workspace_id: v.workspace_id, user_id: uid, module: v.module, path: 'version.statut', old_value: v.status, new_value: 'soumise', mode: 'soumission', version_id: v.id });
     send(res, 200, { ok: true, status: 'soumise' }); return;
   }
@@ -56,13 +56,13 @@ export default handler(async (req: Req, res: Res) => {
     if (v.author_id === uid) throw new HttpError(403, 'Règle des quatre yeux : l\'auteur ne peut pas valider sa propre version');
     if (v.status !== 'soumise') throw new HttpError(409, `Version ${v.status} : seule une version soumise peut être ${b.action === 'validate' ? 'validée' : 'rejetée'}`);
     if (b.action === 'reject') {
-      check(await s.from('plan_versions').update({ status: 'rejetee', comment: String(b.comment || '') }).eq('id', v.id));
+      check(await s.from('fomodesk_plan_versions').update({ status: 'rejetee', comment: String(b.comment || '') }).eq('id', v.id));
       await audit({ workspace_id: v.workspace_id, user_id: uid, module: v.module, path: 'version.statut', old_value: 'soumise', new_value: 'rejetee', mode: 'rejet : ' + String(b.comment || ''), version_id: v.id });
       send(res, 200, { ok: true, status: 'rejetee' }); return;
     }
     if (!sameHash(contentHash(v.data), v.content_hash)) throw new HttpError(409, 'Empreinte incohérente : les données ont changé depuis la création de la version');
     const signature = sign(v.content_hash, uid, now);
-    check(await s.from('plan_versions').update({ status: 'validee', validated_by: uid, validated_at: now, signature, comment: String(b.comment || '') }).eq('id', v.id));
+    check(await s.from('fomodesk_plan_versions').update({ status: 'validee', validated_by: uid, validated_at: now, signature, comment: String(b.comment || '') }).eq('id', v.id));
     await audit({ workspace_id: v.workspace_id, user_id: uid, module: v.module, path: 'version.statut', old_value: 'soumise', new_value: 'validee', mode: 'validation signée', version_id: v.id });
     send(res, 200, { ok: true, status: 'validee', signature, content_hash: v.content_hash, validated_at: now }); return;
   }

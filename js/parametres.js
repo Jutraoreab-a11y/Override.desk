@@ -29,7 +29,8 @@ function renderSET(){const P=document.getElementById('p-set');if(!P||ui.tab!=='s
   const keyUrl=SETK.newKey?`${url}?key=${SETK.newKey}`:null,keys=SETK.keys||[];
   P.innerHTML=`<div class="grid">
   <div class="card s12"><h2><span>Paramètres <span class="meta">${prenom()?'Bonjour '+esc(prenom())+' · ':''}profil, connecteur Claude et clés</span></span></h2>
-    <p class="note">Tout ce qui est saisi ici reste dans votre navigateur, sauf l'e-mail, le mot de passe et les clés, conservés par le serveur de comptes de FOMO.DESK.</p></div>
+    <p class="note">Tout ce qui est saisi ici reste dans votre navigateur, sauf l'e-mail, le mot de passe et les clés, conservés par le serveur de comptes de FOMO.DESK.</p>
+    <div class="btns" style="margin-top:8px">${sess?`<span class="meta" style="align-self:center">Connecté : <b>${esc(em)}</b></span><button class="btn sm" data-act="setlogout" id="setLogoutTop">Se déconnecter</button>`:`<span class="meta" style="align-self:center">Bureau ouvert sans compte</span><button class="btn sm" data-act="setlogout" id="setLogoutTop">Se déconnecter</button>`}</div></div>
   <div class="card s6"><h2><span>Profil</span></h2>
     <div class="set-g"><label class="set-f"><span class="lb">Prénom</span><input id="setPrenom" value="${esc(p.prenom||'')}" placeholder="Votre prénom" autocomplete="given-name"></label>
       <label class="set-f"><span class="lb">Nom</span><input id="setNom" value="${esc(p.nom||'')}" placeholder="Votre nom" autocomplete="family-name"></label></div>
@@ -75,7 +76,7 @@ document.addEventListener('click',async e=>{const b=e.target.closest&&e.target.c
   else if(a==='setacct'){if(!setSess())return;const em=v('setEm2'),pw=v('setPw2'),pw2=v('setPw3'),u={};if(em)u.email=em;
     if(pw){if(pw.length<10){toast('Mot de passe : 10 caractères au moins');return;}if(pw!==pw2){toast('Les deux mots de passe diffèrent');return;}u.password=pw;}
     if(!Object.keys(u).length){toast('Rien à modifier');return;}const r=await FLUX.sb.auth.updateUser(u);toast(r.error?'Mise à jour impossible : '+r.error.message:(u.email?'Lien de confirmation envoyé à '+u.email+(u.password?' ; mot de passe changé':''):'Mot de passe changé'));renderAll();}
-  else if(a==='setlogout'){if(setSess())await FLUX.sb.auth.signOut();SETK.keys=null;toast('Déconnecté');renderAll();}
+  else if(a==='setlogout'){if(setSess())await FLUX.sb.auth.signOut();FLUX.session=null;FLUX.on=false;SETK.keys=null;toast('Déconnecté');renderAll();}
   else if(a==='setnewkey'){if(!setSess())return;SETK.busy=true;renderAll();try{const r=await liveApi('/api/v1/keys',{method:'POST',body:{label:'Claude '+new Date().toLocaleDateString('fr-FR')}});SETK.newKey=r.key;try{localStorage.setItem('fomo.mcp','1');}catch(x){}toast('Clé créée : copiez l\'adresse du connecteur');}catch(x){toast('Création impossible : '+x.message);}SETK.busy=false;await setLoadKeys();renderAll();}
   else if(a==='setrevoke'){if(!confirm('Révoquer cette clé ? Claude ne pourra plus se connecter avec elle.'))return;try{await liveApi('/api/v1/keys?id='+encodeURIComponent(b.dataset.id),{method:'DELETE'});toast('Clé révoquée');}catch(x){toast('Révocation impossible : '+x.message);}setLoadKeys();}
   else if(a==='setcpurl')setCopy(v('setUrl'));else if(a==='setcpmsg')setCopy(((document.getElementById('setMsg')||{}).value)||'');

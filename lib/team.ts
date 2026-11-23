@@ -20,7 +20,7 @@ export function sign(hash: string, validator: string, at: string): string {
   return createHmac('sha256', k).update(`${hash}|${validator}|${at}`).digest('hex');
 }
 export async function roleOf(ws: string, uid: string): Promise<Role | null> {
-  const r = check(await db().from('workspace_members').select('role').eq('workspace_id', ws).eq('user_id', uid).maybeSingle()) as { role: Role } | null;
+  const r = check(await db().from('fomodesk_workspace_members').select('role').eq('workspace_id', ws).eq('user_id', uid).maybeSingle()) as { role: Role } | null;
   return r ? r.role : null;
 }
 export async function requireRole(ws: string, uid: string, allowed: Role[]): Promise<Role> {
@@ -30,5 +30,5 @@ export async function requireRole(ws: string, uid: string, allowed: Role[]): Pro
   return r;
 }
 export async function audit(e: { workspace_id: string | null; user_id: string; module?: string; path: string; old_value?: unknown; new_value?: unknown; mode: string; version_id?: string }) {
-  check(await db().from('audit_events').insert(e));
+  check(await db().from('fomodesk_audit_events').insert(e));
 }
