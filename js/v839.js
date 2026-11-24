@@ -41,7 +41,9 @@ async function uvqLoad(){const k=uvqKey();if(UVQ[k]&&(UVQ[k].busy||Date.now()-UV
   catch(e){UVQ[k]={at:Date.now()-14*60e3,asked:rows.length,pts:[],err:String(e.message||e)};}
   if(ui.tab==='sc'||ui.tab==='an')uvqMount();}
 function uvqMount(){const U=uvS();if(U.view!=='cos'||!U.sel)return;const box=[...document.querySelectorAll('#p-sc .card, #p-an .card')].find(c=>/^← Industries/.test(((c.querySelector('h2')||{}).textContent||'').trim()));if(!box)return;
-  const old=box.parentNode.querySelector('#uvq');if(old)old.remove();box.insertAdjacentHTML('afterend',uvqHTML());uvqLoad();}
+  const old=document.getElementById('uvq');if(old)old.remove();const w=box.querySelector('.mmwrap');
+  if(w){if(/Aucune société de cette industrie/.test(w.textContent))w.style.display='none';w.insertAdjacentHTML('afterend',uvqHTML().replace('<div class="card s12" id="uvq">','<div id="uvq" style="margin-top:12px">'));}
+  else box.insertAdjacentHTML('afterend',uvqHTML());uvqLoad();}
 {const _ra=renderAll;renderAll=function(){const r=_ra.apply(this,arguments);try{if(ui.tab==='sc'||ui.tab==='an')uvqMount();}catch(e){console.error('uvq',e);}return r;};}
 document.addEventListener('change',e=>{const t=e.target;if(!t||!t.dataset||!t.dataset.uvq)return;if(t.dataset.uvq==='x')ui.uvqX=t.value;else ui.uvqY=t.value;renderAll();});
 /* les clics du mapping de l'univers ne passent pas par renderAll : on remonte aussi le nuage après renderSC et renderAnMap */
