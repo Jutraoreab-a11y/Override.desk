@@ -322,3 +322,13 @@ Sources des données livrées (collecte du 10/11/2026) : FRED (CPIAUCSL, PPIFIS,
 
 - Plus d'entrée « sans compte » : le bureau ne s'ouvre qu'avec une session Supabase valide ; à l'expiration de la session ou à la déconnexion, la page d'accueil revient.
 - Bouton « Paramètres » ajouté dans la barre du haut ; la barre latérale défile et se compacte sur les écrans peu hauts (Paramètres n'est plus coupé).
+
+## Version 8.23 : correctif de connexion
+
+- Connexion bloquée par « T.filt.filter » : un dossier LBO enregistré dans le navigateur pointait vers un dossier d'exemple supprimé du Sélecteur. Le dossier LBO tolère désormais une cible disparue, et les dossiers LBO bâtis sur les exemples supprimés sont retirés au chargement.
+- Une erreur d'affichage n'empêche plus jamais la connexion d'aboutir.
+
+## Version 8.23 : correctif connexion (Safari)
+
+- Un dossier LBO créé sur une société d'exemple supprimée faisait planter l'affichage après connexion (« T.filt.filter ») dans les navigateurs qui gardaient d'anciennes données : le dossier est retiré au chargement et le modèle LBO tolère une cible introuvable.
+- La connexion n'est plus bloquée par une erreur d'affichage du bureau.

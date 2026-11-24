@@ -42,7 +42,7 @@ function lboScAct(act,id){const d=lboCur();if(!d)return;lboSync(d);const cur=d.s
   else if(act==='del'){if(d.scs.length<2){toast('Un dossier garde au moins un scénario');return;}d.scs=d.scs.filter(x=>x.id!==id);if(id===d.scCur){const n=d.scs[0];d.scCur=n.id;d.p=clone(n.p);d.syn=clone(n.syn);d.road=clone(n.road);d.ov=clone(n.ov||{rev:[],eb:[]});}toast('Scénario supprimé');}
   renderAll();save();}
 function lboModel(d,ov){
-  const T=lboTarget(d.src)||{rev:0,ebitda:0,netDebt:0},P=Object.assign({},d.p,ov||{}),O=d.ov||{rev:[],eb:[]},H=clamp(Math.round(+P.H),3,7);
+  const T=lboTarget(d.src)||{rev:0,ebitda:0,netDebt:0,filt:[],name:d.name||'Cible introuvable',sec:'',g:0,m:0,score:0,mult:NaN,multSrc:'',srcLab:'source supprimée : choisissez une nouvelle cible',prem:0},P=Object.assign({},d.p,ov||{}),O=d.ov||{rev:[],eb:[]},H=clamp(Math.round(+P.H),3,7);
   const rate=(+P.euribor+ +P.margin)/100,m0=+P.m0/100,mT=+P.mT/100,rev0=T.rev,e0=rev0*m0;
   /* Audit v7.1 : (1) décote de taille et d'illiquidité appliquée aux multiples de sociétés cotées quand la cible ne l'est pas ;
      (2) EBITDA négatif : valorisation au multiple VE/CA du secteur et aucune dette d'acquisition (pas de cash-flow à servir) ;

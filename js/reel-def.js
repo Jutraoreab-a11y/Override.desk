@@ -23,8 +23,9 @@ const REEL_DEMO={bp:'Atelier Nova',sc:DEF.sc.list.map(c=>c.id),pf:DEF.pf.positio
 })();
 /* Données d'exemple déjà enregistrées dans ce navigateur (versions précédentes) : retirées au chargement. */
 function reelPurge(){if(typeof S!=='object')return false;let ch=false;
-  if(S.bp&&S.bp.name===REEL_DEMO.bp){S.bp=clone(DEF.bp);ch=true;}
+  let bpDemo=false;if(S.bp&&S.bp.name===REEL_DEMO.bp){S.bp=clone(DEF.bp);ch=true;bpDemo=true;}
   if(S.prj&&S.prj.bp){const n=S.prj.bp.length;S.prj.bp=S.prj.bp.filter(p=>p.name!==REEL_DEMO.bp);if(S.prj.bp.length!==n)ch=true;}
   if(S.pf&&S.pf.positions){const n=S.pf.positions.length;S.pf.positions=S.pf.positions.filter(p=>!REEL_DEMO.pf.includes([p.tk,p.q,p.pru,p.d].join('|')));if(S.pf.positions.length!==n){ch=true;S.nav={};}}
+  if(S.lbo&&Array.isArray(S.lbo.list)){const n=S.lbo.list.length;S.lbo.list=S.lbo.list.filter(d=>!(typeof d.src==='string'&&((d.src.startsWith('sc:')&&REEL_DEMO.sc.includes(d.src.slice(3)))||(bpDemo&&d.src==='bp')||/Atelier Nova/.test(d.name||''))));if(S.lbo.list.length!==n){ch=true;if(S.lbo.cur&&!S.lbo.list.find(d=>d.id===S.lbo.cur))S.lbo.cur=S.lbo.list[0]?S.lbo.list[0].id:null;}}
   if(S.sc&&S.sc.list){const n=S.sc.list.length;S.sc.list=S.sc.list.filter(c=>!REEL_DEMO.sc.includes(c.id));if(S.sc.list.length!==n)ch=true;}
   return ch;}

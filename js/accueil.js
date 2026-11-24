@@ -8,7 +8,7 @@ const landMark=v=>{try{v?localStorage.setItem('fomo.entered','1'):localStorage.r
 const landEl=()=>document.getElementById('landing');
 function landShow(){let L=landEl();if(!L){const st=document.createElement('style');st.textContent=LAND.css;document.head.appendChild(st);L=document.createElement('div');L.id='landing';L.innerHTML=LAND.html;document.body.appendChild(L);landWire(L);}if(!L.classList.contains('lp-off'))return;L.classList.remove('lp-off');const o=L.querySelector('#lov');if(o)o.classList.remove('lp-on');L.scrollTop=0;}
 function landHide(){const L=landEl();if(L)L.classList.add('lp-off');}
-function landEnter(msg){landMark(true);landHide();if(typeof renderAll==='function')renderAll();if(msg)toast(msg);}
+function landEnter(msg){landMark(true);landHide();try{if(typeof renderAll==='function')renderAll();}catch(e){console.error('bureau',e);}if(msg)toast(msg);}
 function landWire(L){const $=id=>L.querySelector('#'+id),ov=$('lov'),md=$('lmd'),msg=$('lmsg');
   const say=(t,k)=>{msg.textContent=t;msg.className='lp-msg'+(k?' lp-'+k:'')};
   const open=m=>{md.classList.toggle('lp-up',m==='up');L.querySelectorAll('[data-tab]').forEach(b=>b.classList.toggle('lp-on',b.dataset.tab===m));$('lpw').autocomplete=m==='up'?'new-password':'current-password';say('');ov.classList.add('lp-on');setTimeout(()=>$(m==='up'?'lpr':'lem').focus(),30)};
