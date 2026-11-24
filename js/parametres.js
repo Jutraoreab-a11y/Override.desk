@@ -109,12 +109,19 @@ const JOB_SPEC={
     schema:'{"name":"","sector":"","currency":"EUR","fiscal_years":[2021],"revenue":[],"ebitda":[],"ebitda_margin_pct":[],"net_income":[],"eps":[],"fcf":[],"net_debt":[],"roe_pct":[],"shares":nombre,"price":nombre,"price_date":"AAAA-MM-JJ","sources":[{"url":"","quote":"","figure":""}]}'}),
   cm:s=>({instructions:`Dernier cours de clôture du ${({brent:'Brent (ICE)',wti:'WTI (NYMEX)',gold:'Or',silver:'Argent'})[s]||s} en dollars, recoupé sur deux sites (TradingView, Investing.com).`,
     schema:'{"instrument":"'+s+'","rows":[{"date":"AAAA-MM-JJ","close":nombre}],"checked":true,"by":["TradingView","Investing.com"],"sources":[{"url":"","quote":""}]}'})};
+const JOB_EVERY=12*3600e3,jobAtKey=k=>'fomo.jobat.'+k;
+const jobDue=k=>{try{return Date.now()-(+localStorage.getItem(jobAtKey(k))||0)>JOB_EVERY;}catch(e){return true;}};
+const jobMark=k=>{try{localStorage.setItem(jobAtKey(k),String(Date.now()));}catch(e){}};
 const jobsOn=()=>setSess()&&!(typeof rsClaude==='function'&&rsClaude())&&(()=>{try{return localStorage.getItem('fomo.mcp')==='1';}catch(e){return false;}})();
 if(typeof rsRun==='function'){const _rr=rsRun;rsRun=async function(mod,subject,inapp,server,trigger){const k=mod+'|'+subject;
   if(JOBRES[k]){const p=JOBRES[k];delete JOBRES[k];RS.last[mod]={how:'claude',at:new Date().toISOString(),err:[],via:'connecteur'};return{p,how:'claude'};}
-  if(jobsOn()&&trigger!=='init'){const sp=(server&&server.instr)?{instructions:server.instr,schema:server.schema}:(JOB_SPEC[mod]?JOB_SPEC[mod](subject):null);
-    if(sp){try{const r=await liveApi('/api/v1/jobs',{method:'POST',body:{module:mod,subject,query:server&&server.query||null,...sp}});
-      toast(`${RS_MOD[mod]||mod} : demande ${r.queued?'transmise':'déjà en attente'} à Claude. Dans Claude, dites « traite mes demandes FOMO.DESK » : le résultat s'appliquera ici.`);return null;}catch(e){toast('File des demandes indisponible : '+e.message);}}}
+  if(jobsOn()){const sp=(server&&server.instr)?{instructions:server.instr,schema:server.schema}:(JOB_SPEC[mod]?JOB_SPEC[mod](subject):null);
+    /* v8.25 : la mise à jour au chargement envoie aussi la demande à Claude (au plus une fois toutes les 12 h par volet et sujet),
+       sans bloquer la lecture de la base ; Recalculer et « Lancer la recherche » l'envoient à chaque clic */
+    if(sp&&(trigger!=='init'||jobDue(k))){try{const r=await liveApi('/api/v1/jobs',{method:'POST',body:{module:mod,subject,query:server&&server.query||null,...sp}});jobMark(k);
+        toast(`${RS_MOD[mod]||mod} : demande ${r.queued?'transmise':'déjà en attente'} à Claude. Dans Claude, dites « traite mes demandes FOMO.DESK » : le résultat s'appliquera ici.`);
+        if(trigger!=='init')return null;}
+      catch(e){toast('File des demandes indisponible : '+e.message);}}}
   return _rr.apply(this,arguments);};}
 async function jobsPoll(){if(!setSess())return;let r;try{r=await liveApi('/api/v1/jobs?status=done');}catch(e){return;}const J=r.jobs||[];if(!J.length)return;const ids=[];
   for(const j of J){if(!j.result||typeof j.result!=='object'){ids.push(j.id);continue;}JOBRES[j.module+'|'+j.subject]=j.result;ids.push(j.id);
