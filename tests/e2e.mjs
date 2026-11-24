@@ -164,14 +164,16 @@ await step('dossier LBO : Claude indisponible, repli sur l\'API (simulée)', () 
 await step('paramètres : déconnexion ramène à la page d\'accueil', async () => {
   await p.evaluate(() => { landShow = window.__landShow; ui.tab = 'set'; renderAll(); landHide(); }); await p.evaluate(() => document.getElementById('setLogoutTop').click()); await p.waitForTimeout(300);
   if (!(await p.isVisible('#landing'))) throw new Error('page d\'accueil non réaffichée');
-  if (!(await p.$('#setTopBtn'))) throw new Error('bouton Paramètres absent de la barre du haut');
+  if (await p.$('#setTopBtn')) throw new Error('bouton Paramètres en double dans la barre du haut');
+  if (!(await p.$('.rb[data-id="set"]'))) throw new Error('Paramètres absent de la barre latérale');
   await p.evaluate(() => { landShow = () => {}; landHide(); renderAll(); });
 });
 await step('lancement réel : aucune donnée fictive par défaut', () => p.evaluate(() => {
   if (DEF.bp.name || DEF.bp.team.length || DEF.sc.list.length || DEF.pf.positions.length) throw new Error('données d\'exemple encore présentes');
 }));
 await step('valorisation multi-méthodes : 4 méthodes, moyenne, métrique modifiable et réinitialisation', () => p.evaluate(() => {
-  const tk = Object.keys(S.an.assets).includes('MC') ? 'MC' : Object.keys(S.an.assets)[0]; ui.tab = 'an'; ui.tk = tk; renderAll();
+  if (!Object.keys(S.an.assets).length && typeof ficheGet === 'function') ficheOpen('MC.PA', ficheGet('MC.PA'));
+  const tk = Object.keys(S.an.assets).includes('MC') ? 'MC' : Object.keys(S.an.assets)[0]; ui.tab = 'an'; ui.tk = tk; ui.anOpen = true; renderAll();
   const R = anCalc(tk); if (R.VM.m.length !== 4) throw new Error('méthodes : ' + R.VM.m.length);
   const ok = R.VM.m.filter(m => m.ok).map(m => m.v); if (ok.length && Math.abs(R.ref - ok.reduce((x, y) => x + y, 0) / ok.length) > 1e-6) throw new Error('moyenne fausse');
   if (!document.querySelector('.vl-card')) throw new Error('bloc absent');

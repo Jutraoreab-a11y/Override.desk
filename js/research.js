@@ -120,7 +120,7 @@ liveIngest=async function(mod,trigger){const m=RS_RUN[mod]?mod:RS_RUN[ui.tab]?ui
 
 /* ---- Barre « Lancer la recherche » en tête des volets concernés ---- */
 function rsBar(){const M={bp:['Étude de marché du dossier',"Taille du marché, historique, croissance projetée, sources publiques citées",'rsbp'],
-    lbo:['Paramètres de marché du LBO','Euribor 3 mois et multiple VE/EBITDA du secteur, sources citées','rslbo'],an:['Comptes et cours de la société','Comptes recoupés MarketScreener / stockanalysis, cours recoupé Google Finance / TradingView','rsan']}[ui.tab];
+    lbo:['Paramètres de marché du LBO','Euribor 3 mois et multiple VE/EBITDA du secteur, sources citées','rslbo']}[ui.tab];   /* v8.38 : plus de barre de recherche en tête de l'analyse financière (Tout mettre à jour et la création par ticker suffisent) */
   const P=document.getElementById('p-'+ui.tab);if(!P)return;let el=P.querySelector(':scope>.rsbar');if(!M){if(el)el.remove();return;}
   if(!el){el=document.createElement('div');el.className='rsbar noprint';P.insertBefore(el,P.firstChild);}
   const ch=rsChain(),busy=RS.busy[ui.tab],info=ui.tab==='bp'?S.bp.mktAI:ui.tab==='lbo'?(typeof lboCur==='function'&&lboCur()?lboCur().rsAI:null):ui.tab==='cm'?((S.cm.rsAI||{})[ui.cmA]||null):RS.last.an;

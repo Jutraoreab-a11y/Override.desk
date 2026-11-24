@@ -338,3 +338,12 @@ Sources des données livrées (collecte du 10/11/2026) : FRED (CPIAUCSL, PPIFIS,
 - Paramètres › Connecteur Claude : la clé créée reste affichée (masquable) et copiable dans ce navigateur, l'adresse du connecteur et le message à Claude l'incluent ; le serveur n'en garde que l'empreinte.
 - Erreur de création affichée en clair dans la carte, avec la cause probable (clé secrète Supabase erronée, table absente).
 - `/api/v1/status` indique la nature de la clé serveur (`connectors.db` : secret, publique, absente), jamais sa valeur.
+
+## Version 8.38 : dossiers d'analyses, mapping coté / non coté, Commodities séparées
+
+- Analyse financière : « Mes analyses financières » = dossiers (un seul nom, bouton Renommer) contenant plusieurs titres ; chaque titre a ses versions V1, V2, V3… ; « Nouvelle version » copie la version pour la modifier ; dossier fermé : aucune analyse affichée ; « Imprimer en PDF » sur chaque titre et dans la barre de l'analyse.
+- Bouton Paramètres uniquement dans la barre latérale ; carte « Comptes et cours de la société / Lancer la recherche » retirée.
+- Sélecteur & mapping : onglets « Sociétés cotées » (44 031 sociétés, 75 industries, clic sur une industrie : ses sociétés, clic sur une société : son analyse) et « Sociétés non cotées » (vos dossiers, avec les sociétés cotées comparables du secteur cible).
+- Commodities : vue « Tout » par défaut (pression et confirmation ensemble) ; taux directeurs, inflation, dollar et propulsion or/argent seulement dans Or / Argent ; stocks de brut et WASDE seulement hors Or / Argent ; matrice cross-asset retirée ; tableau chronologique or et argent : futur M1, variation du futur, variation sur 5 séances, variation du basis.
+- Correctif : argent comptant aberrant (~158 $ du 02 au 11/11/2026) remplacé par le contrat M1 (contrôle de cohérence resserré à ±15 % pour les métaux).
+- Correctif : un Business plan sans dossier ne fait plus planter tout l'affichage.

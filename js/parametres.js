@@ -97,7 +97,7 @@ document.addEventListener('click',async e=>{const b=e.target.closest&&e.target.c
 {const _s=sideHTML;sideHTML=function(){if(ui.tab==='set')return'';return _s.apply(this,arguments);};}
 {const _r=renderAll;renderAll=function(){if(!document.getElementById('p-set')){const m=document.getElementById('main'),s=document.createElement('section');s.className='panel';s.id='p-set';(m||document.body).appendChild(s);}
   _r.apply(this,arguments);try{const R=document.getElementById('rail');if(R&&!R.querySelector('[data-id=set]')){const x=document.createElement('button');x.className='rb';x.dataset.act='tab';x.dataset.id='set';x.title='Paramètres';if(ui.tab==='set')x.setAttribute('aria-current','page');x.innerHTML=`${ic('set')}<span>Paramètres</span>`;R.appendChild(x);}
-    const pb=document.getElementById('pdfBtn');if(pb&&!document.getElementById('setTopBtn')){const t=document.createElement('button');t.className='btn';t.id='setTopBtn';t.dataset.act='tab';t.dataset.id='set';t.title='Paramètres : compte, déconnexion, connecteur Claude';t.innerHTML=`${ic('set')}<span class="lbl">Paramètres</span>`;pb.parentNode.insertBefore(t,pb);}
+    {const tb=document.getElementById('setTopBtn');if(tb)tb.remove();}   /* v8.38 : Paramètres seulement dans la barre latérale */
     renderSET();if(typeof afBar==='function')afBar();}catch(e){console.error('parametres',e);}};}
 
 /* accueil : « Bonjour Prénom » à l'arrivée */

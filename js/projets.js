@@ -15,7 +15,7 @@ function prjInit(){
   ['bp','an'].forEach(m=>{S.prj[m].forEach(p=>p.versions.forEach(x=>{if(!x.dd)x.dd=x.date.slice(0,10);}));const k='prj_'+m;if(S.prj[m].length&&!S.prj[m].find(p=>p.id===ui[k]))ui[k]=S.prj[m][0].id;});
 }
 function prjCur(mod){return S.prj[mod].find(p=>p.id===ui['prj_'+mod])||S.prj[mod][0];}
-function verCur(mod){const p=prjCur(mod);return p.versions.find(v=>v.id===p.cur)||p.versions[p.versions.length-1];}
+function verCur(mod){const p=prjCur(mod);if(!p||!p.versions)return undefined;return p.versions.find(v=>v.id===p.cur)||p.versions[p.versions.length-1];}
 function prjDirty(mod){const v=verCur(mod);if(!v)return true;const s=prjSnap(mod);return mod==='bp'?JSON.stringify(s)!==JSON.stringify(v.data):JSON.stringify(s.asset)!==JSON.stringify(v.data.asset)||s.tk!==v.data.tk||JSON.stringify(s.crit)!==JSON.stringify(v.data.crit);}
 function sameTk(mod){if(mod==='bp')return true;const v=verCur(mod);return v&&v.data.tk===ui.tk;}
 function nextLabel(p,mod){if(mod==='an')return'Analyse '+(S.an.assets[ui.tk].t||ui.tk);const L='ABCDEFGHIJKLMNOPQRSTUVWXYZ',used=p.versions.map(v=>v.label);for(const c of L)if(!used.includes('Version '+c))return'Version '+c;return'Version '+(p.versions.length+1);}
@@ -31,7 +31,7 @@ function verSummary(mod,v){
   finally{if(mod==='bp')S.bp=keep;else{S.an.assets[v.data.tk]=keep.a;S.an.crit=keep.c;}}
 }
 function prjBar(mod){
-  prjInit();const P=S.prj[mod],p=prjCur(mod),v=verCur(mod),dirty=prjDirty(mod),open=ui['prjOpen_'+mod],pi=P.indexOf(p);
+  prjInit();if(!prjCur(mod))return'';   /* v8.38 : aucun dossier : pas de barre (évitait un plantage de tout l'affichage) */const P=S.prj[mod],p=prjCur(mod),v=verCur(mod),dirty=prjDirty(mod),open=ui['prjOpen_'+mod],pi=P.indexOf(p);
   const folders=[...new Set(P.map(x=>x.folder||'Sans dossier'))].sort((a,b)=>a.localeCompare(b,'fr'));
   const sel=`<select class="f" style="width:auto;max-width:240px" data-prj="${mod}" aria-label="Projet">${folders.map(f=>`<optgroup label="${esc(f)}">${P.filter(x=>(x.folder||'Sans dossier')===f).map(x=>`<option value="${x.id}"${x.id===p.id?' selected':''}>${esc(x.name)}</option>`).join('')}</optgroup>`).join('')}</select>`;
   const vsel=`<select class="f" style="width:auto;max-width:260px" data-ver="${mod}" aria-label="Version">${p.versions.map(x=>`<option value="${x.id}"${x.id===(v&&v.id)?' selected':''}>${esc(x.label)} · ${fdate(x.dd||x.date.slice(0,10))}</option>`).join('')}</select>`;
