@@ -112,20 +112,23 @@ const JOB_SPEC={
 const JOB_EVERY=12*3600e3,jobAtKey=k=>'fomo.jobat.'+k;
 const jobDue=k=>{try{return Date.now()-(+localStorage.getItem(jobAtKey(k))||0)>JOB_EVERY;}catch(e){return true;}};
 const jobMark=k=>{try{localStorage.setItem(jobAtKey(k),String(Date.now()));}catch(e){}};
+let JOB_QUIET=false;const JOB_N={sent:0,ko:0};
+const lboSec=d=>d.sec||String(d.name||'secteur').replace(/^LBO /,'');
 const jobsOn=()=>setSess()&&!(typeof rsClaude==='function'&&rsClaude())&&(()=>{try{return localStorage.getItem('fomo.mcp')==='1';}catch(e){return false;}})();
 if(typeof rsRun==='function'){const _rr=rsRun;rsRun=async function(mod,subject,inapp,server,trigger){const k=mod+'|'+subject;
   if(JOBRES[k]){const p=JOBRES[k];delete JOBRES[k];RS.last[mod]={how:'claude',at:new Date().toISOString(),err:[],via:'connecteur'};return{p,how:'claude'};}
+  if(trigger==='job')return _rr.apply(this,arguments);   /* v8.27 : un résultat attendu mais introuvable ne renvoie jamais une nouvelle demande */
   if(jobsOn()){const sp=(server&&server.instr)?{instructions:server.instr,schema:server.schema}:(JOB_SPEC[mod]?JOB_SPEC[mod](subject):null);
     /* v8.25 : la mise à jour au chargement envoie aussi la demande à Claude (au plus une fois toutes les 12 h par volet et sujet),
        sans bloquer la lecture de la base ; Recalculer et « Lancer la recherche » l'envoient à chaque clic */
-    if(sp&&(trigger!=='init'||jobDue(k))){try{const r=await liveApi('/api/v1/jobs',{method:'POST',body:{module:mod,subject,query:server&&server.query||null,...sp}});jobMark(k);
-        toast(`${RS_MOD[mod]||mod} : demande ${r.queued?'transmise':'déjà en attente'} à Claude. Dans Claude, dites « traite mes demandes FOMO.DESK » : le résultat s'appliquera ici.`);
+    if(sp&&(trigger!=='init'||jobDue(k))){try{const r=await liveApi('/api/v1/jobs',{method:'POST',body:{module:mod,subject,query:server&&server.query||null,...sp}});jobMark(k);JOB_N.sent++;
+        if(!JOB_QUIET)toast(`${RS_MOD[mod]||mod} : demande ${r.queued?'transmise':'déjà en attente'} à Claude. Dans Claude, dites « traite mes demandes FOMO.DESK » : le résultat s'appliquera ici.`);
         if(trigger!=='init')return null;}
-      catch(e){toast('File des demandes indisponible : '+e.message);}}}
+      catch(e){JOB_N.ko++;if(!JOB_QUIET)toast('File des demandes indisponible : '+e.message);}}}
   return _rr.apply(this,arguments);};}
 async function jobsPoll(){if(!setSess())return;let r;try{r=await liveApi('/api/v1/jobs?status=done');}catch(e){return;}const J=r.jobs||[];if(!J.length)return;const ids=[];
   for(const j of J){if(!j.result||typeof j.result!=='object'){ids.push(j.id);continue;}JOBRES[j.module+'|'+j.subject]=j.result;ids.push(j.id);
-    try{if(j.module==='bp')await rsMarket('job');else if(j.module==='lbo')await rsLbo('job');
+    try{if(j.module==='bp')await rsMarket('job');else if(j.module==='lbo'){const d=(S.lbo.list||[]).find(x=>lboSec(x)===j.subject);if(d){const o=S.lbo.cur;S.lbo.cur=d.id;try{await rsLbo('job');}finally{S.lbo.cur=o;}}}
       else if(j.module==='an'){const k=Object.keys(S.an.assets).find(x=>S.an.assets[x].t===j.subject);if(k)await rsAn('job',k);}
       else if(j.module==='cm'){const o=ui.cmA;ui.cmA=j.subject;await rsCm('job');ui.cmA=o;}}catch(e){console.error('job',e);}}
   try{await liveApi('/api/v1/jobs',{method:'POST',body:{action:'ack',ids}});}catch(e){}toast(`${J.length} résultat(s) de Claude appliqué(s)`);}
@@ -145,8 +148,20 @@ function deskSnap(){const A={};Object.entries(S.an.assets).forEach(([k,a])=>{A[k
 const LOGIN_K='fomo.loginrun';let LOGIN_RUN=false;
 async function loginRun(){const t0=Date.now();while(typeof AF==='object'&&AF.run&&Date.now()-t0<120000)await new Promise(r=>setTimeout(r,1000));
   toast('Connexion détectée : mise à jour complète de FOMO.DESK…');
-  if(jobsOn())for(const f of [()=>rsMarket('login'),()=>rsLbo('login'),()=>rsAn('login',ui.tk),()=>rsCm('login')]){try{await f();}catch(e){console.error('connexion',e);}}
   if(typeof afRun==='function')await afRun(true);}
+
+/* v8.27 : « tout le SaaS » : une mise à jour complète (connexion ou « Tout mettre à jour ») envoie à Claude une demande
+   pour CHAQUE sujet de chaque volet : étude de marché du business plan, chaque dossier LBO, chaque titre analysé,
+   chaque matière première (Brent, WTI, or, argent). Les demandes déjà en attente ne sont pas dupliquées (contrôle serveur). */
+async function jobsAll(){if(!jobsOn())return;JOB_QUIET=true;JOB_N.sent=0;JOB_N.ko=0;const run=async f=>{try{await f();}catch(e){console.error('demande',e);}};
+  try{await run(()=>rsMarket('all'));
+    const oL=S.lbo&&S.lbo.cur;for(const d of (S.lbo&&S.lbo.list)||[]){S.lbo.cur=d.id;await run(()=>rsLbo('all'));}if(S.lbo)S.lbo.cur=oL;
+    for(const k of Object.keys(S.an.assets))await run(()=>rsAn('all',k));
+    const oC=ui.cmA;for(const c of ['brent','wti','gold','silver']){ui.cmA=c;await run(()=>rsCm('all'));}ui.cmA=oC;}
+  finally{JOB_QUIET=false;}
+  toast(JOB_N.ko?`File des demandes indisponible (${JOB_N.ko} échec(s)), ${JOB_N.sent} demande(s) transmise(s) à Claude`
+    :`${JOB_N.sent} demande(s) transmise(s) à Claude pour tout FOMO.DESK. Dans Claude, dites « traite mes demandes FOMO.DESK ».`);}
+if(typeof afRun==='function'){const _af=afRun;afRun=async function(force){if(force)await jobsAll();return _af.apply(this,arguments);};}
 setInterval(()=>{if(LOGIN_RUN||!setSess())return;const u=FLUX.session.user||{},k=(u.id||'')+'|'+(u.last_sign_in_at||'');let prev=null;
   try{prev=localStorage.getItem(LOGIN_K);}catch(e){}if(prev===k)return;try{localStorage.setItem(LOGIN_K,k);}catch(e){}
   LOGIN_RUN=true;loginRun().catch(e=>console.error('connexion',e)).finally(()=>{LOGIN_RUN=false;});},2000);
