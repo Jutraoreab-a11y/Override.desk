@@ -13,6 +13,7 @@ const CM_1112={"src":"EIA / FRED (Brent dat\u00e9, WTI Cushing) \u00b7 Yahoo Fin
      marqué provisoire comme quand l'EIA n'a pas encore publié. */
   [['brentC','brentFC','brent'],['wtiC','wtiFC','wti'],['goldC','goldFC','gold'],['silverC','silverFC','silver']].forEach(([c,f,k])=>{const C=CMD[c],F=CMD[f];if(!C||!F)return;
     const lo=/gold|silver/.test(k)?.85:.5,hi=/gold|silver/.test(k)?1.15:2;   /* v8.38 : bornes resserrées (argent comptant ~158 $ du 02 au 11/11/2026 pour un contrat ~52 $) */
+    const O=CMD[k+'O'];if(O)O.forEach((v,i)=>{const m=F[i];if(v!=null&&m>0&&(v/m<lo||v/m>hi))O[i]=null;});   /* v8.39 : ouverture aberrante (argent ~158 $) effacée, redemandée à Claude */
     C.forEach((v,i)=>{const m=F[i];if(v==null||m==null||!(m>0))return;const r=v/m;if(r<lo||r>hi){C[i]=m;CM_1112.prov=CM_1112.prov||{};(CM_1112.prov[k]=CM_1112.prov[k]||[]).includes(CMD.d[i])||CM_1112.prov[k].push(CMD.d[i]);}});});
   /* Variations quotidiennes recalculées sur la série complétée */
   ['brent','wti','gold','silver','spx'].forEach(k=>{const C=CMD[k+'C'],V=CMD[k+'V'];if(!V)return;C.forEach((v,i)=>{if(CMD.d[i]<'2026-06-15'||v==null)return;let j=i-1;while(j>=0&&C[j]==null)j--;V[i]=j>=0?v/C[j]-1:null;});});

@@ -6,11 +6,13 @@ import { CRYPTO_IDS } from './prices.js';
 
 export const ETF_SYMS = ['SPY', 'QQQ', 'IWM', 'EFA', 'EEM', 'EWJ', 'VGK', 'XLE', 'XLK', 'GLD', 'SMH', 'TLT', 'ICLN', 'EWQ', 'EWG', 'INDA', 'FXI', 'XLV', 'XLF', 'ARKK'];
 const US_EX = ['NASDAQ', 'NYSE', 'AMEX', 'BATS', 'CBOE'];
-const SUF: Record<string, string[]> = { PA: ['EURONEXT'], AS: ['EURONEXT'], BR: ['EURONEXT'], DE: ['XETR'], F: ['XETR'], L: ['LSE'], MI: ['MIL'], MC: ['BME'], SW: ['SIX'], TO: ['TSX'], HK: ['HKEX'], T: ['TSE'] };
+const SUF: Record<string, string[]> = { PA: ['EURONEXT'], AS: ['EURONEXT'], BR: ['EURONEXT'], LS: ['EURONEXT'], IR: ['EURONEXT'], DE: ['XETR', 'FWB'], F: ['FWB', 'XETR'], L: ['LSE'], MI: ['MIL'], MC: ['BME'], SW: ['SIX'], TO: ['TSX'], V: ['TSXV'],
+  HK: ['HKEX'], T: ['TSE'], SS: ['SSE'], SZ: ['SZSE'], KS: ['KRX'], KQ: ['KRX'], TW: ['TWSE'], TWO: ['TPEX'], AX: ['ASX'], NZ: ['NZX'], NS: ['NSE'], BO: ['BSE'], SA: ['BMFBOVESPA'], MX: ['BMV'],
+  ST: ['OMXSTO'], CO: ['OMXCOP'], HE: ['OMXHEX'], OL: ['OSL'], SI: ['SGX'], JO: ['JSE'], VI: ['VIE'], WA: ['GPW'], SR: ['TADAWUL'], IS: ['BIST'], BK: ['SET'], JK: ['IDX'], KL: ['MYX'], TA: ['TASE'], SN: ['BCS'], BA: ['BCBA'] };
 /** Candidats TradingView pour un ticker au format Yahoo (AAPL, MC.PA, SAP.DE). */
 export function tvCandidates(tk: string): string[] {
   const m = tk.toUpperCase().match(/^([A-Z0-9\-]+)(?:\.([A-Z]+))?$/); if (!m) return [];
-  const ex = m[2] ? SUF[m[2]] : US_EX; return (ex || []).map(e => `${e}:${m[1].replace('-', '.')}`);
+  const ex = m[2] ? SUF[m[2]] : US_EX, b = m[2] === 'HK' ? String(+m[1]) : m[1]; return (ex || []).map(e => `${e}:${b.replace('-', '.')}`);
 }
 async function tvScan(market: string, tickers: string[], columns: string[], f: typeof fetch): Promise<Map<string, unknown[]>> {
   if (!tickers.length) return new Map();
@@ -32,7 +34,7 @@ export async function mappingData(stk: string[], f: typeof fetch = fetch): Promi
       for (const s of ETF_SYMS) { const hit = US_EX.map(e => M.get(`${e}:${s}`)).find(Boolean); if (hit) etf[s] = pick(hit); else err['etf:' + s] = 'introuvable sur TradingView'; }
       out.etf = etf; } catch (e) { err.etf = String((e as Error).message || e); } })(),
     (async () => { try {
-      const list = stk.map(s => s.trim()).filter(s => /^[A-Za-z0-9.\-]{1,16}$/.test(s)).slice(0, 40), cand = list.flatMap(tvCandidates);
+      const list = stk.map(s => s.trim()).filter(s => /^[A-Za-z0-9.\-]{1,16}$/.test(s)).slice(0, 100), cand = list.flatMap(tvCandidates);
       const M = await tvScan('global', cand, COLS, f), res: Record<string, unknown> = {};
       for (const s of list) { const hit = tvCandidates(s).map(t => M.get(t)).find(Boolean); if (hit) res[s] = pick(hit); else err['stk:' + s] = 'introuvable sur TradingView'; }
       out.stk = res; } catch (e) { err.stk = String((e as Error).message || e); } })(),
