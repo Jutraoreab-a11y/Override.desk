@@ -187,15 +187,17 @@ function mountCharts(){
 }
 function lwBase(el,fmt){
   const L=LightweightCharts;
-  return L.createChart(el,{autoSize:true,
+  const ch=L.createChart(el,{autoSize:true,
     layout:{background:{type:'solid',color:'transparent'},textColor:TVC.mute,fontSize:11,fontFamily:getComputedStyle(document.body).fontFamily},
     grid:{vertLines:{color:TVC.grid},horzLines:{color:TVC.grid}},
     rightPriceScale:{borderColor:TVC.line,scaleMargins:{top:.1,bottom:.1}},
-    timeScale:{borderColor:TVC.line,fixLeftEdge:true,fixRightEdge:true,lockVisibleTimeRangeOnResize:true},
-    crosshair:{mode:L.CrosshairMode.Normal,vertLine:{color:'#71717A',labelBackgroundColor:'#3F3F46'},horzLine:{color:'#71717A',labelBackgroundColor:'#3F3F46'}},
+    /* v8.33 : le graphique se déplace librement à gauche et à droite (glisser), double-clic pour tout revoir */
+    timeScale:{borderColor:TVC.line,fixLeftEdge:false,fixRightEdge:false,rightOffset:4,lockVisibleTimeRangeOnResize:true},
+    crosshair:{mode:L.CrosshairMode.Normal,vertLine:{color:'#A1A1AA',width:1,style:2,labelBackgroundColor:'#3F3F46'},horzLine:{color:'#A1A1AA',width:1,style:2,labelBackgroundColor:'#3F3F46'}},
     localization:{locale:'fr-FR',priceFormatter:fmt||(p=>nf(p,2))},
     handleScroll:{mouseWheel:false,pressedMouseMove:true,horzTouchDrag:true,vertTouchDrag:false},
     handleScale:{mouseWheel:false,pinch:true,axisPressedMouseMove:true}});
+  return typeof lwPlus==='function'?lwPlus(ch,el):ch;
 }
 const kfmt=p=>Math.abs(p)>=1e6?nf(p/1e6,2)+' M':nf(p/1000,0)+' k';
 function niceStep(r){const p=10**Math.floor(Math.log10(r||1)),n=r/p;return(n<1.5?1:n<3?2:n<7?5:10)*p;}
