@@ -129,7 +129,7 @@ if(typeof rsRun==='function'){const _rr=rsRun;rsRun=async function(mod,subject,i
 async function jobsPoll(){if(!setSess())return;let r;try{r=await liveApi('/api/v1/jobs?status=done');}catch(e){return;}const J=r.jobs||[];if(!J.length)return;const ids=[];
   for(const j of J){if(!j.result||typeof j.result!=='object'){ids.push(j.id);continue;}JOBRES[j.module+'|'+j.subject]=j.result;ids.push(j.id);
     try{if(j.module==='bp')await rsMarket('job');else if(j.module==='lbo'){const d=(S.lbo.list||[]).find(x=>lboSec(x)===j.subject);if(d){const o=S.lbo.cur;S.lbo.cur=d.id;try{await rsLbo('job');}finally{S.lbo.cur=o;}}}
-      else if(j.module==='an'){const k=Object.keys(S.an.assets).find(x=>S.an.assets[x].t===j.subject);if(k)await rsAn('job',k);}
+      else if(j.module==='an'){const k=Object.keys(S.an.assets).find(x=>S.an.assets[x].t===j.subject);if(k){await rsAn('job',k);S.an.assets[k].fundAt=new Date().toISOString();save();}}
       else if(j.module==='cm'){const o=ui.cmA;ui.cmA=j.subject;await rsCm('job');ui.cmA=o;}}catch(e){console.error('job',e);}}
   try{await liveApi('/api/v1/jobs',{method:'POST',body:{action:'ack',ids}});}catch(e){}toast(`${J.length} résultat(s) de Claude appliqué(s)`);}
 setTimeout(jobsPoll,4000);setInterval(jobsPoll,60000);
