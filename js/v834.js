@@ -124,7 +124,11 @@ async function mmLiveLoad(){if(MML.busy)return;MML.busy=true;
     MML.d=D;MML.err='';save();}catch(e){MML.err=e.message||String(e);}
   MML.at=Date.now();MML.busy=false;if(typeof ui==='object'&&['an','sc'].includes(ui.tab))renderAll();}
 const mmLiveDue=()=>!MML.busy&&Date.now()-MML.at>5*60e3;
-{const _r2=renderAll;renderAll=function(){const r=_r2.apply(this,arguments);try{if(['an','sc'].includes(ui.tab)&&mmLiveDue())setTimeout(mmLiveLoad,0);
+{const _r2=renderAll;renderAll=function(){const r=_r2.apply(this,arguments);
+  /* Business plan sans dossier : seul l'écran de création s'affiche (ni bandeaux, ni synthèse, ni panneau de droite) */
+  try{if(ui.tab==='bp'&&!bpStarted()){const P=document.getElementById('p-bp');if(P)P.innerHTML=`<div class="grid">${bpEmptyHTML()}</div>`;
+    const sd=document.getElementById('side');if(sd)sd.innerHTML='';const ap=document.getElementById('app');if(ap)ap.classList.add('noside');}}catch(e){}
+  try{if(['an','sc'].includes(ui.tab)&&mmLiveDue())setTimeout(mmLiveLoad,0);
   const P=document.getElementById('p-'+ui.tab),h=P&&P.querySelector('.anmm h2 .meta, #p-sc .mm-h .meta');
   if(P&&MML.d&&!P.querySelector('.mmlive')){const t=P.querySelector('.anmm h2');if(t)t.insertAdjacentHTML('beforeend',`<span class="meta mmlive">· données en direct (TradingView, CoinGecko) à ${new Date(MML.d.at).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})}</span>`);}}catch(e){}return r;};}
 setInterval(()=>{if(typeof ui==='object'&&['an','sc'].includes(ui.tab)&&document.visibilityState==='visible'&&mmLiveDue())mmLiveLoad();},60e3);

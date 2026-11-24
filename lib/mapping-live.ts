@@ -5,7 +5,7 @@ import { send, q, type Req, type Res } from './http.js';
 import { CRYPTO_IDS } from './prices.js';
 
 export const ETF_SYMS = ['SPY', 'QQQ', 'IWM', 'EFA', 'EEM', 'EWJ', 'VGK', 'XLE', 'XLK', 'GLD', 'SMH', 'TLT', 'ICLN', 'EWQ', 'EWG', 'INDA', 'FXI', 'XLV', 'XLF', 'ARKK'];
-const US_EX = ['NASDAQ', 'NYSE', 'AMEX', 'BATS'];
+const US_EX = ['NASDAQ', 'NYSE', 'AMEX', 'BATS', 'CBOE'];
 const SUF: Record<string, string[]> = { PA: ['EURONEXT'], AS: ['EURONEXT'], BR: ['EURONEXT'], DE: ['XETR'], F: ['XETR'], L: ['LSE'], MI: ['MIL'], MC: ['BME'], SW: ['SIX'], TO: ['TSX'], HK: ['HKEX'], T: ['TSE'] };
 /** Candidats TradingView pour un ticker au format Yahoo (AAPL, MC.PA, SAP.DE). */
 export function tvCandidates(tk: string): string[] {

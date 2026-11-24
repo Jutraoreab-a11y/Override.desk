@@ -89,7 +89,7 @@ function chatFields(){const out=[],prim=(o,pre,max)=>{let n=0;if(!o||typeof o!==
 function chatInstr(q){const tab=CHAT_TABS[ui.tab]||ui.tab,a=S.an&&S.an.assets&&S.an.assets[ui.tk];
   return(`ASSISTANT FOMO.DESK — question de l'utilisateur : « ${String(q).slice(0,900)} »
 Contexte : volet affiché « ${tab} »${a?` ; titre affiché ${a.t||ui.tk} (${a.n||''}, clé ${ui.tk})`:''} ; date ${new Date().toISOString().slice(0,16)} UTC.
-Pour les chiffres de l'utilisateur, lis d'abord fomo_desk (section "all"). Réponds en français, clairement et brièvement. Tout chiffre externe : cite sa source (url + extrait) dans "sources". Question générale : réponds normalement.
+Pour les chiffres de l'utilisateur, lis d'abord fomo_desk (section "all"). ${(typeof I18N_LANG==='function'&&I18N_LANG()==='en')?'Réponds EN ANGLAIS (l\'utilisateur a choisi l\'anglais), clairement et brièvement.':'Réponds en français, clairement et brièvement.'} Tout chiffre externe : cite sa source (url + extrait) dans "sources". Question générale : réponds normalement.
 Ordre de modification : propose des actions dans "actions", parmi {"type":"set","path":"...","value":...,"label":"..."} (path EXACTEMENT parmi les champs ci-dessous, valeur du même type ; un pourcentage s'écrit comme la valeur actuelle), {"type":"tab","id":"bp|an|sc|lbo|pf|cm|pc|jr"}, {"type":"update"} (tout mettre à jour), {"type":"recalc"}. L'utilisateur validera chaque action. N'invente pas de chemin.
 Champs modifiables (chemin=valeur actuelle) :
 ${chatFields()}`).slice(0,3990);}
