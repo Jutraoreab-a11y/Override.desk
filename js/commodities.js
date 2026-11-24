@@ -5,7 +5,7 @@ function cmP(){return S.cm.p;}
 /* Jours fériés de place (aucune cotation : la case l'indique au lieu de rester vide) */
 const CM_HOL={us:new Set(['2025-01-01','2025-01-09','2025-01-20','2025-02-17','2025-04-18','2025-05-26','2025-06-19','2025-07-04','2025-09-01','2025-11-27','2025-12-25','2026-01-01','2026-01-19','2026-02-16','2026-04-03','2026-05-25','2026-06-19','2026-07-03','2026-09-07','2026-11-26','2026-12-25']),
   uk:new Set(['2025-01-01','2025-04-18','2025-04-21','2025-05-05','2025-05-26','2025-08-25','2025-12-25','2025-12-26','2026-01-01','2026-04-03','2026-04-06','2026-05-04','2026-05-25','2026-08-31','2026-12-25','2026-12-28'])};
-const cmHolTxt=(d,pref)=>{const us=CM_HOL.us.has(d),uk=CM_HOL.uk.has(d),t=pref==='uk'?(uk?'férié Londres':us?'férié New York':''):(us?'férié New York':uk?'férié Londres':'');return t?`<span class="meta">${t}</span>`:'<span class="meta">non coté</span>';};
+const cmHolTxt=(d,pref)=>{const us=CM_HOL.us.has(d),uk=CM_HOL.uk.has(d),t=pref==='uk'?(uk?'férié Londres':us?'férié New York':''):(us?'férié New York':uk?'férié Londres':'');return t?`<span class="meta">${t}</span>`:'<span class="meta" title="Séance ouvrée sans cours enregistré : à relire (Tout mettre à jour)">à relire</span>';};
 const cmV=(v,dg,d,pref)=>nn(v)?nf(v,dg):cmHolTxt(d,pref);
 const cmProv=(d,k)=>typeof CM_1112==='object'&&CM_1112.prov[k]&&CM_1112.prov[k].includes(d);
 const cmLiveT=d=>{if(typeof CM_1112!=='object'||d!==CM_1112.meta.at.slice(0,10))return'';return' <span class="meta">'+new Date(CM_1112.meta.at).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})+'</span>';};
@@ -20,13 +20,18 @@ function cmCls(t){const u=String(t||'').toUpperCase();
   if(/SELL|VENTE|ALERTE|CAPITULATION|RUPTURE|PANIQUE|BLOCAGE|BAISSIER|BAISSIÈRE|CRITIQUE|DISTRIBUTION|SURCHAUFFE|EXTRÊME|SURCHARGE|PRESSION SUR|FAIBLESSE|BAISSE SAINE/.test(u))return'ko';
   if(/BUY|ACHAT|HAUSSE|ACCUMULATION|RÉSILIENCE|SAIN|HAUSSIER|BON/.test(u))return'ok';
   return'am';}
+function cmDays(d0){if(!d0.length)return d0;const out=new Set(d0),t=new Date(d0[0]+'T12:00:00Z'),end=new Date(d0[d0.length-1]+'T12:00:00Z');
+  for(;t<=end;t.setUTCDate(t.getUTCDate()+1)){const w=t.getUTCDay();if(w>0&&w<6)out.add(t.toISOString().slice(0,10));}return[...out].sort();}
 /* Fusion des séries du classeur et des imports CSV */
 function cmSeries(){
   const add=S.cm.add||{},keys=Object.keys(CM_INST),map={};
   keys.forEach(k=>{const m=new Map();CMD.d.forEach((d,i)=>{const c=CMD[k+'C'][i];if(c!==null)m.set(d,[c,CMD[k+'O']?CMD[k+'O'][i]:null,CMD[k+'V']?CMD[k+'V'][i]:(k==='spx'?CMD.spxV[i]:null)]);});
     Object.entries(add[k]||{}).forEach(([d,r])=>m.set(d,r));map[k]=m;});
   /* Axe des dates : union des séances Brent, WTI, or et argent (le comptant des métaux est publié les jours sans Brent daté) */
-  const d=[...new Set(['brent','wti','gold','silver'].flatMap(k=>[...map[k].keys()]))].sort();
+  const d0=[...new Set(['brent','wti','gold','silver'].flatMap(k=>[...map[k].keys()]))].sort();
+  /* v8.29 : aucune date sautée. Chaque jour ouvré (lundi à vendredi) entre la première et la dernière séance a sa ligne,
+     même sans cours : la case dit alors « férié » ou « à relire » au lieu de disparaître du tableau */
+  const d=cmDays(d0);
   const col=(k,j)=>d.map(x=>{const r=map[k].get(x);return r?r[j]:null;});
   const s={d};keys.forEach(k=>{s[k]=col(k,0);s[k+'O']=col(k,1);s[k+'V']=col(k,2);});return s;
 }
