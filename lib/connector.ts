@@ -33,6 +33,7 @@ export async function jobsRoute(req: Req, res: Res): Promise<void> {
     return send(res, 200, { jobs: check(await s.from('fomodesk_jobs').select('id,module,subject,status,created_at,done_at,result,error').eq('user_id', uid).eq('status', st).order('created_at').limit(50)) });
   }
   const b = body<{ action?: string; ids?: string[]; module?: string; subject?: string; query?: string; instructions?: string; schema?: string }>(req);
+  if (b.action === 'wake') return send(res, 200, await wakeClaude());
   if (b.action === 'ack') { check(await s.from('fomodesk_jobs').update({ status: 'applied' }).in('id', (b.ids || []).slice(0, 50)).eq('user_id', uid)); return send(res, 200, { ok: true }); }
   if (!b.module || !b.subject || !b.instructions) throw new HttpError(400, 'module, subject et instructions requis');
   /* une même demande en attente n'est pas dupliquée */
@@ -40,6 +41,22 @@ export async function jobsRoute(req: Req, res: Res): Promise<void> {
   if (open.length) return send(res, 200, { id: open[0].id, queued: false });
   const row = check(await s.from('fomodesk_jobs').insert({ user_id: uid, module: b.module, subject: String(b.subject).slice(0, 200), query: b.query || null, instructions: String(b.instructions).slice(0, 4000), schema: b.schema ? String(b.schema).slice(0, 4000) : null, status: 'pending' }).select('id').single()) as { id: string };
   send(res, 201, { id: row.id, queued: true });
+}
+/* v8.31 : réveil de Claude à chaque demande. La routine Claude Code « FOMO.DESK - traitement automatique des demandes »
+   a un déclencheur API (créé sur sa page claude.ai) : son adresse et son jeton vivent dans ROUTINE_FIRE_URL et ROUTINE_FIRE_TOKEN
+   (variables Vercel, jamais côté navigateur). Un réveil au plus toutes les 45 s par instance : une salve de demandes = un seul réveil. */
+let lastWake = 0;
+export async function wakeClaude(): Promise<{ woken: boolean; reason?: string; status?: number }> {
+  const url = process.env.ROUTINE_FIRE_URL, tok = process.env.ROUTINE_FIRE_TOKEN;
+  if (!url || !tok) return { woken: false, reason: 'réveil non configuré (ROUTINE_FIRE_URL / ROUTINE_FIRE_TOKEN absents) : passage automatique planifié' };
+  if (Date.now() - lastWake < 45_000) return { woken: true, reason: 'déjà réveillé il y a moins de 45 s' };
+  lastWake = Date.now();
+  try {
+    const r = await fetch(url, { method: 'POST', headers: { Authorization: 'Bearer ' + tok, 'Content-Type': 'application/json', 'anthropic-version': '2023-06-01', 'anthropic-beta': process.env.ROUTINE_FIRE_BETA || 'experimental-cc-routine-2026-04-01' },
+      body: JSON.stringify({ text: 'Nouvelles demandes FOMO.DESK en attente : traite toute la file maintenant.' }) });
+    if (!r.ok) { lastWake = 0; return { woken: false, status: r.status, reason: 'la routine a refusé le réveil (HTTP ' + r.status + ')' }; }
+    return { woken: true, status: r.status };
+  } catch (e) { lastWake = 0; return { woken: false, reason: 'réveil impossible : ' + (e instanceof Error ? e.message : String(e)) }; }
 }
 export async function deskRoute(req: Req, res: Res): Promise<void> {
   const uid = await requireUser(req), b = body<{ state?: unknown }>(req), raw = JSON.stringify(b.state ?? null);

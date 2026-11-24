@@ -123,7 +123,8 @@ function jobCmSeries(res){const X=res&&res.series;if(!X||typeof X!=='object')ret
     S.cm.add[k]=S.cm.add[k]||{};rows.forEach(r=>{if(!/^\d{4}-\d{2}-\d{2}$/.test(String(r&&r.date))||!isFinite(+r.close)||+r.close<=0)return;if(last&&Math.abs(+r.close/last-1)>0.35)return;S.cm.add[k][r.date]=[+r.close,null,null];n++;});});
   return n;}
 const JOB_EVERY=12*3600e3,jobAtKey=k=>'fomo.jobat.'+k;
-const jobDue=k=>{try{return Date.now()-(+localStorage.getItem(jobAtKey(k))||0)>JOB_EVERY;}catch(e){return true;}};
+const AUTO_EVERY=10*60e3;
+const jobDue=(k,every)=>{try{return Date.now()-(+localStorage.getItem(jobAtKey(k))||0)>(every||JOB_EVERY);}catch(e){return true;}};
 const jobMark=k=>{try{localStorage.setItem(jobAtKey(k),String(Date.now()));}catch(e){}};
 let JOB_QUIET=false;const JOB_N={sent:0,ko:0};
 const lboSec=d=>d.sec||String(d.name||'secteur').replace(/^LBO /,'');
@@ -134,7 +135,8 @@ if(typeof rsRun==='function'){const _rr=rsRun;rsRun=async function(mod,subject,i
   if(jobsOn()){const sp=(server&&server.instr)?{instructions:server.instr,schema:server.schema}:(JOB_SPEC[mod]?JOB_SPEC[mod](subject):null);
     /* v8.25 : la mise à jour au chargement envoie aussi la demande à Claude (au plus une fois toutes les 12 h par volet et sujet),
        sans bloquer la lecture de la base ; Recalculer et « Lancer la recherche » l'envoient à chaque clic */
-    if(sp&&(trigger!=='init'||jobDue(k))){try{const r=await liveApi('/api/v1/jobs',{method:'POST',body:{module:mod,subject,query:server&&server.query||null,...sp}});jobMark(k);JOB_N.sent++;
+    if(sp&&(trigger!=='init'||jobDue(k))&&!(JOB_AUTO&&!jobDue(k,AUTO_EVERY))){try{const r=await liveApi('/api/v1/jobs',{method:'POST',body:{module:mod,subject,query:server&&server.query||null,...sp}});jobMark(k);JOB_N.sent++;
+        if(!JOB_QUIET&&trigger!=='init'){jobWake();const t=jtGet();jtSet({n:Math.max(1,(t?t.n:0)+(r.queued?1:0)),at:Date.now()});}
         if(!JOB_QUIET)toast(`${RS_MOD[mod]||mod} : demande ${r.queued?'transmise':'déjà en attente'} à Claude. Dans Claude, dites « traite mes demandes FOMO.DESK » : le résultat s'appliquera ici.`);
         if(trigger!=='init')return null;}
       catch(e){JOB_N.ko++;if(!JOB_QUIET)toast('File des demandes indisponible : '+e.message);}}}
@@ -166,13 +168,14 @@ async function loginRun(){const t0=Date.now();while(typeof AF==='object'&&AF.run
 /* v8.27 : « tout le SaaS » : une mise à jour complète (connexion ou « Tout mettre à jour ») envoie à Claude une demande
    pour CHAQUE sujet de chaque volet : étude de marché du business plan, chaque dossier LBO, chaque titre analysé,
    chaque matière première (Brent, WTI, or, argent). Les demandes déjà en attente ne sont pas dupliquées (contrôle serveur). */
-async function jobsAll(){if(!jobsOn())return;JOB_QUIET=true;JOB_SENDING=true;try{afBar();}catch(e){}JOB_N.sent=0;JOB_N.ko=0;const run=async f=>{try{await f();}catch(e){console.error('demande',e);}};
+let JOB_AUTO=false;
+async function jobsAll(auto){if(!jobsOn())return;JOB_AUTO=!!auto;JOB_QUIET=true;JOB_SENDING=true;try{afBar();}catch(e){}JOB_N.sent=0;JOB_N.ko=0;const run=async f=>{try{await f();}catch(e){console.error('demande',e);}};
   try{await run(()=>rsMarket('all'));
     const oL=S.lbo&&S.lbo.cur;for(const d of (S.lbo&&S.lbo.list)||[]){S.lbo.cur=d.id;await run(()=>rsLbo('all'));}if(S.lbo)S.lbo.cur=oL;
     for(const k of Object.keys(S.an.assets))await run(()=>rsAn('all',k));
     const oC=ui.cmA;for(const c of ['brent','wti','gold','silver']){ui.cmA=c;await run(()=>rsCm('all'));}ui.cmA=oC;}
-  finally{JOB_QUIET=false;JOB_SENDING=false;}
-  if(JOB_N.sent){const t=jtGet();jtSet({n:Math.max(JOB_N.sent,t?t.n:0),at:Date.now()});jtPoll();}
+  finally{JOB_QUIET=false;JOB_SENDING=false;JOB_AUTO=false;}
+  if(JOB_N.sent){const t=jtGet();jtSet({n:Math.max(JOB_N.sent,t?t.n:0),at:Date.now()});await jobWake();jtPoll();}
   toast(JOB_N.ko?`File des demandes indisponible (${JOB_N.ko} échec(s)), ${JOB_N.sent} demande(s) transmise(s) à Claude`
     :`${JOB_N.sent} demande(s) transmise(s) à Claude pour tout FOMO.DESK. Dans Claude, dites « traite mes demandes FOMO.DESK ».`);}
 if(typeof afRun==='function'){const _af=afRun;afRun=async function(force){if(force)await jobsAll();return _af.apply(this,arguments);};}
@@ -181,7 +184,9 @@ if(typeof afRun==='function'){const _af=afRun;afRun=async function(force){if(for
    - La routine Claude « FOMO.DESK - traitement automatique des demandes » (cloud, toutes les heures à hh:18 UTC) traite la file seule.
    - Barre de progression : sources publiques du serveur (passe en cours), puis demandes traitées par Claude, suivies toutes les 30 s.
    - Le bouton répond toujours : retour immédiat, et pendant une passe déjà en cours il envoie quand même les demandes à Claude. */
-let JOB_SENDING=false,JT_REM=null;const JT_K='fomo.jobtrack',ROUTINE_MIN_UTC=18;
+let JOB_SENDING=false,JT_REM=null,JT_WOKE=null;
+/* réveil de Claude : le serveur appelle la routine (déclencheur API) ; sinon, la routine passe à son heure */
+async function jobWake(){try{const r=await liveApi('/api/v1/jobs',{method:'POST',body:{action:'wake'}});JT_WOKE=!!(r&&r.woken);return r;}catch(e){JT_WOKE=false;return null;}}const JT_K='fomo.jobtrack',ROUTINE_MIN_UTC=18;
 const jtGet=()=>{try{return JSON.parse(localStorage.getItem(JT_K)||'null');}catch(e){return null;}};
 const jtSet=v=>{try{v?localStorage.setItem(JT_K,JSON.stringify(v)):localStorage.removeItem(JT_K);}catch(e){}};
 const jtNext=()=>{const n=new Date(),x=new Date(n);x.setUTCMinutes(ROUTINE_MIN_UTC,0,0);if(x<=n)x.setUTCHours(x.getUTCHours()+1);return x.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'});};
@@ -200,7 +205,7 @@ if(typeof afBar==='function'){const _ab=afBar;afBar=function(){_ab.apply(this,ar
   const cl=t?(JT_REM===null?0:Math.max(0,1-JT_REM/Math.max(1,t.n))):null;
   const pct=Math.round(100*(cl===null?(srv===null?0:srv):((srv===null?1:srv)*0.25+cl*0.75)));
   const lab=[JOB_SENDING?'Envoi des demandes à Claude…':'',srv!==null?`Sources publiques ${AF.i}/${AF.n}`:'',
-    t?`Claude : ${JT_REM===null?'…':t.n-JT_REM}/${t.n} demandes traitées · passage automatique vers ${jtNext()}`:''].filter(Boolean).join(' · ');
+    t?`Claude : ${JT_REM===null?'…':t.n-JT_REM}/${t.n} demandes traitées · ${JT_WOKE?'Claude réveillé, traitement en cours':'passage automatique vers '+jtNext()}`:''].filter(Boolean).join(' · ');
   if(!pb){pb=document.createElement('div');pb.className='fd-prog';el.appendChild(pb);}
   pb.innerHTML=`<div class="fd-prog-bar${JOB_SENDING&&srv===null&&!t?' ind':''}" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${pct}"><i style="width:${pct}%"></i></div><span class="meta">${pct} % · ${esc(lab)}</span>`;};}
 /* capture : passe avant le gestionnaire du bandeau, pour que chaque clic ait un effet visible */
@@ -210,3 +215,16 @@ document.addEventListener('click',e=>{const b=e.target.closest&&e.target.closest
 setInterval(()=>{if(LOGIN_RUN||!setSess())return;const u=FLUX.session.user||{},k=(u.id||'')+'|'+(u.last_sign_in_at||'');let prev=null;
   try{prev=localStorage.getItem(LOGIN_K);}catch(e){}if(prev===k)return;try{localStorage.setItem(LOGIN_K,k);}catch(e){}
   LOGIN_RUN=true;loginRun().catch(e=>console.error('connexion',e)).finally(()=>{LOGIN_RUN=false;});},2000);
+
+
+/* v8.31 : mise à jour complète à l'arrivée sur le site, puis toutes les 10 minutes tant que l'onglet est ouvert et visible.
+   Personne sur le site = aucune mise à jour lancée. Le bouton « Tout mettre à jour » reste immédiat et sans limite. */
+const AUTO_K='fomo.autoat';let AUTO_BUSY=false;
+async function autoCycle(reason){if(AUTO_BUSY||!setSess()||document.visibilityState!=='visible'||typeof afRun!=='function')return;
+  const t0=Date.now();while(typeof AF==='object'&&AF.run&&Date.now()-t0<180000)await new Promise(r=>setTimeout(r,2000));
+  if(LOGIN_RUN)return;AUTO_BUSY=true;try{localStorage.setItem(AUTO_K,String(Date.now()));}catch(e){}
+  try{await jobsAll(true);await afRun(false);}catch(e){console.error('auto',e);}finally{AUTO_BUSY=false;}}
+const autoDue=()=>{try{return Date.now()-(+localStorage.getItem(AUTO_K)||0)>AUTO_EVERY-15000;}catch(e){return true;}};
+setTimeout(()=>autoCycle('arrivée'),12000);
+setInterval(()=>{if(autoDue())autoCycle('10 min');},60000);
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&autoDue())autoCycle('retour');});
