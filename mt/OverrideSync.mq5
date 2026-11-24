@@ -8,7 +8,7 @@
 #property version   "1.00"
 #property description "Synchronisation OVERRIDE.DESK (lecture seule : aucun ordre n'est passé)"
 
-input string InpUrl          = "https://votre-projet.vercel.app/api/v1/trading/mt-sync"; // Adresse de l'API
+input string InpUrl          = "https://override-desk.vercel.app/api/v1/trading/mt-sync"; // Adresse de l'API
 input string InpKey          = "";   // Clé d'EA fournie par OVERRIDE.DESK (affichée une seule fois)
 input int    InpIntervalSec  = 30;   // Fréquence d'envoi (secondes)
 input int    InpHistoryDays  = 30;   // Historique envoyé (jours)

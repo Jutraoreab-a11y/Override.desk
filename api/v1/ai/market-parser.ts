@@ -13,6 +13,7 @@ import { keysRoute, jobsRoute, deskRoute, mcpRoute } from '../../../lib/connecto
 export { htmlToText } from '../../../lib/html.js';
 import { htmlToText } from '../../../lib/html.js';
 import { boardRoute } from '../../../lib/commodities-board.js';
+import { mappingRoute } from '../../../lib/mapping-live.js';
 const norm = (s: string) => s.replace(/\s+/g, ' ').toLowerCase();
 /** Score de confiance : confiance déclarée par le modèle, plafonnée selon la vérification de l'extrait et de la valeur dans la page. */
 export function confidence(modelConf: number, quoteFound: boolean, valueInQuote: boolean): number {
@@ -26,6 +27,7 @@ export default handler(async (req: Req, res: Res) => {
   if (q(req, 'op') === 'fundamentals') return fundamentalsRoute(req, res);
   if (q(req, 'op') === 'refresh') return refreshRoute(req, res);
   if (q(req, 'op') === 'board') return boardRoute(req, res);
+  if (q(req, 'op') === 'mapping') return mappingRoute(req, res);
   if (q(req, 'op') === 'mcp') return mcpRoute(req, res);
   if (q(req, 'op') === 'keys') return keysRoute(req, res);
   if (q(req, 'op') === 'jobs') return jobsRoute(req, res);

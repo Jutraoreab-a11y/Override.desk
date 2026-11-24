@@ -53,7 +53,9 @@ const CMB={d:null,at:0,busy:false,err:''};
 async function cmBoardLoad(){if(CMB.busy)return;CMB.busy=true;
   try{const base=typeof liveBase==='function'&&liveBase()||'';const r=await fetch(base+'/api/v1/commodities');const j=await r.json();
     if(!r.ok)throw new Error(j.error||('HTTP '+r.status));CMB.d=j;CMB.err='';}catch(e){CMB.err=e.message||String(e);}
-  CMB.at=Date.now();CMB.busy=false;const el=document.getElementById('cmBoard');if(el)el.innerHTML=cmBoardInner();}
+  CMB.at=Date.now();CMB.busy=false;
+  /* panneau de droite seul : la page ne bouge pas */
+  try{if(typeof ui==='object'&&ui.tab==='cm'&&typeof sideHTML==='function'){const sd=document.getElementById('side'),y=sd?sd.scrollTop:0;if(sd){sd.innerHTML=sideHTML();sd.scrollTop=y;}}else{const el=document.getElementById('cmBoard');if(el)el.innerHTML=cmBoardInner();}}catch(e){}}
 function cmBoardInner(){const D=CMB.d;
   if(!D)return`<div class="sideh" style="margin-top:8px">Toutes les matières premières</div><div class="cmb-note">${CMB.err?'Cours momentanément indisponibles ('+esc(CMB.err)+') : nouvel essai dans 5 minutes.':'Chargement des cours…'}</div>`;
   const t=new Date(D.at).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'});
@@ -61,8 +63,8 @@ function cmBoardInner(){const D=CMB.d;
     D.groups.map(g=>`<div class="cmb-g">${esc(g.g)}</div>`+g.items.map(x=>{const ok=x.c!==null&&isFinite(x.c),ch=x.ch;
       return`<div class="cmb-r" title="${esc(x.t)} · ${esc(x.u)}"><span class="n"><b>${esc(x.l)}</b><small>${esc(x.u)}</small></span><span class="p">${ok?nf(x.c,x.c<10?3:2):'<span class="meta">indisponible</span>'}</span><span class="c ${!isFinite(ch)||ch===null?'fl':ch>0?'up':ch<0?'dn':'fl'}">${ch!==null&&isFinite(ch)?(ch>0?'+':'')+nf(ch,2)+' %':''}</span></div>`;}).join('')).join('')+
     `<div class="cmb-note">Premier contrat à terme de chaque marché, cours différé d'environ 10 min, source TradingView. Variation : séance en cours.</div>`;}
-function cmBoardHTML(){if(!CMB.busy&&Date.now()-CMB.at>5*60e3)setTimeout(cmBoardLoad,0);return`<div id="cmBoard">${cmBoardInner()}</div>`;}
-setInterval(()=>{if(typeof ui==='object'&&ui.tab==='cm'&&document.visibilityState==='visible')cmBoardLoad();},5*60e3);
+function cmBoardHTML(){if(!CMB.busy&&Date.now()-CMB.at>60e3)setTimeout(cmBoardLoad,0);return`<div id="cmBoard">${cmBoardInner()}</div>`;}
+setInterval(()=>{if(typeof ui==='object'&&ui.tab==='cm'&&document.visibilityState==='visible')cmBoardLoad();},60e3);
 
 /* ---------- camembert : répartition des signaux sur les 60 dernières séances ---------- */
 function cmSigPie(R,a){try{const key=a==='gold'?'sigGold':a==='silver'?'sigSilver':'sigChine',name=a==='gold'?'Or':a==='silver'?'Argent':'Brent';

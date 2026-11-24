@@ -31,6 +31,6 @@ export async function boardData(f: typeof fetch = fetch): Promise<Record<string,
     groups: BOARD.map(([g, L]) => ({ g, items: L.map(([t, l, u]) => { const d = got.get(t); return { t, l, u, c: d && isFinite(d[0]) ? d[0] : null, ch: d && isFinite(d[1]) ? d[1] : null }; }) })) };
 }
 export async function boardRoute(_req: Req, res: Res): Promise<void> {
-  try { const out = await boardData(); res.setHeader('Cache-Control', 's-maxage=300, stale-while-revalidate=300'); send(res, 200, out); }
+  try { const out = await boardData(); res.setHeader('Cache-Control', 's-maxage=60, stale-while-revalidate=60'); send(res, 200, out); }
   catch (e) { send(res, 502, { error: 'cours indisponibles : ' + (e instanceof Error ? e.message : String(e)) }); }
 }

@@ -1,6 +1,7 @@
 {
   "rewrites": [
     { "source": "/api/v1/commodities", "destination": "/api/v1/ai/market-parser?op=board" },
+    { "source": "/api/v1/mapping", "destination": "/api/v1/ai/market-parser?op=mapping" },
     { "source": "/api/v1/ai/ingest", "destination": "/api/v1/ai/market-parser?op=ingest" },
     { "source": "/api/v1/ai/key", "destination": "/api/v1/ai/market-parser?op=key" },
     { "source": "/api/v1/fundamentals", "destination": "/api/v1/ai/market-parser?op=fundamentals" },
