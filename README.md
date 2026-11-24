@@ -332,3 +332,9 @@ Sources des données livrées (collecte du 10/11/2026) : FRED (CPIAUCSL, PPIFIS,
 
 - Un dossier LBO créé sur une société d'exemple supprimée faisait planter l'affichage après connexion (« T.filt.filter ») dans les navigateurs qui gardaient d'anciennes données : le dossier est retiré au chargement et le modèle LBO tolère une cible introuvable.
 - La connexion n'est plus bloquée par une erreur d'affichage du bureau.
+
+## Version 8.24 : clé du connecteur visible
+
+- Paramètres › Connecteur Claude : la clé créée reste affichée (masquable) et copiable dans ce navigateur, l'adresse du connecteur et le message à Claude l'incluent ; le serveur n'en garde que l'empreinte.
+- Erreur de création affichée en clair dans la carte, avec la cause probable (clé secrète Supabase erronée, table absente).
+- `/api/v1/status` indique la nature de la clé serveur (`connectors.db` : secret, publique, absente), jamais sa valeur.

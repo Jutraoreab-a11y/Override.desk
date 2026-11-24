@@ -12,7 +12,12 @@ const setAcct=()=>typeof FLUX==='object'&&!!FLUX.sb;
 function prof(){S.profile=S.profile||{prenom:'',nom:''};return S.profile;}
 const prenom=()=>{const p=prof(),m=setSess()&&FLUX.session.user&&FLUX.session.user.user_metadata;return(p.prenom||(m&&m.prenom)||'').trim();};
 function helloHTML(){return prenom()?`<b class="hello">Bonjour ${esc(prenom())}</b>`:'<button class="lnk hello" data-act="tab" data-id="set">Bonjour : indiquez votre prénom</button>';}
-const SETK={keys:null,newKey:null,jobs:null,busy:false};
+const SETK={keys:null,newKey:null,jobs:null,busy:false,err:'',show:false};
+/* v8.24 : la clé créée reste visible et copiable dans ce navigateur (le serveur n'en garde que l'empreinte). */
+const setKeyStore=()=>{try{const u=FLUX.session&&FLUX.session.user&&FLUX.session.user.id;return u?'fomo.mcpkey.'+u:'';}catch(_){return'';}};
+const setKeyGet=()=>{const k=setKeyStore();if(!k)return'';try{return localStorage.getItem(k)||'';}catch(_){return'';}};
+const setKeySet=v=>{const k=setKeyStore();if(!k)return;try{v?localStorage.setItem(k,v):localStorage.removeItem(k);}catch(_){}};
+const setErrFr=m=>/row-level security|permission denied|42501/i.test(m||'')?'la base refuse l\'écriture : sur Vercel, SUPABASE_SERVICE_ROLE_KEY doit être la clé secrète (sb_secret_… ou service_role) du projet Supabase partagé, puis redéployez.':/fomodesk_keys|does not exist|42P01|schema cache/i.test(m||'')?'table fomodesk_keys absente : exécutez supabase/fomodesk/setup_fomodesk.sql dans ce projet Supabase.':(m||'erreur inconnue');
 ICON.set='<path d="M12 15.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7z" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3h.1a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8v.1a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z" fill="none" stroke="currentColor" stroke-width="1.4"/>';
 if(!PANELS.includes('set'))PANELS.push('set');
 const setMsg=url=>`Tu es connecté à mon SaaS FOMO.DESK par le connecteur « FOMO.DESK ». À chaque fois que je te le demande (« traite mes demandes FOMO.DESK ») :
@@ -26,7 +31,7 @@ async function setCopy(t){try{await navigator.clipboard.writeText(t);toast('Copi
 async function setLoadKeys(){if(!setSess())return;try{const r=await liveApi('/api/v1/keys');SETK.keys=r.keys||[];}catch(e){SETK.keys=null;SETK.err=e.message;}try{const j=await liveApi('/api/v1/jobs?status=pending');SETK.jobs=(j.jobs||[]).length;}catch(e){}if(ui.tab==='set')renderAll();}
 
 function renderSET(){const P=document.getElementById('p-set');if(!P||ui.tab!=='set')return;const p=prof(),acct=setAcct(),sess=setSess(),url=setBase()+'/api/v1/mcp',em=sess?(FLUX.session.user.email||''):'';
-  const keyUrl=SETK.newKey?`${url}?key=${SETK.newKey}`:null,keys=SETK.keys||[];
+  const keys=SETK.keys||[],stK=SETK.newKey||setKeyGet(),stOk=stK&&(!SETK.keys||keys.some(k=>!k.revoked_at&&stK.startsWith(k.prefix))),keyUrl=stOk?`${url}?key=${stK}`:null;
   P.innerHTML=`<div class="grid">
   <div class="card s12"><h2><span>Paramètres <span class="meta">${prenom()?'Bonjour '+esc(prenom())+' · ':''}profil, connecteur Claude et clés</span></span></h2>
     <p class="note">Tout ce qui est saisi ici reste dans votre navigateur, sauf l'e-mail, le mot de passe et les clés, conservés par le serveur de comptes de FOMO.DESK.</p>
@@ -51,8 +56,10 @@ function renderSET(){const P=document.getElementById('p-set');if(!P||ui.tab!=='s
       <li>Dans Claude : <b>Paramètres › Connecteurs › Ajouter un connecteur personnalisé</b>. Nom : <b>FOMO.DESK</b>. Adresse : celle ci-dessous.</li>
       <li>Dans une conversation, activez le connecteur FOMO.DESK et collez le message à donner à Claude.</li></ol>
     ${sess?`<div class="btns"><button class="btn sm pri" data-act="setnewkey" ${SETK.busy?'disabled':''}>Créer une clé</button>${SETK.jobs!==null&&SETK.jobs!==undefined?`<span class="meta">${SETK.jobs} demande(s) en attente de Claude</span>`:''}</div>`:''}
-    ${keyUrl?`<p class="note"><b>Copiez cette adresse maintenant :</b> la clé n'est affichée qu'une fois.</p>`:''}
-    <label class="set-f"><span class="lb">Adresse du connecteur</span><div class="set-cp"><input readonly value="${esc(keyUrl||url)}" id="setUrl"><button class="btn sm" data-act="setcpurl">Copier</button></div></label>
+    ${SETK.err?`<p class="note" style="color:var(--down)"><b>Création impossible :</b> ${esc(SETK.err)}</p>`:''}
+    ${keyUrl?`<label class="set-f"><span class="lb">Votre clé personnelle</span><div class="set-cp"><input readonly value="${esc(SETK.show?stK:stK.slice(0,10)+'•'.repeat(18))}" id="setKey"><button class="btn sm" data-act="setshowkey">${SETK.show?'Masquer':'Afficher'}</button><button class="btn sm" data-act="setcpkey">Copier</button></div></label>
+    <p class="note">La clé reste visible dans ce navigateur. Sur un autre appareil, créez une nouvelle clé ; révoquez celles que vous n'utilisez plus.</p>`:(sess&&keys.some(k=>!k.revoked_at)?`<p class="note">Une clé active existe mais elle a été créée sur un autre navigateur : créez-en une nouvelle ici pour l'afficher.</p>`:'')}
+    <label class="set-f"><span class="lb">Adresse du connecteur${keyUrl?' (avec votre clé, à coller dans Claude)':''}</span><div class="set-cp"><input readonly value="${esc(keyUrl||url)}" id="setUrl"><button class="btn sm" data-act="setcpurl">Copier</button></div></label>
     ${keys.length?`<div class="tw"><table class="tbl"><thead><tr><th>Clé</th><th>Créée le</th><th>Dernier usage</th><th></th></tr></thead><tbody>${keys.map(k=>`<tr><td>${esc(k.label)} <span class="meta">${esc(k.prefix)}…</span></td><td>${fdate(String(k.created_at).slice(0,10))}</td><td>${k.last_used_at?fdate(String(k.last_used_at).slice(0,10)):'<span class="meta">jamais</span>'}</td><td>${k.revoked_at?'<span class="tag ko">révoquée</span>':`<button class="btn sm" data-act="setrevoke" data-id="${esc(k.id)}">Révoquer</button>`}</td></tr>`).join('')}</tbody></table></div>`:''}
     <label class="set-f"><span class="lb">Message à donner à Claude</span><textarea id="setMsg" rows="9" readonly>${esc(setMsg(keyUrl||url))}</textarea></label>
     <button class="btn sm" data-act="setcpmsg">Copier le message</button>
@@ -77,8 +84,10 @@ document.addEventListener('click',async e=>{const b=e.target.closest&&e.target.c
     if(pw){if(pw.length<10){toast('Mot de passe : 10 caractères au moins');return;}if(pw!==pw2){toast('Les deux mots de passe diffèrent');return;}u.password=pw;}
     if(!Object.keys(u).length){toast('Rien à modifier');return;}const r=await FLUX.sb.auth.updateUser(u);toast(r.error?'Mise à jour impossible : '+r.error.message:(u.email?'Lien de confirmation envoyé à '+u.email+(u.password?' ; mot de passe changé':''):'Mot de passe changé'));renderAll();}
   else if(a==='setlogout'){if(setSess()&&FLUX.sb)await FLUX.sb.auth.signOut();FLUX.session=null;FLUX.on=false;SETK.keys=null;toast('Déconnecté');renderAll();}
-  else if(a==='setnewkey'){if(!setSess())return;SETK.busy=true;renderAll();try{const r=await liveApi('/api/v1/keys',{method:'POST',body:{label:'Claude '+new Date().toLocaleDateString('fr-FR')}});SETK.newKey=r.key;try{localStorage.setItem('fomo.mcp','1');}catch(x){}toast('Clé créée : copiez l\'adresse du connecteur');}catch(x){toast('Création impossible : '+x.message);}SETK.busy=false;await setLoadKeys();renderAll();}
+  else if(a==='setnewkey'){if(!setSess())return;SETK.busy=true;renderAll();try{const r=await liveApi('/api/v1/keys',{method:'POST',body:{label:'Claude '+new Date().toLocaleDateString('fr-FR')}});SETK.newKey=r.key;SETK.err='';setKeySet(r.key);try{localStorage.setItem('fomo.mcp','1');}catch(x){}toast('Clé créée : copiez l\'adresse du connecteur');}catch(x){SETK.err=setErrFr(x.message);toast('Création impossible : '+SETK.err);}SETK.busy=false;await setLoadKeys();renderAll();}
   else if(a==='setrevoke'){if(!confirm('Révoquer cette clé ? Claude ne pourra plus se connecter avec elle.'))return;try{await liveApi('/api/v1/keys?id='+encodeURIComponent(b.dataset.id),{method:'DELETE'});toast('Clé révoquée');}catch(x){toast('Révocation impossible : '+x.message);}setLoadKeys();}
+  else if(a==='setshowkey'){SETK.show=!SETK.show;renderAll();}
+  else if(a==='setcpkey')setCopy(SETK.newKey||setKeyGet());
   else if(a==='setcpurl')setCopy(v('setUrl'));else if(a==='setcpmsg')setCopy(((document.getElementById('setMsg')||{}).value)||'');
   else if(a==='tab'&&b.dataset.id==='set'&&setSess()&&SETK.keys===null)setLoadKeys();});
 
