@@ -66,6 +66,6 @@ async function oilRefresh(){if(typeof AI!=='object'||!AI.mcp){toast("Mise à jou
   ui.oilBusy=false;renderAll();}
 try{const s=JSON.parse(localStorage.getItem('fomo.oil')||'null');if(s&&s.at>OIL_STK.at&&Array.isArray(s.w))Object.assign(OIL_STK,s);}catch(e){}
 document.addEventListener('click',e=>{const b=e.target.closest('[data-act=oilref]');if(b&&!ui.oilBusy)oilRefresh();});
-{const _r=renderCM;renderCM=function(){_r.apply(this,arguments);try{const P=document.getElementById('p-cm');if(!P||P.querySelector('#oilk'))return;
+{const _r=renderCM;renderCM=function(){_r.apply(this,arguments);try{const P=document.getElementById('p-cm');if(!P||P.querySelector('#oilk')||(ui.cmA&&ui.cmA!=='brent'))return;   /* v8.37 : stocks de brut seulement dans la vue Brent / WTI */
   const sig=[...P.querySelectorAll('.card')].find(c=>/^Signaux du jour/.test((c.querySelector('h2')||{}).textContent||''));const d=document.createElement('div');d.innerHTML=oilCard();
   if(sig)sig.after(d.firstElementChild);else(P.querySelector('.grid')||P).prepend(d.firstElementChild);}catch(e){console.error('stocks',e);}};}

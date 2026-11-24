@@ -9,7 +9,7 @@ function prjInit(){
   /* v8.34 : aucun dossier Business plan créé d'office : il naît du bouton « Créer un dossier » */
   if(!S.prj.bp.length&&S.bpStarted){const v={id:uid('v'),label:'Version A',date:new Date().toISOString(),note:'Scénario de référence',data:clone(S.bp)};
     S.prj.bp.push({id:uid('p'),name:S.bp.name||'Mon projet',folder:'',created:today(),versions:[v],cur:v.id});}
-  if(!S.prj.an.length){const tk=S.an.assets[ui.tk]?ui.tk:Object.keys(S.an.assets)[0];
+  if(!S.prj.an.length&&Object.keys(S.an.assets||{}).length){const tk=S.an.assets[ui.tk]?ui.tk:Object.keys(S.an.assets)[0];   /* v8.37 : aucun dossier d'office sans titre réel */
     const v={id:uid('v'),label:'Analyse '+(S.an.assets[tk].t||tk),date:new Date().toISOString(),note:'Première analyse',data:{tk,asset:clone(S.an.assets[tk]),crit:clone(S.an.crit)}};
     S.prj.an.push({id:uid('p'),name:'Analyses '+new Date().getFullYear(),folder:'Titres cotés',created:today(),versions:[v],cur:v.id});}
   ['bp','an'].forEach(m=>{S.prj[m].forEach(p=>p.versions.forEach(x=>{if(!x.dd)x.dd=x.date.slice(0,10);}));const k='prj_'+m;if(S.prj[m].length&&!S.prj[m].find(p=>p.id===ui[k]))ui[k]=S.prj[m][0].id;});

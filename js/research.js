@@ -56,18 +56,18 @@ async function rsRun(mod,subject,inapp,server,trigger){trigger=trigger==='init'?
   finally{RS.busy[mod]=false;rsBar();rsHdr();}}
 
 /* ---- Module 1 : business plan, étude de marché ---- */
-async function rsMarket(trigger){const b=S.bp,Z={fr:'France',eu:'Europe',world:'monde'},sl=(typeof SECT==='object'&&SECT[b.sector]&&SECT[b.sector].l)||b.sector||'',
-    label=((b.mkt&&b.mkt.label)||`${sl} ${Z[b.zone]||b.zone||''}`).trim(),q=`${label} taille du marché chiffre d'affaires croissance ${new Date().getFullYear()}`;
+async function rsMarket(trigger){const b=S.bp,Z={fr:'France',eu:'Europe',world:'monde'},sl=b.secLbl||(typeof SECT==='object'&&SECT[b.sector]&&SECT[b.sector].l)||b.sector||'',ZS=Array.isArray(b.zones)&&b.zones.length?b.zones:null,
+    label=((b.mkt&&b.mkt.label)||`${sl} ${ZS?ZS.join(', '):Z[b.zone]||b.zone||''}`).trim(),q=`${label} taille du marché chiffre d'affaires croissance ${new Date().getFullYear()}`;
   if(!label){if(trigger!=='init')toast('Renseignez le secteur et la zone du dossier avant la recherche');return;}
-  const INS=`Étude de marché pour : « ${label} ». Donne la taille du marché visé (montant, devise, unité, année), l'historique annuel si disponible et la croissance annuelle moyenne projetée avec son horizon. Un marché mondial ne vaut pas marché national : précise le périmètre.`,
-    SCH=`{"market_label":"","currency":"EUR","unit":"M","year":2025,"tam":nombre|null,"cagr_pct":nombre|null,"cagr_horizon":"2025-2030"|null,"hist":[{"year":2023,"value":nombre}],"sources":[{"url":"","quote":"","figure":"chiffre justifié par cet extrait (ex. taille du marché 2025, croissance annuelle, historique 2023)"}]}`;
+  const INS=`Étude de marché pour : « ${label} ». Donne la taille du marché visé (montant, devise, unité, année), l'historique annuel si disponible et la croissance annuelle moyenne projetée avec son horizon. Un marché mondial ne vaut pas marché national : précise le périmètre.${ZS&&ZS.length>1?` Zones demandées : ${ZS.join(', ')}. Donne AUSSI, dans "zones", les chiffres de CHAQUE zone séparément (taille, devise, unité, année, croissance, sources) ; une zone sans chiffre public reste à null avec la raison dans "note". Les champs tam et cagr_pct du haut portent le total des zones (ou le plus grand périmètre publié).`:''}`,
+    SCH=`{"market_label":"","currency":"EUR","unit":"M","year":2025,"tam":nombre|null,"cagr_pct":nombre|null,"cagr_horizon":"2025-2030"|null,"hist":[{"year":2023,"value":nombre}],"sources":[{"url":"","quote":"","figure":"chiffre justifié par cet extrait (ex. taille du marché 2025, croissance annuelle, historique 2023)"}]${ZS&&ZS.length>1?',"zones":[{"zone":"","tam":nombre|null,"currency":"EUR","unit":"M","year":2025,"cagr_pct":nombre|null,"cagr_horizon":"","note":"","sources":[{"url":"","quote":""}]}]':''}}`;
   const r=await rsRun('bp',label,async()=>{const urls=await rsSearch(q);if(!urls.length)throw new Error('aucune source trouvée');
       return rsRead(urls,INS,SCH);},{query:q,instr:INS,schema:SCH},trigger);
   if(!r)return;const p=r.p,M=b.mkt,mul={Md:1000,B:1000,G:1000,M:1,k:0.001}[String(p.unit||'M').replace(/[^A-Za-z]/g,'').slice(0,2)]||1,cur=String(p.currency||'EUR').toUpperCase(),fx=cur==='USD'?1/(typeof FX_EURUSD==='number'?FX_EURUSD:1.1):1;
   const toM=v=>v!==null&&v!==undefined&&isFinite(+v)?+(v*mul*fx).toFixed(1):null;let n=0;
   (p.hist||[]).forEach(h=>{const v=toM(h.value);if(!v||!isFinite(+h.year))return;const e=M.hist.find(x=>x.y===+h.year);if(e)e.v=v;else M.hist.push({y:+h.year,v,q:null});n++;});M.hist.sort((a,c)=>a.y-c.y);
   if(toM(p.tam)){b.tamOv=toM(p.tam);b.tamAI=true;}if(p.cagr_pct!==null&&p.cagr_pct!==undefined&&isFinite(+p.cagr_pct)){b.cagrOv=+(+p.cagr_pct).toFixed(2);b.cagrAI=true;}
-  const urls=[...new Set((p.sources||[]).map(s=>s.url).filter(Boolean))];M.src=urls.join(' ; ');b.mktAI={how:r.how,at:new Date().toISOString(),label:p.market_label||label,quotes:(p.sources||[]).slice(0,4),quotesAll:(p.sources||[]).slice(0,30)};
+  const urls=[...new Set((p.sources||[]).map(s=>s.url).filter(Boolean))];M.src=urls.join(' ; ');b.mktZones=Array.isArray(p.zones)?p.zones.filter(z=>z&&z.zone).map(z=>({zone:String(z.zone),tam:isFinite(+z.tam)&&z.tam!==null?+z.tam:null,cur:z.currency||'',unit:z.unit||'',year:z.year||null,cagr:isFinite(+z.cagr_pct)&&z.cagr_pct!==null?+z.cagr_pct:null,hz:z.cagr_horizon||'',note:z.note||'',src:(z.sources||[]).slice(0,3)})):(b.mktZones||null);b.mktAI={how:r.how,at:new Date().toISOString(),label:p.market_label||label,quotes:(p.sources||[]).slice(0,4),quotesAll:(p.sources||[]).slice(0,30)};
   save();recalc();renderAll();toast(`Étude de marché (${rsLabel(r.how)}) : ${toM(p.tam)?'TAM '+nf(toM(p.tam),0)+' M€':'taille non trouvée'}${b.cagrAI?' · TCAM '+nf(b.cagrOv,1)+' %':''}${n?' · '+n+' année(s) d\'historique':''} · ${urls.length} source(s) citée(s)`);}
 
 /* ---- Dossier LBO : Euribor 3 mois et multiple sectoriel ---- */
@@ -107,7 +107,8 @@ async function rsCm(trigger){const k=(ui.cmA&&RS_CM[ui.cmA])?ui.cmA:'brent',I=RS
     /* Garde-fou : un cours à plus de 35 % du dernier connu est écarté (mauvaise page, mauvaise unité) */
     .filter(x=>!last||Math.abs(+x.close/last.v-1)<=0.35);
   if(!rows.length){toast(`${I.n} : aucun cours plausible dans la réponse${last?' (dernier connu '+nf(last.v,2)+')':''}`);return;}
-  S.cm.add=S.cm.add||{};S.cm.add[k]=S.cm.add[k]||{};rows.slice(-60).forEach(x=>{S.cm.add[k][x.date]=[+x.close,null,null];});
+  S.cm.add=S.cm.add||{};S.cm.add[k]=S.cm.add[k]||{};rows.slice(-60).forEach(x=>{const o=isFinite(+x.open)&&+x.open>0&&Math.abs(+x.open/+x.close-1)<=0.2?+x.open:null,pr=S.cm.add[k][x.date];let o0=pr?pr[1]:null;
+    if(o===null&&o0===null){try{const s0=cmSeries(),i=s0.d.indexOf(x.date);if(i>=0)o0=s0[k+'O'][i];}catch(e){}}S.cm.add[k][x.date]=[+x.close,o!==null?o:o0,null];});   /* v8.37 : l'ouverture est gardée */
   const top=rows[rows.length-1];S.cm.rsAI=S.cm.rsAI||{};S.cm.rsAI[k]={how:r.how,at:new Date().toISOString(),v:+top.close,d:top.date,by:r.p.by||[],checked:!!r.p.checked};
   save();recalc();renderAll();toast(`${I.n} : ${nf(+top.close,2)} $ au ${fdate(top.date)} (${rsLabel(r.how)}${r.p.by?' · '+(r.p.checked?'recoupé ':'source unique : ')+r.p.by.join(' et '):''})`);}
 
@@ -119,12 +120,11 @@ liveIngest=async function(mod,trigger){const m=RS_RUN[mod]?mod:RS_RUN[ui.tab]?ui
 
 /* ---- Barre « Lancer la recherche » en tête des volets concernés ---- */
 function rsBar(){const M={bp:['Étude de marché du dossier',"Taille du marché, historique, croissance projetée, sources publiques citées",'rsbp'],
-    lbo:['Paramètres de marché du LBO','Euribor 3 mois et multiple VE/EBITDA du secteur, sources citées','rslbo'],an:['Comptes et cours de la société','Comptes recoupés MarketScreener / stockanalysis, cours recoupé Google Finance / TradingView','rsan'],
-    cm:['Cours comptant de l\'actif affiché','Dernier cours lu sur TradingView et Investing.com, recoupé à 1,5 %','rscm']}[ui.tab];
+    lbo:['Paramètres de marché du LBO','Euribor 3 mois et multiple VE/EBITDA du secteur, sources citées','rslbo'],an:['Comptes et cours de la société','Comptes recoupés MarketScreener / stockanalysis, cours recoupé Google Finance / TradingView','rsan']}[ui.tab];
   const P=document.getElementById('p-'+ui.tab);if(!P)return;let el=P.querySelector(':scope>.rsbar');if(!M){if(el)el.remove();return;}
   if(!el){el=document.createElement('div');el.className='rsbar noprint';P.insertBefore(el,P.firstChild);}
   const ch=rsChain(),busy=RS.busy[ui.tab],info=ui.tab==='bp'?S.bp.mktAI:ui.tab==='lbo'?(typeof lboCur==='function'&&lboCur()?lboCur().rsAI:null):ui.tab==='cm'?((S.cm.rsAI||{})[ui.cmA]||null):RS.last.an;
-  el.innerHTML=`<span class="dot ${busy?'am pulse':ch.length?'ok':'ko'}"></span><div><b>${M[0]}</b><span class="meta">${M[1]} · ${busy?'en cours : '+rsLabel(RS.eng[ui.tab]):'moteurs : '+(ch.length?ch.map(rsShort).join(' → '):'aucun (lecture seule)')}${info&&info.at?` · dernière recherche le ${new Date(info.at).toLocaleString('fr-FR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})} (${rsShort(info.how)})`:''}</span></div>
+  el.innerHTML=`<span class="dot ${busy?'am pulse':ch.length?'ok':'ko'}"></span><div><b>${M[0]}</b><span class="meta">${M[1]} · ${busy?'en cours : '+rsLabel(RS.eng[ui.tab]):''}${info&&info.at?` · dernière recherche le ${new Date(info.at).toLocaleString('fr-FR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})} (${rsShort(info.how)})`:''}</span></div>
     <button class="btn sm pri" data-act="${M[2]}" data-id="${ui.tab==='an'?esc(ui.tk):''}"${!ch.length||busy?' disabled':''}>${busy?'Recherche en cours…':'Lancer la recherche'}</button>`;}
 document.addEventListener('click',e=>{const b=e.target.closest&&e.target.closest('[data-act]');if(!b)return;const a=b.dataset.act;
   if(a==='rsbp')rsMarket('recalc');else if(a==='rslbo')rsLbo('recalc');else if(a==='rsan')rsAn('recalc',b.dataset.id||ui.tk);else if(a==='rscm')rsCm('recalc');

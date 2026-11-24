@@ -1,5 +1,5 @@
 /* ============ Volet 5 : Commodities & flows ============ */
-const CM_ASSETS={brent:'Brent / WTI',gold:'Or',silver:'Argent'};
+const CM_ASSETS={brent:'Brent / WTI',gold:'Or / Argent'};   /* v8.37 : or et argent réunis dans une seule vue */
 const CM_INST={brent:'Brent spot',wti:'WTI spot',brentF:'Brent futur',gold:'Or spot',goldF:'Or futur',silver:'Argent spot',silverF:'Argent contrat',cnh:'USD/CNH',spx:'S&P 500',dxy:'Dollar Index (DXY)',brentS:'Brent ICE (spread)',wtiF:'WTI NYMEX (spread)'};
 function cmP(){return S.cm.p;}
 /* Jours fériés de place (aucune cotation : la case l'indique au lieu de rester vide) */
@@ -96,7 +96,7 @@ function cmImport(txt,inst){
   return n;
 }
 function renderCM(){
-  if(!CM_ASSETS[ui.cmA])ui.cmA='brent';
+  if(ui.cmA==='silver'&&!ui.cmSilverPass)ui.cmA='gold';if(!CM_ASSETS[ui.cmA]&&!ui.cmSilverPass)ui.cmA='brent';
   const X=mktX(),MA=mktAll(),MX=MA[X.main]||MA.brent,noMain=!mktPts(X.main).length;
   const C=cmCalc(),{s,R,N}=C,a=ui.cmA,oil=a==='brent',tab=ui.cmT||'t',last=R[N-1],E=ui.edit,P=cmP();
   const li=(()=>{for(let i=N-1;i>=0;i--)if(s[a][i]!==null)return i;return N-1;})(),r=R[li];
@@ -137,11 +137,9 @@ function renderCM(){
   }
   const k=(l,v,d,c)=>`<div class="stat"><div class="k">${l}</div><div class="x ${c||''}">${v}</div><div class="d">${d||''}</div></div>`;
   const kpis=oil?k('WTI',nf(s.wti[li],2),nn(s.wtiV[li])?sgn(s.wtiV[li]*100,2)+' sur la séance':'',nn(s.wtiV[li])?cls(s.wtiV[li]):'')+k('Spread Brent − WTI',nf(r.spread,2),r.spSt)+k('Basis Brent',nf(r.bB,2),r.bBSt)+k(`Z-score spread ${P.zWin} j`,nf(r.zSp,2),Math.abs(r.zSp)>P.zCrit?'critique':Math.abs(r.zSp)>P.zAlert?'alerte':'normal')+k(`Corr. CNH/Brent ${P.cS} j`,nf(r.cC20,2),cmCorrLab(r.cC20))+k(`Corr. CNH/Brent ${P.cM} j`,nf(r.cC60,2),cmCorrLab(r.cC60))
-    :a==='gold'?k('Basis Or',nf(r.bG,2),r.bGSt)+k('Ratio Or/Argent',nf(r.gs,1),r.gs>P.gsRef?'zone refuge (> '+P.gsRef+')':'sous le seuil refuge')+k('Ratio Or/Brent',nf(r.gb,1),r.gb>P.gbDis?'déséquilibre (> '+P.gbDis+')':'')+k(`Z-score Or ${P.zWin} j`,nf(r.zG,2),Math.abs(r.zG)>P.zCrit?'critique':Math.abs(r.zG)>P.zAlert?'alerte':'normal')+k(`Corr. CNH/Or ${P.cS} j`,nf(r.cCG,2),cmCorrLab(r.cCG))
+    :a==='gold'?k('Basis Or',nf(r.bG,2),r.bGSt)+k('Ratio Or/Argent',nf(r.gs,1),r.gs>P.gsRef?'zone refuge (> '+P.gsRef+') : pousse à l\'achat d\'or':'sous le seuil refuge',nn(r.gs)?(r.gs>P.gsRef?'up':'down'):'')+k('Ratio Or/Brent',nf(r.gb,1),r.gb>P.gbDis?'déséquilibre (> '+P.gbDis+') : or recherché':'sous le seuil de déséquilibre',nn(r.gb)?(r.gb>P.gbDis?'up':'down'):'')+k(`Z-score Or ${P.zWin} j`,nf(r.zG,2),Math.abs(r.zG)>P.zCrit?'critique':Math.abs(r.zG)>P.zAlert?'alerte':'normal')+k(`Corr. CNH/Or ${P.cS} j`,nf(r.cCG,2),cmCorrLab(r.cCG))
     :k('Basis Argent',nf(r.bS,3),r.bSSt)+k('Z-score 20 j',nf(r.zS,2),Math.abs(r.zS)>1.7?'extrême':'normal')+k('Distance à la moyenne 20 j',nf(r.sDist,2))+k('Ratio Or/Argent',nf(r.gs,1));
   $('#p-cm').innerHTML=`<div class="grid">
-    ${typeof cmGapNote==='function'?cmGapNote(lastD,P):''}
-    ${age>7?`<div class="card s12 msg"><b style="color:var(--hi)">Données arrêtées au ${fd(lastD)}</b> (${age} jours). Importez les derniers exports Investing.com pour actualiser les signaux (bouton « Importer un export » au-dessus du tableau).</div>`:''}
     <div class="card s12"><div class="symhead">
       <div class="sh-id"><div class="sh-t">${oil?'Brent':CM_ASSETS[a]}</div><div class="sh-n">${tab==='t'?'Pression et approvisionnement':'Confirmation et corrélations macro'}</div><div class="sh-m">séance du ${fd(s.d[li])}${typeof CM_1112==='object'&&s.d[li]===CM_1112.meta.at.slice(0,10)?', cours à '+new Date(CM_1112.meta.at).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'}):''}</div></div>
       <div><div class="sh-px"><span class="v">${nf(px,2)}</span><em class="u">USD</em></div><div class="sh-d ${nn(pv)?cls(pv):''}">${nn(pv)?sgn(pv*100,2):''} sur la séance</div></div>

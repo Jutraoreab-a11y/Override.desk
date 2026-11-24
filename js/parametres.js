@@ -110,19 +110,19 @@ const JOB_SPEC={
     schema:'{"name":"","sector":"","currency":"EUR","fiscal_years":[2021],"revenue":[],"ebitda":[],"ebitda_margin_pct":[],"net_income":[],"eps":[],"fcf":[],"net_debt":[],"roe_pct":[],"shares":nombre,"price":nombre,"price_date":"AAAA-MM-JJ","sources":[{"url":"","quote":"","figure":""}]}'}),
   /* v8.29 : jamais de date sautée : Claude renvoie TOUTES les séances depuis la dernière date connue, et les séries de la vue Confirmation */
   cm:s=>{const N={brent:'Brent (ICE)',wti:'WTI (NYMEX)',gold:'Or',silver:'Argent'},X=JOB_CM_X[s]||{},from=jobCmFrom(s);
-    return{instructions:`Clôtures quotidiennes du ${N[s]||s} en dollars pour CHAQUE séance ${from?'du '+from+' (exclu)':'des 30 derniers jours'} jusqu'à la dernière clôture publiée, sans sauter aucune date ; un jour férié de place est signalé dans "holidays". Recoupe sur deux sites (TradingView, Investing.com).${Object.keys(X).length?' Pour la vue Confirmation, donne aussi les clôtures des mêmes séances de : '+Object.entries(X).map(([k,l])=>l+' ("'+k+'")').join(', ')+'.':''}`,
-      schema:'{"instrument":"'+s+'","rows":[{"date":"AAAA-MM-JJ","close":nombre}],"series":{'+Object.keys(X).map(k=>'"'+k+'":[{"date":"AAAA-MM-JJ","close":nombre}]').join(',')+'},"holidays":["AAAA-MM-JJ"],"checked":true,"by":["TradingView","Investing.com"],"sources":[{"url":"","quote":""}]}'};}};
+    return{instructions:`Cours d'OUVERTURE et de CLÔTURE quotidiens du ${N[s]||s} en dollars pour CHAQUE séance ${from?'du '+from+' (exclu)':'des 30 derniers jours'} jusqu'à la dernière clôture publiée, sans sauter aucune date ; un jour férié de place est signalé dans "holidays". Recoupe sur deux sites (TradingView, Investing.com).${Object.keys(X).length?' Pour la vue Confirmation, donne aussi l\'ouverture et la clôture des mêmes séances de : '+Object.entries(X).map(([k,l])=>l+' ("'+k+'")').join(', ')+'.':''}`,
+      schema:'{"instrument":"'+s+'","rows":[{"date":"AAAA-MM-JJ","open":nombre,"close":nombre}],"series":{'+Object.keys(X).map(k=>'"'+k+'":[{"date":"AAAA-MM-JJ","open":nombre,"close":nombre}]').join(',')+'},"holidays":["AAAA-MM-JJ"],"checked":true,"by":["TradingView","Investing.com"],"sources":[{"url":"","quote":""}]}'};}};
 /* première séance manquante (hors fériés) sur les 120 derniers jours ouvrés : la demande repart de la veille, pour combler chaque trou */
 function jobCmFrom(k){try{const s=cmSeries(),keys=[k,...Object.keys(JOB_CM_X[k]||{})],a=s[k]||[],N=s.d.length;let from=null;
     /* v8.36 : un trou dans la série principale OU dans une série de la vue Confirmation (futur, spread, USD/CNH…) relance la demande */
-    for(let i=N-1;i>=Math.max(1,N-120);i--){const d=s.d[i];if(CM_HOL.us.has(d)||CM_HOL.uk.has(d))continue;if(!nn(a[i])||(i>=N-30&&keys.slice(1).some(x=>s[x]&&!nn(s[x][i]))))from=s.d[i-1];}
+    for(let i=N-1;i>=Math.max(1,N-120);i--){const d=s.d[i];if(CM_HOL.us.has(d)||CM_HOL.uk.has(d))continue;if(!nn(a[i])||(i>=N-30&&(!nn((s[k+'O']||[])[i])||keys.slice(1).some(x=>s[x]&&!nn(s[x][i])))))from=s.d[i-1];}   /* v8.37 : une ouverture manquante sur 30 séances relance aussi la demande */
   if(from)return from;for(let i=N-1;i>=0;i--)if(nn(a[i]))return s.d[i];}catch(e){}return null;}
 const JOB_CM_X={brent:{brentF:'Brent futur M1 ICE',brentS:'Brent M1 ICE (pour le spread)',wtiF:'WTI M1 NYMEX',cnh:'USD/CNH'},wti:{wtiF:'WTI M1 NYMEX'},
   gold:{goldF:'Or futur COMEX',cnh:'USD/CNH',spx:'S&P 500'},silver:{silverF:'Argent contrat COMEX',cnh:'USD/CNH'}};
 /* séries complémentaires renvoyées par Claude : écrites séance par séance, avec le même garde-fou que les cours (35 % du dernier connu) */
 function jobCmSeries(res){const X=res&&res.series;if(!X||typeof X!=='object')return 0;let n=0;S.cm.add=S.cm.add||{};
   Object.entries(X).forEach(([k,rows])=>{if(!(k in CM_INST)||!Array.isArray(rows))return;let last=null;try{const s=cmSeries(),a=s[k]||[];for(let i=a.length-1;i>=0;i--)if(nn(a[i])){last=a[i];break;}}catch(e){}
-    S.cm.add[k]=S.cm.add[k]||{};rows.forEach(r=>{if(!/^\d{4}-\d{2}-\d{2}$/.test(String(r&&r.date))||!isFinite(+r.close)||+r.close<=0)return;if(last&&Math.abs(+r.close/last-1)>0.35)return;S.cm.add[k][r.date]=[+r.close,null,null];n++;});});
+    S.cm.add[k]=S.cm.add[k]||{};rows.forEach(r=>{if(!/^\d{4}-\d{2}-\d{2}$/.test(String(r&&r.date))||!isFinite(+r.close)||+r.close<=0)return;if(last&&Math.abs(+r.close/last-1)>0.35)return;const o=isFinite(+r.open)&&+r.open>0&&Math.abs(+r.open/+r.close-1)<=0.2?+r.open:null,pr=S.cm.add[k][r.date];S.cm.add[k][r.date]=[+r.close,o!==null?o:(pr?pr[1]:null),null];n++;});});
   return n;}
 const JOB_EVERY=12*3600e3,jobAtKey=k=>'fomo.jobat.'+k;
 const AUTO_EVERY=10*60e3;
@@ -138,8 +138,8 @@ if(typeof rsRun==='function'){const _rr=rsRun;rsRun=async function(mod,subject,i
     /* v8.25 : la mise à jour au chargement envoie aussi la demande à Claude (au plus une fois toutes les 12 h par volet et sujet),
        sans bloquer la lecture de la base ; Recalculer et « Lancer la recherche » l'envoient à chaque clic */
     if(sp&&(trigger!=='init'||jobDue(k))&&!(JOB_AUTO&&!jobDue(k,AUTO_EVERY))){try{const r=await liveApi('/api/v1/jobs',{method:'POST',body:{module:mod,subject,query:server&&server.query||null,...sp}});jobMark(k);JOB_N.sent++;
-        if(!JOB_QUIET&&trigger!=='init'){jobWake();const t=jtGet();jtSet({n:Math.max(1,(t?t.n:0)+(r.queued?1:0)),at:Date.now()});}
-        if(!JOB_QUIET)toast(`${RS_MOD[mod]||mod} : demande ${r.queued?'transmise':'déjà en attente'} à Claude. Dans Claude, dites « traite mes demandes FOMO.DESK » : le résultat s'appliquera ici.`);
+        if(!JOB_QUIET){const w=jobWake();if(trigger!=='init'){const t=jtGet();jtSet({n:Math.max(1,(t?t.n:0)+(r.queued?1:0)),at:Date.now()});}
+          if(trigger!=='init')w.then(x=>toast(`${RS_MOD[mod]||mod} : demande ${r.queued?'transmise':'déjà en attente'}. ${x&&x.woken?'Claude est réveillé automatiquement et la traite':'Réveil automatique de Claude envoyé'} : le résultat s'appliquera ici dès qu'il est prêt.`));}
         if(trigger!=='init')return null;}
       catch(e){JOB_N.ko++;if(!JOB_QUIET)toast('File des demandes indisponible : '+e.message);}}}
   return _rr.apply(this,arguments);};}
@@ -179,7 +179,7 @@ async function jobsAll(auto){if(!jobsOn())return;JOB_AUTO=!!auto;JOB_QUIET=true;
   finally{JOB_QUIET=false;JOB_SENDING=false;JOB_AUTO=false;}
   if(JOB_N.sent){const t=jtGet();jtSet({n:Math.max(JOB_N.sent,t?t.n:0),at:Date.now()});await jobWake();jtPoll();}
   toast(JOB_N.ko?`File des demandes indisponible (${JOB_N.ko} échec(s)), ${JOB_N.sent} demande(s) transmise(s) à Claude`
-    :`${JOB_N.sent} demande(s) transmise(s) à Claude pour tout FOMO.DESK. Dans Claude, dites « traite mes demandes FOMO.DESK ».`);}
+    :`${JOB_N.sent} demande(s) transmise(s) pour tout FOMO.DESK : Claude est réveillé automatiquement et les traite, les résultats s'appliquent ici.`);}
 if(typeof afRun==='function'){const _af=afRun;afRun=async function(force){if(force)await jobsAll();return _af.apply(this,arguments);};}
 
 /* v8.30 : « Tout mettre à jour » sans intervention humaine.
