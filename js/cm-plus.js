@@ -37,7 +37,7 @@ function lwPlus(ch,el){try{
   const hint=document.createElement('div');hint.className='lwhint';hint.textContent='glisser pour déplacer · double-clic pour tout revoir';el.appendChild(hint);
   const SER=[];['addLineSeries','addAreaSeries','addHistogramSeries','addBaselineSeries','addCandlestickSeries'].forEach(m=>{if(typeof ch[m]!=='function')return;const o=ch[m].bind(ch);
     ch[m]=function(opt){const s=o(opt);SER.push(s);return s;};});
-  const fmtT=t=>{if(typeof t==='string')return fd(t);if(t&&t.year)return fd(`${t.year}-${String(t.month).padStart(2,'0')}-${String(t.day).padStart(2,'0')}`);
+  const fmtT=t=>{if(typeof t==='string')return fdate(t);if(t&&t.year)return fdate(`${t.year}-${String(t.month).padStart(2,'0')}-${String(t.day).padStart(2,'0')}`);
     if(typeof t==='number')return new Date(t*1000).toLocaleDateString('fr-FR');return'';};
   ch.subscribeCrosshairMove(p=>{if(!p||!p.time||!p.seriesData||!p.point){leg.style.display='none';return;}
     const items=[];SER.forEach(s=>{const v=p.seriesData.get(s);if(!v)return;const val=v.value!==undefined?v.value:v.close;if(!isFinite(val))return;
