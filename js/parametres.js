@@ -166,15 +166,47 @@ async function loginRun(){const t0=Date.now();while(typeof AF==='object'&&AF.run
 /* v8.27 : « tout le SaaS » : une mise à jour complète (connexion ou « Tout mettre à jour ») envoie à Claude une demande
    pour CHAQUE sujet de chaque volet : étude de marché du business plan, chaque dossier LBO, chaque titre analysé,
    chaque matière première (Brent, WTI, or, argent). Les demandes déjà en attente ne sont pas dupliquées (contrôle serveur). */
-async function jobsAll(){if(!jobsOn())return;JOB_QUIET=true;JOB_N.sent=0;JOB_N.ko=0;const run=async f=>{try{await f();}catch(e){console.error('demande',e);}};
+async function jobsAll(){if(!jobsOn())return;JOB_QUIET=true;JOB_SENDING=true;try{afBar();}catch(e){}JOB_N.sent=0;JOB_N.ko=0;const run=async f=>{try{await f();}catch(e){console.error('demande',e);}};
   try{await run(()=>rsMarket('all'));
     const oL=S.lbo&&S.lbo.cur;for(const d of (S.lbo&&S.lbo.list)||[]){S.lbo.cur=d.id;await run(()=>rsLbo('all'));}if(S.lbo)S.lbo.cur=oL;
     for(const k of Object.keys(S.an.assets))await run(()=>rsAn('all',k));
     const oC=ui.cmA;for(const c of ['brent','wti','gold','silver']){ui.cmA=c;await run(()=>rsCm('all'));}ui.cmA=oC;}
-  finally{JOB_QUIET=false;}
+  finally{JOB_QUIET=false;JOB_SENDING=false;}
+  if(JOB_N.sent){const t=jtGet();jtSet({n:Math.max(JOB_N.sent,t?t.n:0),at:Date.now()});jtPoll();}
   toast(JOB_N.ko?`File des demandes indisponible (${JOB_N.ko} échec(s)), ${JOB_N.sent} demande(s) transmise(s) à Claude`
     :`${JOB_N.sent} demande(s) transmise(s) à Claude pour tout FOMO.DESK. Dans Claude, dites « traite mes demandes FOMO.DESK ».`);}
 if(typeof afRun==='function'){const _af=afRun;afRun=async function(force){if(force)await jobsAll();return _af.apply(this,arguments);};}
+
+/* v8.30 : « Tout mettre à jour » sans intervention humaine.
+   - La routine Claude « FOMO.DESK - traitement automatique des demandes » (cloud, toutes les heures à hh:18 UTC) traite la file seule.
+   - Barre de progression : sources publiques du serveur (passe en cours), puis demandes traitées par Claude, suivies toutes les 30 s.
+   - Le bouton répond toujours : retour immédiat, et pendant une passe déjà en cours il envoie quand même les demandes à Claude. */
+let JOB_SENDING=false,JT_REM=null;const JT_K='fomo.jobtrack',ROUTINE_MIN_UTC=18;
+const jtGet=()=>{try{return JSON.parse(localStorage.getItem(JT_K)||'null');}catch(e){return null;}};
+const jtSet=v=>{try{v?localStorage.setItem(JT_K,JSON.stringify(v)):localStorage.removeItem(JT_K);}catch(e){}};
+const jtNext=()=>{const n=new Date(),x=new Date(n);x.setUTCMinutes(ROUTINE_MIN_UTC,0,0);if(x<=n)x.setUTCHours(x.getUTCHours()+1);return x.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'});};
+async function jtPoll(){const t=jtGet();if(!t||!setSess())return;let rem=0;
+  try{for(const st of ['pending','claimed']){const r=await liveApi('/api/v1/jobs?status='+st);rem+=(r.jobs||[]).length;}}catch(e){return;}
+  JT_REM=rem;if(rem>t.n){t.n=rem;jtSet(t);}
+  if(rem===0){jtSet(null);JT_REM=null;try{await jobsPoll();}catch(e){}toast('Claude a traité toutes les demandes : FOMO.DESK est à jour');}
+  try{afBar();}catch(e){}}
+setTimeout(jtPoll,5000);setInterval(jtPoll,30000);
+if(!document.getElementById('fd-prog-css')){const st=document.createElement('style');st.id='fd-prog-css';
+  st.textContent='.fd-prog{flex-basis:100%;display:flex;align-items:center;gap:10px;margin-top:2px}.fd-prog-bar{flex:1;height:6px;border-radius:3px;background:rgba(255,255,255,.1);overflow:hidden}.fd-prog-bar i{display:block;height:100%;background:var(--amber,#F5A524);transition:width .6s ease}.fd-prog-bar.ind i{width:35%!important;animation:fdind 1.2s ease-in-out infinite}@keyframes fdind{0%{margin-left:-35%}100%{margin-left:100%}}.fd-prog .meta{white-space:nowrap}';
+  document.head.appendChild(st);}
+if(typeof afBar==='function'){const _ab=afBar;afBar=function(){_ab.apply(this,arguments);const el=document.getElementById('afbar');if(!el)return;
+  let pb=el.querySelector('.fd-prog');const t=jtGet(),srv=AF.run?AF.i/Math.max(1,AF.n):null;
+  if(!t&&srv===null&&!JOB_SENDING){if(pb)pb.remove();return;}
+  const cl=t?(JT_REM===null?0:Math.max(0,1-JT_REM/Math.max(1,t.n))):null;
+  const pct=Math.round(100*(cl===null?(srv===null?0:srv):((srv===null?1:srv)*0.25+cl*0.75)));
+  const lab=[JOB_SENDING?'Envoi des demandes à Claude…':'',srv!==null?`Sources publiques ${AF.i}/${AF.n}`:'',
+    t?`Claude : ${JT_REM===null?'…':t.n-JT_REM}/${t.n} demandes traitées · passage automatique vers ${jtNext()}`:''].filter(Boolean).join(' · ');
+  if(!pb){pb=document.createElement('div');pb.className='fd-prog';el.appendChild(pb);}
+  pb.innerHTML=`<div class="fd-prog-bar${JOB_SENDING&&srv===null&&!t?' ind':''}" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${pct}"><i style="width:${pct}%"></i></div><span class="meta">${pct} % · ${esc(lab)}</span>`;};}
+/* capture : passe avant le gestionnaire du bandeau, pour que chaque clic ait un effet visible */
+document.addEventListener('click',e=>{const b=e.target.closest&&e.target.closest('[data-act="afall"]');if(!b)return;
+  if(typeof AF==='object'&&AF.run){e.stopImmediatePropagation();toast('Mise à jour déjà en cours : les demandes partent aussi à Claude');jobsAll().then(()=>{try{afBar();}catch(x){}});return;}
+  b.disabled=true;b.textContent='Mise à jour…';setTimeout(()=>{if(!(typeof AF==='object'&&AF.run)&&!JOB_SENDING)try{afBar();}catch(x){}},2500);},true);
 setInterval(()=>{if(LOGIN_RUN||!setSess())return;const u=FLUX.session.user||{},k=(u.id||'')+'|'+(u.last_sign_in_at||'');let prev=null;
   try{prev=localStorage.getItem(LOGIN_K);}catch(e){}if(prev===k)return;try{localStorage.setItem(LOGIN_K,k);}catch(e){}
   LOGIN_RUN=true;loginRun().catch(e=>console.error('connexion',e)).finally(()=>{LOGIN_RUN=false;});},2000);
