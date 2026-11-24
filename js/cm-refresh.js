@@ -8,6 +8,11 @@ const CM_1112={"src":"EIA / FRED (Brent dat\u00e9, WTI Cushing) \u00b7 Yahoo Fin
   if(add.length){const nd=[...CMD.d,...add].sort(),idx=new Map(CMD.d.map((d,i)=>[d,i]));keys.forEach(k=>{const o=CMD[k];CMD[k]=nd.map(d=>idx.has(d)?o[idx.get(d)]:null);});CMD.d=nd;}
   const at=new Map(CMD.d.map((d,i)=>[d,i])),col={brent:'brentC',brentO:'brentO',brentF:'brentFC',wti:'wtiC',wtiO:'wtiO',gold:'goldC',goldO:'goldO',goldF:'goldFC',silver:'silverC',silverO:'silverO',silverF:'silverFC',cnh:'cnhC',spx:'spxC',dxy:'dxyC',brentS:'brentSC',wtiF:'wtiFC'};
   Object.entries(col).forEach(([k,c])=>{if(!CMD[c])CMD[c]=CMD.d.map(()=>null);Object.entries(D[k]||{}).forEach(([d,v])=>{const i=at.get(d);if(i!==undefined)CMD[c][i]=v;});});
+  /* v8.33 : contrôle de cohérence comptant / contrat M1 du même jour. Un comptant à moins de 25 % ou plus de 4 fois son contrat
+     (série d'un autre instrument chargée par erreur, ex. WTI à 2,6 $ du 26/10 au 09/11/2026) est rejeté : le contrat M1 en tient lieu,
+     marqué provisoire comme quand l'EIA n'a pas encore publié. */
+  [['brentC','brentFC','brent'],['wtiC','wtiFC','wti'],['goldC','goldFC','gold'],['silverC','silverFC','silver']].forEach(([c,f,k])=>{const C=CMD[c],F=CMD[f];if(!C||!F)return;
+    C.forEach((v,i)=>{const m=F[i];if(v==null||m==null||!(m>0))return;const r=v/m;if(r<.25||r>4){C[i]=m;CM_1112.prov=CM_1112.prov||{};(CM_1112.prov[k]=CM_1112.prov[k]||[]).includes(CMD.d[i])||CM_1112.prov[k].push(CMD.d[i]);}});});
   /* Variations quotidiennes recalculées sur la série complétée */
   ['brent','wti','gold','silver','spx'].forEach(k=>{const C=CMD[k+'C'],V=CMD[k+'V'];if(!V)return;C.forEach((v,i)=>{if(CMD.d[i]<'2026-06-15'||v==null)return;let j=i-1;while(j>=0&&C[j]==null)j--;V[i]=j>=0?v/C[j]-1:null;});});
 })();
