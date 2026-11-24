@@ -22,7 +22,8 @@ function macPinkHTML(){const R=RATES,src=[];
     R.rates.filter(x=>x.bank!=='Fed').forEach(x=>{h+=cell(x.bank+' : '+x.name,x.v!=null?nf(x.v,2)+' %':'—',x.v!=null?'en vigueur au '+v7d(x.d):'source illisible');src.push([x.url,x.bank]);});}
   else{const ff=macLast('ff');h+=cell('Fed Funds effectif',nf(ff.v,2)+' %',v7ym(ff.ym)+' (FRED, archivé)');}
   const inf=(o,k,l)=>{if(o&&o.ym){src.push([o.url,'BLS '+l]);const dv=o.yoy!=null&&o.prevYoy!=null?o.yoy-o.prevYoy:null;
-      return cell(l+' glissement annuel',o.yoy!=null?nf(o.yoy,2)+' %':'—',o.yoy!=null?v7ym(o.ym)+(dv!=null?' · '+(dv>=0?'▲ ':'▼ ')+nf(Math.abs(dv),2)+' pt':''):v7ym(o.ym)+' : indice publié ('+nf(o.idx,3)+'), base de l\'an passé non publiée par le BLS',o.calc);}
+      if(o.yoy==null&&o.prevYoy!=null)return cell(l+' glissement annuel',nf(o.prevYoy,2)+' %',v7ym(o.prevYm)+' · '+v7ym(o.ym)+' : indice publié ('+nf(o.idx,3)+'), glissement non calculable (indice d\'il y a un an non publié par le BLS)',o.calc);
+      return cell(l+' glissement annuel',o.yoy!=null?nf(o.yoy,2)+' %':'—',o.yoy!=null?v7ym(o.ym)+(dv!=null?' · '+(dv>=0?'▲ ':'▼ ')+nf(Math.abs(dv),2)+' pt':''):v7ym(o.ym),o.calc);}
     const m=macLast(k);return cell(l+' glissement annuel',nf(m.v,2)+' %',v7ym(m.ym)+' (FRED, archivé)');};
   h+=inf(R&&R.cpi,'cpi','CPI')+inf(R&&R.ppi,'ppi','PPI');
   const F=typeof MACRO==='object'&&MACRO.sep;if(F)h+=cell('Dernière décision Fed',esc(F.decision),'cible '+esc(F.target)+' · médiane FOMC fin 2026 '+nf(F.med['2026'],1)+' %');
@@ -38,7 +39,7 @@ function ratesDxyHTML(){const R=RATES,D=R&&R.dx;
   return`<div class="card s12" id="ratesdxy"><h2><span>Taux directeurs en vigueur et performance du dollar <span class="meta">facteurs de décision de l'or et de l'argent</span></span></h2>
     <div class="tw"><table class="tbl"><thead><tr><th>Banque centrale</th><th>Taux</th><th class="n">Niveau</th><th>En vigueur au</th><th>Source</th></tr></thead><tbody>${rows}</tbody></table></div>
     <div class="tw" style="margin-top:10px"><table class="tbl"><thead><tr><th>Indicateur</th><th class="n">Dernier</th><th class="n">Séance</th>${P.map(([,l])=>`<th class="n">${l}</th>`).join('')}</tr></thead><tbody>
-      ${D&&D.dxy?perf(D.dxy,'Dollar Index (DXY)',true)+perf(D.us10,'Taux US 10 ans (%)',true)+perf(D.us02,'Taux US 2 ans (%)',true):`<tr><td colspan="9" class="meta">${D&&D.err?'TradingView illisible : '+esc(D.err):'Lecture en cours…'}</td></tr>`}
+      ${D&&D.dxy?perf(D.dxy,'Dollar Index (DXY)',true)+perf(D.us10,'Rendement US 10 ans (%, variation relative)',true)+perf(D.us02,'Rendement US 2 ans (%, variation relative)',true):`<tr><td colspan="9" class="meta">${D&&D.err?'TradingView illisible : '+esc(D.err):'Lecture en cours…'}</td></tr>`}
     </tbody></table></div>
     <p class="note">Fond vert : le mouvement pousse l'or et l'argent à la hausse (dollar ou taux en baisse) ; rouge : il pèse sur les métaux. Performances lues sur <a href="${esc(D&&D.url||'https://www.tradingview.com/symbols/TVC-DXY/')}" target="_blank" rel="noopener">TradingView</a> (cours différé).</p></div>`;}
 

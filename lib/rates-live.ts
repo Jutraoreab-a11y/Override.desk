@@ -50,10 +50,11 @@ async function bls(id: string, name: string, f: typeof fetch) {
 }
 async function dxy(f: typeof fetch) {
   const url = 'https://www.tradingview.com/symbols/TVC-DXY/';
-  try { const r = await f('https://scanner.tradingview.com/america/scan', { method: 'POST', headers: { 'Content-Type': 'application/json', ...UA },
-      body: JSON.stringify({ symbols: { tickers: ['TVC:DXY', 'TVC:US10Y', 'TVC:US02Y'] }, columns: ['close', 'change', 'Perf.W', 'Perf.1M', 'Perf.3M', 'Perf.6M', 'Perf.YTD', 'Perf.Y'] }) });
-    if (!r.ok) throw new Error('HTTP ' + r.status);
-    const j = await r.json() as { data?: Array<{ s: string; d: number[] }> }, g = (s: string) => (j.data || []).find(x => x.s === s);
+  try { const cols = ['close', 'change', 'Perf.W', 'Perf.1M', 'Perf.3M', 'Perf.6M', 'Perf.YTD', 'Perf.Y'];
+    /* le DXY est servi par le marché « america », les rendements US par « global » */
+    const scan = async (m: string, t: string[]) => { const r = await f(`https://scanner.tradingview.com/${m}/scan`, { method: 'POST', headers: { 'Content-Type': 'application/json', ...UA }, body: JSON.stringify({ symbols: { tickers: t }, columns: cols }) });
+      if (!r.ok) throw new Error('HTTP ' + r.status); return ((await r.json()) as { data?: Array<{ s: string; d: number[] }> }).data || []; };
+    const [A, B] = await Promise.all([scan('america', ['TVC:DXY']), scan('global', ['TVC:US10Y', 'TVC:US02Y']).catch(() => [])]), all = [...A, ...B], g = (s: string) => all.find(x => x.s === s);
     const m = (x?: { d: number[] }) => x ? { c: num(x.d[0]), ch: num(x.d[1]), w: num(x.d[2]), m1: num(x.d[3]), m3: num(x.d[4]), m6: num(x.d[5]), ytd: num(x.d[6]), y1: num(x.d[7]) } : null;
     return { url, dxy: m(g('TVC:DXY')), us10: m(g('TVC:US10Y')), us02: m(g('TVC:US02Y')) };
   } catch (e) { return { url, err: String((e as Error).message) }; }
