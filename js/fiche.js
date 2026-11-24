@@ -187,7 +187,10 @@ function fiEnrich(){if(ui.tab!=='an'||ui.anX)return;const id=ui.tk,a=S.an.assets
 /* ---------- lecture complète d'une société inconnue, sans IA : les données JSON des pages publiques ---------- */
 function fiDecode(j){const n=(j.nodes||[]).find(x=>x&&x.type==='data');if(!n)throw new Error('format');const D=n.data,memo=new Map();
   const R=i=>{if(i===-1)return undefined;if(memo.has(i))return memo.get(i);const v=D[i];let o;if(Array.isArray(v)){o=[];memo.set(i,o);v.forEach(k=>o.push(R(k)));}else if(v&&typeof v==='object'){o={};memo.set(i,o);for(const k in v)o[k]=R(v[k]);}else o=v;return o;};return R(0);}
-async function fiReadJson(url){const t=await aiPage(url);const m=String(t).match(/\{[\s\S]*\}/);if(!m)throw new Error('page vide');return fiDecode(JSON.parse(m[0]));}
+async function fiReadJson(url){let t;
+  /* v8.37 : hors de l'application Claude, lecture par le serveur FOMO.DESK */
+  if(!(typeof AI==='object'&&AI.mcp)){const m=String(url).match(/^https:\/\/stockanalysis\.com(\/[^?]+?)\/__data\.json/);if(!m)throw new Error('lecture impossible hors de Claude');const r=await fetch('/api/v1/sa?p='+encodeURIComponent(m[1]));if(!r.ok){let e='';try{e=(await r.json()).error;}catch(x){}throw new Error(e||'HTTP '+r.status);}t=await r.text();}
+  else t=await aiPage(url);const m=String(t).match(/\{[\s\S]*\}/);if(!m)throw new Error('page vide');return fiDecode(JSON.parse(m[0]));}
 async function ficheFetch(tk){const m=String(tk).match(/^(.+)\.([A-Z]+)$/),EX={SS:'sha',SZ:'she',AS:'ams',L:'lon',MC:'bme',AX:'asx',PA:'epa',TW:'tpe',T:'tyo',SW:'swx',TO:'tsx',KS:'krx',KQ:'kosdaq',SR:'tadawul',F:'etr',DE:'etr',HK:'hkg',MI:'bit',BR:'ebr',ST:'sto',CO:'cph',HE:'hel',OL:'osl',NS:'nse',BO:'bom',SA:'bvmf',MX:'bmv',JO:'jse',SI:'sgx',V:'tsxv',VI:'vie',WA:'wse',IR:'ise',NZ:'nzx',IS:'ist',TA:'tase',JK:'idx',BK:'set',KL:'klse',LS:'eli',AT:'athex'};
   const p=m?(EX[m[2]]?`/quote/${EX[m[2]]}/${m[2]==='HK'?String(+m[1]):m[1]}`:null):'/stocks/'+tk.toLowerCase().replace('-','.');if(!p)throw new Error('place de cotation non couverte');
   const U=s=>`https://stockanalysis.com${p}${s}/__data.json?x-sveltekit-invalidated=001`,M6=v=>typeof v==='number'?Math.round(v/1e4)/100:null;

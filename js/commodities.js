@@ -152,7 +152,7 @@ function renderCM(){
       <div class="dc"><span class="dot ${cmCls(sigMain)}"></span><div><b>Signal principal</b><span>${esc(cmStrip(sigMain))}</span></div></div>
       ${sigStruct?`<div class="dc"><span class="dot ${cmCls(sigStruct)}"></span><div><b>Structure</b><span>${esc(cmStrip(sigStruct))}</span></div></div>`:''}
       <div class="dc"><span class="dot ${cmCls(r[ind[3]])}"></span><div><b>${esc(r[ind[2]])}</b><span>${esc(r[ind[3]])}</span></div></div>
-      ${a!=='silver'?`<div class="dc"><span class="dot ${cmCls(r.spRk)}"></span><div><b>Spread Brent − WTI : ${nf(r.spread,2)}</b><span>${esc(r.spRk)}</span></div></div>`:''}
+      ${oil?`<div class="dc"><span class="dot ${cmCls(r.spRk)}"></span><div><b>Spread Brent − WTI : ${nf(r.spread,2)}</b><span>${esc(r.spRk)}</span></div></div>`:''}
     </div></div>
     <div class="card s12"><div class="stats">${kpis}</div></div>
     ${cmHeat(C)}
