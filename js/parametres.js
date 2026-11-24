@@ -52,6 +52,7 @@ function renderSET(){const P=document.getElementById('p-set');if(!P||ui.tab!=='s
       <p class="note">Un changement d'e-mail est confirmé par un lien envoyé à la nouvelle adresse.</p>`}
   </div>
   <div class="card s6"><h2><span>Connecteur Claude <span class="meta">Claude répond aux demandes de FOMO.DESK avec votre abonnement, sans clé API Anthropic</span></span></h2>
+    <p class="note"><a href="guide.html" target="_blank" rel="noopener" class="btn sm" style="text-decoration:none">Guide : connecter Claude et utiliser FOMO.DESK</a></p>
     <ol class="set-steps"><li>${sess?'Créez une clé personnelle ci-dessous.':'Connectez-vous à votre compte (à gauche), puis créez une clé personnelle.'} Sans clé, le connecteur ne donne accès qu'aux données publiques (changes, cours, comptes, stocks de brut).</li>
       <li>Dans Claude : <b>Paramètres › Connecteurs › Ajouter un connecteur personnalisé</b>. Nom : <b>FOMO.DESK</b>. Adresse : celle ci-dessous.</li>
       <li>Dans une conversation, activez le connecteur FOMO.DESK et collez le message à donner à Claude.</li></ol>
@@ -141,7 +142,7 @@ if(typeof rsRun==='function'){const _rr=rsRun;rsRun=async function(mod,subject,i
         if(trigger!=='init')return null;}
       catch(e){JOB_N.ko++;if(!JOB_QUIET)toast('File des demandes indisponible : '+e.message);}}}
   return _rr.apply(this,arguments);};}
-async function jobsPoll(){if(!setSess())return;let r;try{r=await liveApi('/api/v1/jobs?status=done');}catch(e){return;}const J=r.jobs||[];if(!J.length)return;const ids=[];
+async function jobsPoll(){if(!setSess())return;let r;try{r=await liveApi('/api/v1/jobs?status=done');}catch(e){return;}const J=(r.jobs||[]).filter(j=>j.module!=='chat');if(!J.length)return;   /* les réponses de l'assistant sont lues par js/assistant.js */const ids=[];
   for(const j of J){if(!j.result||typeof j.result!=='object'){ids.push(j.id);continue;}JOBRES[j.module+'|'+j.subject]=j.result;ids.push(j.id);
     try{if(j.module==='bp')await rsMarket('job');else if(j.module==='lbo'){const d=(S.lbo.list||[]).find(x=>lboSec(x)===j.subject);if(d){const o=S.lbo.cur;S.lbo.cur=d.id;try{await rsLbo('job');}finally{S.lbo.cur=o;}}}
       else if(j.module==='an'){const k=Object.keys(S.an.assets).find(x=>S.an.assets[x].t===j.subject);if(k){await rsAn('job',k);S.an.assets[k].fundAt=new Date().toISOString();save();}}

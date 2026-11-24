@@ -1,0 +1,179 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Guide FOMO.DESK : connecter Claude et utiliser le SaaS</title>
+<meta name="description" content="Connecter Claude à FOMO.DESK, comprendre les mises à jour automatiques, chaque volet et l'assistant IA.">
+<style>
+:root{--shell:#09090B;--pane:#111113;--raised:#18181B;--line:#27272A;--line2:#3F3F46;--text:#D4D4D8;--hi:#FAFAFA;--mute:#A1A1AA;--up:#10B981;--amber:#F5A524;--down:#DC2626;--mono:ui-monospace,SFMono-Regular,Menlo,monospace}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--shell);color:var(--text);font:16px/1.65 Inter,system-ui,-apple-system,"Segoe UI",sans-serif;-webkit-font-smoothing:antialiased}
+a{color:var(--hi)}
+.w{max-width:880px;margin:0 auto;padding:0 24px}
+header.top{border-bottom:1px solid var(--line);position:sticky;top:0;background:rgba(9,9,11,.92);backdrop-filter:blur(8px);z-index:5}
+header.top .w{display:flex;align-items:center;justify-content:space-between;height:56px}
+.brand{display:flex;align-items:center;gap:8px;color:var(--hi);text-decoration:none;font-weight:800;letter-spacing:.04em;font-size:14px}
+.brand i{font-style:normal;color:var(--mute);font-weight:700}
+.back{font-size:14px;color:var(--mute);text-decoration:none;border:1px solid var(--line2);border-radius:6px;padding:6px 12px}
+.back:hover{color:var(--hi);border-color:var(--mute)}
+.hero{padding:56px 0 24px}
+.hero h1{font-size:clamp(28px,4.5vw,42px);line-height:1.15;color:var(--hi);margin:0 0 12px;letter-spacing:-.02em;text-wrap:balance}
+.hero p{color:var(--mute);margin:0;max-width:62ch}
+nav.toc{display:flex;flex-wrap:wrap;gap:8px;margin:28px 0 8px}
+nav.toc a{font-size:13px;text-decoration:none;color:var(--text);border:1px solid var(--line);border-radius:999px;padding:6px 12px;background:var(--pane)}
+nav.toc a:hover{border-color:var(--line2);color:var(--hi)}
+section{padding:40px 0;border-top:1px solid var(--line)}
+section:first-of-type{border-top:0}
+h2{font-size:24px;color:var(--hi);margin:0 0 6px;letter-spacing:-.01em}
+h2+p.lead{color:var(--mute);margin:0 0 24px}
+h3{font-size:16px;color:var(--hi);margin:28px 0 8px}
+ol.steps{list-style:none;counter-reset:s;padding:0;margin:0;display:grid;gap:12px}
+ol.steps>li{counter-increment:s;position:relative;padding:14px 16px 14px 56px;background:var(--pane);border:1px solid var(--line);border-radius:8px}
+ol.steps>li::before{content:counter(s);position:absolute;left:16px;top:14px;width:26px;height:26px;border-radius:50%;background:var(--raised);border:1px solid var(--line2);color:var(--hi);font:700 13px/24px var(--mono);text-align:center}
+ol.steps b{color:var(--hi)}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px}
+.card{background:var(--pane);border:1px solid var(--line);border-radius:8px;padding:16px}
+.card h4{margin:0 0 6px;color:var(--hi);font-size:15px}
+.card p{margin:0;color:var(--mute);font-size:14px}
+code,kbd{font-family:var(--mono);font-size:13px;background:var(--raised);border:1px solid var(--line);border-radius:4px;padding:1px 6px;color:var(--hi)}
+.note{border-left:3px solid var(--amber);background:var(--pane);padding:12px 16px;border-radius:0 8px 8px 0;margin:16px 0;font-size:15px}
+.note.ok{border-color:var(--up)}
+table{width:100%;border-collapse:collapse;font-size:14px;margin:8px 0}
+th,td{text-align:left;padding:10px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+th{color:var(--mute);font-weight:600;font-size:12px;text-transform:uppercase;letter-spacing:.05em}
+td:first-child{color:var(--hi);white-space:nowrap}
+.flow{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:20px 0}
+.flow div{background:var(--pane);border:1px solid var(--line);border-radius:8px;padding:12px;font-size:13px;color:var(--mute);position:relative}
+.flow div b{display:block;color:var(--hi);font-size:14px;margin-bottom:2px}
+@media (max-width:680px){.flow{grid-template-columns:1fr 1fr}td:first-child{white-space:normal}}
+details{background:var(--pane);border:1px solid var(--line);border-radius:8px;padding:12px 16px;margin:8px 0}
+details summary{cursor:pointer;color:var(--hi);font-weight:600}
+details p{margin:8px 0 0;color:var(--mute);font-size:15px}
+.bubble{display:inline-grid;place-items:center;width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,#F5A524,#D97757);vertical-align:middle;margin:0 4px}
+.bubble svg{width:16px;height:16px}
+footer{border-top:1px solid var(--line);padding:24px 0 48px;color:var(--mute);font-size:13px}
+</style>
+</head>
+<body>
+<header class="top"><div class="w">
+  <a class="brand" href="/"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><rect x="1" y="1" width="22" height="22" rx="4" fill="#FAFAFA"/><path d="M6 16.5l4-4.5 3 3 5-6.5" stroke="#09090B" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/><circle cx="18" cy="8.5" r="1.6" fill="#09090B"/></svg>FOMO<i>.DESK</i></a>
+  <a class="back" href="/">Ouvrir FOMO.DESK</a>
+</div></header>
+
+<main class="w">
+  <div class="hero">
+    <h1>Guide : connecter Claude et utiliser FOMO.DESK</h1>
+    <p>FOMO.DESK lit les sources publiques lui-même et confie à Claude les recherches qui demandent de lire et de citer des pages. Une fois Claude connecté, tout se met à jour sans que vous ayez à ouvrir Claude.</p>
+    <nav class="toc" aria-label="Sommaire">
+      <a href="#connecter">1. Connecter Claude</a>
+      <a href="#automatique">2. Mises à jour automatiques</a>
+      <a href="#volets">3. Les volets</a>
+      <a href="#boutons">4. Boutons et indicateurs</a>
+      <a href="#assistant">5. L'assistant IA</a>
+      <a href="#regles">6. Règles de fiabilité</a>
+      <a href="#depannage">7. Dépannage</a>
+    </nav>
+  </div>
+
+  <section id="connecter">
+    <h2>1. Connecter Claude</h2>
+    <p class="lead">À faire une seule fois, sur l'appareil où vous utilisez FOMO.DESK.</p>
+    <ol class="steps">
+      <li><b>Connectez-vous</b> à votre compte FOMO.DESK (page d'accueil, bouton « Se connecter »).</li>
+      <li>Ouvrez <b>Paramètres</b> (en haut à droite), carte <b>Connecteur Claude</b>, puis cliquez sur <b>Créer une clé</b>. La clé reste visible dans ce navigateur ; sur un autre appareil, créez-en une nouvelle et révoquez celles que vous n'utilisez plus.</li>
+      <li><b>C'est tout pour l'usage courant.</b> La routine Claude de FOMO.DESK est réveillée automatiquement à chaque demande : vous n'avez rien à écrire dans Claude.</li>
+      <li><b>Facultatif : utiliser FOMO.DESK depuis une conversation Claude.</b> Dans Claude, ouvrez <b>Paramètres › Connecteurs › Ajouter un connecteur personnalisé</b>, nom <code>FOMO.DESK</code>, adresse : celle affichée dans Paramètres (elle se termine par <code>?key=fdk_…</code>). Vous pouvez alors demander à Claude « traite mes demandes FOMO.DESK » ou l'interroger sur vos dossiers.</li>
+    </ol>
+    <div class="note">L'adresse avec la clé est un secret : quiconque la possède peut lire et remplir vos demandes. Ne la partagez pas. En cas de doute, révoquez la clé dans Paramètres et créez-en une nouvelle.</div>
+  </section>
+
+  <section id="automatique">
+    <h2>2. Les mises à jour automatiques</h2>
+    <p class="lead">Ce qui se passe quand vous êtes sur le site, sans aucune intervention de votre part.</p>
+    <div class="flow" aria-label="Déroulé d'une mise à jour">
+      <div><b>1. Demande</b>Le site envoie à Claude une demande par sujet (titre, dossier, matière première).</div>
+      <div><b>2. Réveil</b>Le serveur réveille la routine Claude en quelques secondes.</div>
+      <div><b>3. Recherche</b>Claude lit les pages sources et cite chaque chiffre mot pour mot.</div>
+      <div><b>4. Application</b>Le résultat s'affiche dans le site en moins d'une minute.</div>
+    </div>
+    <table>
+      <thead><tr><th>Moment</th><th>Ce qui est lancé</th></tr></thead>
+      <tbody>
+        <tr><td>À votre connexion</td><td>Mise à jour complète de tout le SaaS : chaque titre, chaque dossier LBO, l'étude de marché, Brent, WTI, or et argent.</td></tr>
+        <tr><td>À votre arrivée</td><td>Mise à jour complète, une fois.</td></tr>
+        <tr><td>Toutes les 10 minutes</td><td>Nouvelle mise à jour tant que l'onglet FOMO.DESK est ouvert et visible. Onglet fermé ou caché : rien n'est lancé.</td></tr>
+        <tr><td>« Tout mettre à jour »</td><td>Mise à jour complète immédiate, à chaque clic.</td></tr>
+        <tr><td>Chaque jour à 6 h</td><td>Passage de secours de Claude, pour une demande qui aurait manqué son réveil.</td></tr>
+      </tbody>
+    </table>
+    <div class="note ok">Une demande déjà en attente n'est jamais dupliquée, et chaque sujet n'est redemandé qu'une fois par période de 10 minutes.</div>
+  </section>
+
+  <section id="volets">
+    <h2>3. Les volets</h2>
+    <p class="lead">La barre latérale gauche donne accès à chaque volet. En tête de chaque volet, la ligne « Mise à jour » indique la donnée la plus récente reçue.</p>
+    <div class="grid">
+      <div class="card"><h4>Business plan</h4><p>Votre dossier d'entreprise : secteur, zone, hypothèses. L'étude de marché (taille, croissance, sources) est recherchée par Claude.</p></div>
+      <div class="card"><h4>Analyse financière</h4><p>Vos titres : comptes sur 5 exercices, cours de clôture, valorisation (DCF, multiples), décision et mapping des sociétés.</p></div>
+      <div class="card"><h4>Sélecteur &amp; mapping</h4><p>Filtrer et comparer les sociétés, ETF et cryptos par zone et par critères.</p></div>
+      <div class="card"><h4>Dossier LBO</h4><p>Montage d'acquisition : Euribor 3 mois et multiple VE/EBITDA du secteur recherchés par Claude, pour chaque dossier.</p></div>
+      <div class="card"><h4>Suivi &amp; placements</h4><p>Vos positions valorisées avec les derniers cours et le taux BCE.</p></div>
+      <div class="card"><h4>Commodities &amp; flows</h4><p>Brent, WTI, or, argent : pression, approvisionnement, confirmation et corrélations. Chaque jour ouvré a sa ligne, aucune date n'est sautée.</p></div>
+      <div class="card"><h4>Calculateur de position</h4><p>Taille de position et levier selon votre risque, au taux EUR/USD de la BCE.</p></div>
+      <div class="card"><h4>Journal de trading</h4><p>Vos opérations saisies ou synchronisées.</p></div>
+    </div>
+  </section>
+
+  <section id="boutons">
+    <h2>4. Boutons et indicateurs</h2>
+    <table>
+      <thead><tr><th>Élément</th><th>Rôle</th></tr></thead>
+      <tbody>
+        <tr><td>Tout mettre à jour</td><td>Relit toutes les sources publiques et envoie à Claude les demandes de tout le SaaS.</td></tr>
+        <tr><td>Barre de progression</td><td>Sous le bandeau du haut : sources relues par le serveur, puis demandes traitées par Claude (« Claude réveillé, traitement en cours »). Elle disparaît quand tout est à jour.</td></tr>
+        <tr><td>Lancer la recherche</td><td>En tête d'un volet : envoie à Claude la demande de ce seul sujet.</td></tr>
+        <tr><td>Recalculer</td><td>Recalcule le volet affiché et relance sa recherche.</td></tr>
+        <tr><td>Override (crayon)</td><td>Saisir vous-même une valeur ; elle est signalée comme « valeur forcée ».</td></tr>
+        <tr><td>« au chargement »</td><td>Case du bandeau : coupe ou réactive la mise à jour automatique.</td></tr>
+        <tr><td>Exporter PDF</td><td>Rapport du volet affiché.</td></tr>
+        <tr><td>« à relire »</td><td>Séance ouvrée sans cours enregistré : elle sera comblée à la prochaine mise à jour.</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section id="assistant">
+    <h2>5. L'assistant IA</h2>
+    <p class="lead">La bulle ronde <span class="bubble" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 2l2.4 7.6L22 12l-7.6 2.4L12 22l-2.4-7.6L2 12l7.6-2.4z" fill="#fff"/></svg></span> en bas à droite ouvre l'assistant. C'est toujours Claude qui répond, avec votre abonnement.</p>
+    <div class="grid">
+      <div class="card"><h4>Questions sur vos chiffres</h4><p>« Quelle est la dette nette de LVMH ? », « Quel titre a la meilleure marge d'EBITDA ? », « Résume mon dossier LBO ». Claude lit l'instantané de votre bureau.</p></div>
+      <div class="card"><h4>Questions diverses</h4><p>Marchés, définitions, méthodes de valorisation, actualité : Claude cite ses sources quand il donne un chiffre.</p></div>
+      <div class="card"><h4>Ordres de modification</h4><p>« Mets le WACC d'Apple à 8,5 % », « Ouvre Commodities », « Mets tout à jour ». Claude propose l'action ; vous cliquez sur <b>Appliquer</b> pour la valider.</p></div>
+    </div>
+    <div class="note">Une réponse prend en général 20 à 60 secondes : la bulle tourne pendant que Claude se réveille et travaille. Rien n'est modifié sans votre clic sur « Appliquer ».</div>
+  </section>
+
+  <section id="regles">
+    <h2>6. Règles de fiabilité</h2>
+    <ul>
+      <li>Aucun chiffre de mémoire : chaque chiffre vient d'une page ouverte, avec son adresse et l'extrait cité mot pour mot.</li>
+      <li>Un chiffre introuvable reste vide, avec une explication, plutôt que d'être deviné.</li>
+      <li>Les cours sont recoupés sur deux sources à 1,5 % près ; sinon ils sont marqués « non recoupé ».</li>
+      <li>Aucune date n'est sautée dans les tableaux : chaque jour ouvré a sa ligne.</li>
+      <li>Les informations affichées ne constituent pas un conseil en investissement.</li>
+    </ul>
+  </section>
+
+  <section id="depannage">
+    <h2>7. Dépannage</h2>
+    <details><summary>Rien ne bouge après « Tout mettre à jour »</summary><p>Vérifiez que vous êtes connecté et qu'une clé a été créée dans ce navigateur (Paramètres › Connecteur Claude). La ligne « Connecteur Claude (MCP) » ne doit pas afficher « aucune clé ».</p></details>
+    <details><summary>La date d'un volet ne change pas</summary><p>La date suit la donnée la plus récente reçue. Les marchés ne publient pas le week-end ni les jours fériés, et la BCE publie son taux vers 16 h : la date peut légitimement rester sur la dernière séance.</p></details>
+    <details><summary>Un titre affiche une erreur</summary><p>Le ticker n'a pas été trouvé (exemple : AXP.TO). Corrigez-le dans Analyse financière ; la prochaine mise à jour le reprendra.</p></details>
+    <details><summary>L'assistant ne répond pas</summary><p>Il faut être connecté avec une clé active. Si la réponse tarde plus de 2 minutes, la demande reste en file et sera traitée au prochain réveil.</p></details>
+  </section>
+</main>
+
+<footer><div class="w">FOMO.DESK · Les informations affichées ne constituent pas un conseil en investissement. · <a href="/">Retour au bureau</a></div></footer>
+</body>
+</html>
