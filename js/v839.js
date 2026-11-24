@@ -39,8 +39,11 @@ async function uvqLoad(){const k=uvqKey();if(UVQ[k]&&(UVQ[k].busy||Date.now()-UV
     if(!Object.keys(M).length&&j.err&&j.err.stk)throw new Error(j.err.stk);
     UVQ[k]={at:Date.now(),asked:rows.length,pts:rows.filter(x=>M[x[0]]).map(x=>{const m=M[x[0]];return{sym:x[0],n:x[1],per:m.per,evE:m.evE,pb:m.pb,p1y:m.p1y,p5y:m.p5y,cap:m.cap};})};}
   catch(e){UVQ[k]={at:Date.now()-14*60e3,asked:rows.length,pts:[],err:String(e.message||e)};}
-  if(ui.tab==='sc'||ui.tab==='an')renderAll();}
+  if(ui.tab==='sc'||ui.tab==='an')uvqMount();}
 function uvqMount(){const U=uvS();if(U.view!=='cos'||!U.sel)return;const box=[...document.querySelectorAll('#p-sc .card, #p-an .card')].find(c=>/^← Industries/.test(((c.querySelector('h2')||{}).textContent||'').trim()));if(!box)return;
   const old=box.parentNode.querySelector('#uvq');if(old)old.remove();box.insertAdjacentHTML('afterend',uvqHTML());uvqLoad();}
 {const _ra=renderAll;renderAll=function(){const r=_ra.apply(this,arguments);try{if(ui.tab==='sc'||ui.tab==='an')uvqMount();}catch(e){console.error('uvq',e);}return r;};}
 document.addEventListener('change',e=>{const t=e.target;if(!t||!t.dataset||!t.dataset.uvq)return;if(t.dataset.uvq==='x')ui.uvqX=t.value;else ui.uvqY=t.value;renderAll();});
+/* les clics du mapping de l'univers ne passent pas par renderAll : on remonte aussi le nuage après renderSC et renderAnMap */
+if(typeof renderSC==='function'){const _rs=renderSC;renderSC=function(){const r=_rs.apply(this,arguments);try{uvqMount();}catch(e){console.error('uvq',e);}return r;};}
+if(typeof renderAnMap==='function'){const _rm=renderAnMap;renderAnMap=function(){const r=_rm.apply(this,arguments);try{uvqMount();}catch(e){console.error('uvq',e);}return r;};}
