@@ -66,7 +66,8 @@ function anCalc(id){
   return{a,B,peers,peerSrc,medEvE,medPE,medEm,base,iv,impEv,impPe,meth,VM,ref,buy,sl,tp,up,tvw:pvtv/ev,rows,score,filt,fPass,checks,positive,concl};
 }
 function renderAN(){
-  const A=S.an.assets;let id=ui.tk;if(!A[id]){id=ui.tk=Object.keys(A)[0];}
+  const A=S.an.assets;if(!Object.keys(A||{}).length){const P0=document.getElementById('p-an');if(P0)P0.innerHTML=typeof anEmptyHTML==='function'?anEmptyHTML():'<div class="card"><h2>Mes analyses</h2><p class="meta">Aucune analyse.</p></div>';return;}   /* v8.37 : aucune analyse */
+  let id=ui.tk;if(!A[id]){id=ui.tk=Object.keys(A)[0];}
   const R=anCalc(id),a=R.a,B=R.B,L=B.L,E=ui.edit,c=S.an.crit,P=k=>`an.assets.${id}.${k}`,cur=a.cur,rc=a.rcur;
   const LV=[{key:'sl',k:'Stop-loss',v:R.sl,c:TVC.down},{key:'buy',k:"Achat cible",v:R.buy,c:TVC.up},{key:'px',k:'Cours',v:+a.price,c:'#FAFAFA'},{key:'iv',k:'Valeur de référence',v:R.ref,c:'#A1A1AA'},{key:'tp',k:'Take-profit',v:R.tp,c:TVC.amber}];
   const hrow=(lab,arr,fmt,key,cl)=>`<tr><td>${lab}</td>${arr.map((v,i)=>`<td class="n ${cl?(isFinite(v)?cls(v):''):''}">${key?penV(`${P(key)}.${i}`,fmt(v),{al:lab+' '+a.y[i]}):fmt(v)}</td>`).join('')}</tr>`;
