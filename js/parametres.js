@@ -138,3 +138,15 @@ function deskSnap(){const A={};Object.entries(S.an.assets).forEach(([k,a])=>{A[k
   return{an:A,bp:{nom:S.bp.name,secteur:S.bp.sector,zone:S.bp.zone,marche:S.bp.mkt,tamOv:S.bp.tamOv,cagrOv:S.bp.cagrOv},lbo:S.lbo&&S.lbo.list,pf:{lignes:S.hold,positions:S.pf&&S.pf.positions},
     cm:typeof OIL_STK==='object'?{stocks_brut:OIL_STK.w.slice(-5)}:null,profil:{prenom:prenom()},maj:new Date().toISOString()};}
 {const _sv=save;save=function(){_sv.apply(this,arguments);if(!setSess())return;clearTimeout(deskT);deskT=setTimeout(async()=>{try{const st=deskSnap(),js=JSON.stringify(st);if(js===deskLast)return;await liveApi('/api/v1/desk',{method:'POST',body:{state:st}});deskLast=js;}catch(e){}},30000);};}
+
+/* v8.26 : règle « à chaque connexion » : dès qu'une nouvelle connexion au compte est détectée (date de dernière connexion changée),
+   FOMO.DESK lance une mise à jour complète et, si le connecteur Claude est créé dans ce navigateur, envoie à Claude
+   les demandes des quatre volets (étude de marché, LBO, comptes du titre affiché, cours de l'actif affiché). Une seule passe par connexion. */
+const LOGIN_K='fomo.loginrun';let LOGIN_RUN=false;
+async function loginRun(){const t0=Date.now();while(typeof AF==='object'&&AF.run&&Date.now()-t0<120000)await new Promise(r=>setTimeout(r,1000));
+  toast('Connexion détectée : mise à jour complète de FOMO.DESK…');
+  if(jobsOn())for(const f of [()=>rsMarket('login'),()=>rsLbo('login'),()=>rsAn('login',ui.tk),()=>rsCm('login')]){try{await f();}catch(e){console.error('connexion',e);}}
+  if(typeof afRun==='function')await afRun(true);}
+setInterval(()=>{if(LOGIN_RUN||!setSess())return;const u=FLUX.session.user||{},k=(u.id||'')+'|'+(u.last_sign_in_at||'');let prev=null;
+  try{prev=localStorage.getItem(LOGIN_K);}catch(e){}if(prev===k)return;try{localStorage.setItem(LOGIN_K,k);}catch(e){}
+  LOGIN_RUN=true;loginRun().catch(e=>console.error('connexion',e)).finally(()=>{LOGIN_RUN=false;});},2000);
