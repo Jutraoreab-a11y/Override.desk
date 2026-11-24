@@ -113,8 +113,9 @@ const JOB_SPEC={
     return{instructions:`Clôtures quotidiennes du ${N[s]||s} en dollars pour CHAQUE séance ${from?'du '+from+' (exclu)':'des 30 derniers jours'} jusqu'à la dernière clôture publiée, sans sauter aucune date ; un jour férié de place est signalé dans "holidays". Recoupe sur deux sites (TradingView, Investing.com).${Object.keys(X).length?' Pour la vue Confirmation, donne aussi les clôtures des mêmes séances de : '+Object.entries(X).map(([k,l])=>l+' ("'+k+'")').join(', ')+'.':''}`,
       schema:'{"instrument":"'+s+'","rows":[{"date":"AAAA-MM-JJ","close":nombre}],"series":{'+Object.keys(X).map(k=>'"'+k+'":[{"date":"AAAA-MM-JJ","close":nombre}]').join(',')+'},"holidays":["AAAA-MM-JJ"],"checked":true,"by":["TradingView","Investing.com"],"sources":[{"url":"","quote":""}]}'};}};
 /* première séance manquante (hors fériés) sur les 120 derniers jours ouvrés : la demande repart de la veille, pour combler chaque trou */
-function jobCmFrom(k){try{const s=cmSeries(),a=s[k]||[],N=s.d.length;let from=null;for(let i=N-1;i>=Math.max(1,N-120);i--){const d=s.d[i];
-    if(!nn(a[i])&&!(CM_HOL.us.has(d)||CM_HOL.uk.has(d)))from=s.d[i-1];}
+function jobCmFrom(k){try{const s=cmSeries(),keys=[k,...Object.keys(JOB_CM_X[k]||{})],a=s[k]||[],N=s.d.length;let from=null;
+    /* v8.36 : un trou dans la série principale OU dans une série de la vue Confirmation (futur, spread, USD/CNH…) relance la demande */
+    for(let i=N-1;i>=Math.max(1,N-120);i--){const d=s.d[i];if(CM_HOL.us.has(d)||CM_HOL.uk.has(d))continue;if(!nn(a[i])||(i>=N-30&&keys.slice(1).some(x=>s[x]&&!nn(s[x][i]))))from=s.d[i-1];}
   if(from)return from;for(let i=N-1;i>=0;i--)if(nn(a[i]))return s.d[i];}catch(e){}return null;}
 const JOB_CM_X={brent:{brentF:'Brent futur M1 ICE',brentS:'Brent M1 ICE (pour le spread)',wtiF:'WTI M1 NYMEX',cnh:'USD/CNH'},wti:{wtiF:'WTI M1 NYMEX'},
   gold:{goldF:'Or futur COMEX',cnh:'USD/CNH',spx:'S&P 500'},silver:{silverF:'Argent contrat COMEX',cnh:'USD/CNH'}};

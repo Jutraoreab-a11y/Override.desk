@@ -132,3 +132,13 @@ const mmLiveDue=()=>!MML.busy&&Date.now()-MML.at>5*60e3;
   const P=document.getElementById('p-'+ui.tab),h=P&&P.querySelector('.anmm h2 .meta, #p-sc .mm-h .meta');
   if(P&&MML.d&&!P.querySelector('.mmlive')){const t=P.querySelector('.anmm h2');if(t)t.insertAdjacentHTML('beforeend',`<span class="meta mmlive">· données en direct (TradingView, CoinGecko) à ${new Date(MML.d.at).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})}</span>`);}}catch(e){}return r;};}
 setInterval(()=>{if(typeof ui==='object'&&['an','sc'].includes(ui.tab)&&document.visibilityState==='visible'&&mmLiveDue())mmLiveLoad();},60e3);
+
+/* ---------- v8.36 : prix en direct en tête du panneau Commodities (or, argent, WTI, Brent) ---------- */
+const CM_TOP4=[['gold','Or','COMEX:GC1!','USD/oz'],['silver','Argent','COMEX:SI1!','USD/oz'],['wti','WTI','NYMEX:CL1!','USD/baril'],['brent','Brent','ICEEUR:BRN1!','USD/baril']];
+function cmTop4HTML(s){const D=typeof CMB==='object'&&CMB.d,live=t=>{if(!D)return null;for(const g of D.groups)for(const x of g.items)if(x.t===t&&x.c!==null&&isFinite(x.c))return x;return null;};
+  const last=k=>{const a=s&&s[k];if(!a)return null;let i=a.length-1;while(i>=0&&!(a[i]>0))i--;if(i<0)return null;let j=i-1;while(j>=0&&!(a[j]>0))j--;return{c:a[i],ch:j>=0?(a[i]/a[j]-1)*100:null,d:s.d[i]};};
+  const t=D?new Date(D.at).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'}):'';
+  if(!D&&typeof cmBoardLoad==='function'&&!(typeof CMB==='object'&&CMB.busy))setTimeout(cmBoardLoad,0);
+  return`<div class="sideh">Prix en direct <span class="meta">${D?'TradingView · '+t:'chargement…'}</span></div><div class="wl-h"><span>Actif</span><span>Cours</span><span>Var.</span></div>`+
+    CM_TOP4.map(([k,l,tk,u])=>{const x=live(tk),f=x?null:last(k),c=x?x.c:f&&f.c,ch=x?x.ch:f&&f.ch,sel=k===(ui.cmA||'brent')||(k==='wti'&&(ui.cmA||'brent')==='brent');
+      return`<button class="wl${sel?' on':''}" data-act="cma" data-id="${k==='wti'?'brent':k}" title="${x?'Cours en direct, différé ~10 min (TradingView)':f?'Dernière clôture du '+fd(f.d):''}"><span class="wl-s"><b>${l}</b><small>${u}${x?'':' · clôture'}</small></span><span class="wl-p">${c!=null?nf(c,c<100?2:2):'—'}</span><span class="wl-c ${ch!=null?cls(ch):''}">${ch!=null&&isFinite(ch)?sgn(ch,2):'—'}</span></button>`;}).join('');}
