@@ -15,6 +15,11 @@ const CM_1112={"src":"EIA / FRED (Brent dat\u00e9, WTI Cushing) \u00b7 Yahoo Fin
     const lo=/gold|silver/.test(k)?.85:.5,hi=/gold|silver/.test(k)?1.15:2;   /* v8.38 : bornes resserrées (argent comptant ~158 $ du 02 au 11/11/2026 pour un contrat ~52 $) */
     const O=CMD[k+'O'];if(O)O.forEach((v,i)=>{const m=F[i];if(v!=null&&m>0&&(v/m<lo||v/m>hi))O[i]=null;});   /* v8.39 : ouverture aberrante (argent ~158 $) effacée, redemandée à Claude */
     C.forEach((v,i)=>{const m=F[i];if(v==null||m==null||!(m>0))return;const r=v/m;if(r<lo||r>hi){C[i]=m;CM_1112.prov=CM_1112.prov||{};(CM_1112.prov[k]=CM_1112.prov[k]||[]).includes(CMD.d[i])||CM_1112.prov[k].push(CMD.d[i]);}});});
+  /* v8.40 : séries d'un autre instrument chargées par erreur (USD/CNH ~1,40 et S&P 500 ~60 000 du 02 au 11/11/2026) : une valeur à plus de 20 %
+     de la médiane des 10 séances valides précédentes est effacée (case « à relire », redemandée à Claude) */
+  ['cnh','spx','dxy'].forEach(k=>{const C=CMD[k+'C'],O=CMD[k+'O'],V=CMD[k+'V'];if(!C)return;const ok=[];
+    C.forEach((v,i)=>{if(v==null)return;if(ok.length>=5){const w=ok.slice(-10).sort((a,b)=>a-b),m=w[w.length>>1];if(m>0&&(v/m<.8||v/m>1.25)){C[i]=null;if(O)O[i]=null;if(V)V[i]=null;return;}}ok.push(v);});
+    if(O)O.forEach((v,i)=>{if(v!=null&&C[i]!=null&&(v/C[i]<.8||v/C[i]>1.25))O[i]=null;});});
   /* Variations quotidiennes recalculées sur la série complétée */
   ['brent','wti','gold','silver','spx'].forEach(k=>{const C=CMD[k+'C'],V=CMD[k+'V'];if(!V)return;C.forEach((v,i)=>{if(CMD.d[i]<'2026-06-15'||v==null)return;let j=i-1;while(j>=0&&C[j]==null)j--;V[i]=j>=0?v/C[j]-1:null;});});
 })();

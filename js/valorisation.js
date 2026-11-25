@@ -47,26 +47,26 @@ function anVal(a,X){
       x:isFinite(bv)&&bv>0&&isFinite(roe)?`P/B justifié : ${nf((roe-gr)/(kr-gr),2)}×`:''}
   ];
   m.forEach(x=>{x.ok=isFinite(x.v)&&x.v>0;});
-  const ok=m.filter(x=>x.ok).map(x=>x.v),avgV=ok.length?sum(ok)/ok.length:NaN;
+  /* v8.40 : prix cible unique = moyenne des 3 méthodes de valeur (DCF, multiples, bénéfices résiduels) ; Gordon-Shapiro reste affiché à titre indicatif */
+  m.forEach(x=>{x.inAvg=x.k!=='gs';});const ok=m.filter(x=>x.ok&&x.inAvg).map(x=>x.v),avgV=ok.length?sum(ok)/ok.length:NaN;
   return{m,avg:avgV,n:ok.length,min:ok.length?Math.min(...ok):NaN,max:ok.length?Math.max(...ok):NaN,tvw};
 }
 function anValHTML(a,R,cur){const VM=R.VM;if(!VM)return'';const px=+a.price,up=isFinite(VM.avg)&&px>0?(VM.avg/px-1)*100:NaN,disp=VM.n>1&&VM.avg>0?(VM.max-VM.min)/VM.avg*100:NaN;
   const inp=(k,f)=>{const v=f[2];return`<label class="fld vl-f${f[4]?' vl-ov':''}"><span class="lb">${esc(f[1])}${f[4]?' <span class="tag am">modifiée</span>':''}</span><span class="fv"><input class="vl-in" type="number" step="any" data-vk="${f[0]}" value="${valNum(v)?Math.round(v*1000)/1000:''}" placeholder="non publié"><small>${esc(f[3])}</small></span><span class="meta vl-d">${esc(f[5])}</span></label>`;};
-  return`<div class="card s12 vl-card"><h2><span>7. Valorisation multi-méthodes <span class="meta">quatre angles, un prix unique : la moyenne des méthodes applicables</span></span>
+  return`<div class="card s12 vl-card"><h2><span>7. Valorisation multi-méthodes <span class="meta">un prix cible unique : la moyenne des trois méthodes de valeur</span></span>
       <button class="btn sm" data-act="valreset" data-k="all">Réinitialiser toutes les métriques</button></h2>
     <div class="vl-sum">
-      <div class="stat"><div class="k">Prix unique (moyenne)</div><div class="x">${isFinite(VM.avg)?nf(VM.avg,2)+' '+esc(cur):'non calculable'}</div><div class="d">${VM.n} méthode${VM.n>1?'s':''} sur 4 applicable${VM.n>1?'s':''}</div></div>
+      <div class="stat vl-target"><div class="k">Prix cible</div><div class="x">${isFinite(VM.avg)?nf(VM.avg,2)+' '+esc(cur):'non calculable'}</div><div class="d">moyenne de ${VM.n} méthode${VM.n>1?'s':''} sur 3 (DCF, multiples, bénéfices résiduels)</div></div>
       <div class="stat"><div class="k">Cours</div><div class="x">${nf(px,2)} ${esc(cur)}</div><div class="d">${esc(a.pxDate||'')}</div></div>
       <div class="stat"><div class="k">Potentiel</div><div class="x ${isFinite(up)?(up>=0?'up':'down'):''}">${isFinite(up)?sgn(up,1):'—'}</div><div class="d">prix unique / cours − 1</div></div>
-      <div class="stat"><div class="k">Fourchette des méthodes</div><div class="x">${VM.n?nf(VM.min,2)+' – '+nf(VM.max,2):'—'}</div><div class="d">${isFinite(disp)?'écart de '+nf(disp,0)+' % autour de la moyenne'+(disp>60?' : méthodes très divergentes, lire les angles morts':''):''}</div></div>
     </div>
     <div class="vl-grid">${VM.m.map(m=>`<div class="vl-m${m.ok?'':' vl-na'}">
-      <div class="vl-h"><b>${esc(m.l)}</b><span class="vl-v">${m.ok?nf(m.v,2)+' '+esc(cur):'non applicable'}</span></div>
+      <div class="vl-h"><b>${esc(m.l)}${m.inAvg?'':' <span class="tag am">indicatif, hors moyenne</span>'}</b><span class="vl-v">${m.ok?nf(m.v,2)+' '+esc(cur):'non applicable'}</span></div>
       ${m.ok?(isFinite(px)&&px>0?`<div class="meta">${sgn((m.v/px-1)*100,1)} vs cours${m.x?' · '+esc(m.x):''}</div>`:''):`<div class="meta">${esc(m.why)}</div>`}
       <div class="vl-fs">${m.f.map(f=>inp(m.k,f)).join('')}</div>
       <p class="vl-ang"><b>Angle mort :</b> ${esc(VAL_ANG[m.k])}</p>
       <button class="lnk" data-act="valreset" data-k="${m.k}">Réinitialiser cette méthode</button></div>`).join('')}</div>
-    <p class="note">Chaque méthode corrige l'angle mort des autres : le DCF capte la génération de trésorerie, les multiples le prix du marché, Gordon-Shapiro le rendement versé à l'actionnaire, les bénéfices résiduels la création de valeur au-delà du coût du capital. Le prix unique est la moyenne simple des méthodes applicables ; il sert de valeur de référence pour les zones d'intervention et la décision. Montants en ${esc(a.rcur||cur)}, convertis en ${esc(cur)} au taux du titre.</p>
+    <p class="note">Chaque méthode corrige l'angle mort des autres : le DCF capte la génération de trésorerie, les multiples le prix du marché, Gordon-Shapiro le rendement versé à l'actionnaire, les bénéfices résiduels la création de valeur au-delà du coût du capital. Le prix cible est la moyenne simple du DCF, des multiples et des bénéfices résiduels quand ils sont applicables (Gordon-Shapiro, souvent hors d'échelle pour les sociétés qui rachètent leurs actions, est affiché à titre indicatif) ; il sert de valeur de référence pour les zones d'intervention et la décision. Montants en ${esc(a.rcur||cur)}, convertis en ${esc(cur)} au taux du titre.</p>
   </div>`;}
 const VAL_KEYS={dcf:['fcf','g','wacc','tg'],mult:['evm','ebitda','pem','eps'],gs:['dps','ke','gg'],ri:['bvps','roe','keri','gri']};
 document.addEventListener('change',e=>{const t=e.target;if(!t.classList||!t.classList.contains('vl-in'))return;const a=S.an.assets[ui.tk];if(!a)return;

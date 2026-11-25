@@ -53,7 +53,7 @@ function anCalc(id){
   const checks=[
     ['Qualité',score>=c.min,`Score ${score}/100 pour un seuil de ${c.min}`],
     ['Tamis',fPass===4,`${fPass}/4 filtres franchis (seuil ${c.fmin}/10)`],
-    ['Valorisation',isFinite(ref),isFinite(ref)?`Valeur de référence ${nf(ref,2)} ${a.cur}`:'Aucune méthode applicable (FCF ou résultats négatifs)'],
+    ['Valorisation',isFinite(ref),isFinite(ref)?`Prix cible ${nf(ref,2)} ${a.cur}`:'Aucune méthode applicable (FCF ou résultats négatifs)'],
     ['Prix',isFinite(ref)&&a.price<=buy,isFinite(ref)?`Cours ${nf(+a.price,2)} pour un prix d'achat cible de ${nf(buy,2)}`:'Prix d\'achat cible non calculable']
   ];
   const positive=checks.every(x=>x[1]);
@@ -69,7 +69,7 @@ function renderAN(){
   const A=S.an.assets;if(!Object.keys(A||{}).length){const P0=document.getElementById('p-an');if(P0)P0.innerHTML=typeof anEmptyHTML==='function'?anEmptyHTML():'<div class="card"><h2>Mes analyses</h2><p class="meta">Aucune analyse.</p></div>';return;}   /* v8.37 : aucune analyse */
   let id=ui.tk;if(!A[id]){id=ui.tk=Object.keys(A)[0];}
   const R=anCalc(id),a=R.a,B=R.B,L=B.L,E=ui.edit,c=S.an.crit,P=k=>`an.assets.${id}.${k}`,cur=a.cur,rc=a.rcur;
-  const LV=[{key:'sl',k:'Stop-loss',v:R.sl,c:TVC.down},{key:'buy',k:"Achat cible",v:R.buy,c:TVC.up},{key:'px',k:'Cours',v:+a.price,c:'#FAFAFA'},{key:'iv',k:'Valeur de référence',v:R.ref,c:'#A1A1AA'},{key:'tp',k:'Take-profit',v:R.tp,c:TVC.amber}];
+  const LV=[{key:'sl',k:'Stop-loss',v:R.sl,c:TVC.down},{key:'buy',k:"Achat cible",v:R.buy,c:TVC.up},{key:'px',k:'Cours',v:+a.price,c:'#FAFAFA'},{key:'iv',k:'Prix cible',v:R.ref,c:'#A1A1AA'},{key:'tp',k:'Take-profit',v:R.tp,c:TVC.amber}];
   const hrow=(lab,arr,fmt,key,cl)=>`<tr><td>${lab}</td>${arr.map((v,i)=>`<td class="n ${cl?(isFinite(v)?cls(v):''):''}">${key?penV(`${P(key)}.${i}`,fmt(v),{al:lab+' '+a.y[i]}):fmt(v)}</td>`).join('')}</tr>`;
   $('#p-an').innerHTML=`
   <div class="grid">
@@ -79,7 +79,7 @@ function renderAN(){
       <div class="sh-id"><div class="sh-t">${esc(a.t)}</div><div class="sh-n">${esc(a.n)}</div><div class="sh-m">${esc(a.sec)}, exercice clos en ${esc(a.fy)}, comptes en ${esc(rc)}</div></div>
       <div><div class="sh-px">${fld(P('price'),'n',{al:'Cours',d:2})}<em class="u">${esc(cur)}</em></div><div class="sh-m">cours au ${esc(a.pxDate)}${a.pxSrc&&/Recoupé|Non recoupé/.test(a.pxSrc)?`<span class="${/^Recoupé/.test(a.pxSrc)?'up':'amber'}" title="${esc(a.pxSrc)}"> · ${/^Recoupé/.test(a.pxSrc)?'recoupé':'source unique'}</span>`:''}${a.fundSrc?`<span class="meta" title="${esc(a.fundSrc)}"> · comptes ${/^Recoupé/.test(a.fundSrc)?'recoupés':'non recoupés'}</span>`:''}</div></div>
       <div class="sh-kv">
-        <div><span>Valeur de référence</span><b>${nf(R.ref,2)}</b></div>
+        <div><span>Prix cible</span><b>${nf(R.ref,2)}</b></div>
         <div><span>Potentiel</span><b class="${cls(R.up)}">${isFinite(R.up)?sgn(R.up*100):'—'}</b></div>
         <div><span>Prix d'achat cible</span><b>${nf(R.buy,2)}</b></div>
         <div><span>Score qualité</span><b>${R.score}/100</b></div>
@@ -133,7 +133,7 @@ function renderAN(){
         <tr><td>PER sur BPA consensus N</td><td class="n">${isFinite(B.perF)?nf(B.perF,1)+'×':'n.s.'}</td><td class="n">—</td><td class="n">—</td></tr>
         <tr><td>Rendement FCF N-1</td><td class="n">${pct(B.fcfY,1)}</td><td class="n">—</td><td class="n">—</td></tr>
       </tbody></table></div>
-      <p class="note" style="margin-top:8px">Valeur de référence : <b style="color:var(--hi)">${nf(R.ref,2)} ${cur}</b>, moyenne des méthodes du bloc « Valorisation multi-méthodes ».</p></div>
+      <p class="note" style="margin-top:8px">Prix cible : <b style="color:var(--hi)">${nf(R.ref,2)} ${cur}</b>, moyenne du DCF, des multiples et des bénéfices résiduels (bloc « Valorisation multi-méthodes »).</p></div>
     ${anValHTML(a,R,cur)}
 
     <div class="card s8"><h2>6. Zones d'intervention</h2>${levelsChart(LV,cur)}
