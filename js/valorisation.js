@@ -58,7 +58,7 @@ function anValHTML(a,R,cur){const VM=R.VM;if(!VM)return'';const px=+a.price,up=i
     <div class="vl-sum">
       <div class="stat vl-target"><div class="k">Prix cible</div><div class="x">${isFinite(VM.avg)?nf(VM.avg,2)+' '+esc(cur):'non calculable'}</div><div class="d">moyenne de ${VM.n} méthode${VM.n>1?'s':''} sur 3 (DCF, multiples, bénéfices résiduels)</div></div>
       <div class="stat"><div class="k">Cours</div><div class="x">${nf(px,2)} ${esc(cur)}</div><div class="d">${esc(a.pxDate||'')}</div></div>
-      <div class="stat"><div class="k">Potentiel</div><div class="x ${isFinite(up)?(up>=0?'up':'down'):''}">${isFinite(up)?sgn(up,1):'—'}</div><div class="d">prix unique / cours − 1</div></div>
+      <div class="stat"><div class="k">Potentiel</div><div class="x ${isFinite(up)?(up>=0?'up':'down'):''}">${isFinite(up)?sgn(up,1):'—'}</div><div class="d">prix cible / cours − 1</div></div>
     </div>
     <div class="vl-grid">${VM.m.map(m=>`<div class="vl-m${m.ok?'':' vl-na'}">
       <div class="vl-h"><b>${esc(m.l)}${m.inAvg?'':' <span class="tag am">indicatif, hors moyenne</span>'}</b><span class="vl-v">${m.ok?nf(m.v,2)+' '+esc(cur):'non applicable'}</span></div>

@@ -63,7 +63,7 @@ function ncM2(){if(ui.ncInd===undefined||ui.ncInd===null||!UNIV.ind[ui.ncInd])re
       :'<p class="note">Aucun dossier non coté dans cette industrie : créez-en un avec le bouton ci-dessus.</p>'}</div>`;}
 function sc840(){if(ui.tab!=='sc')return;const P=document.getElementById('p-sc'),G=P&&(P.querySelector(':scope>.grid')||P);if(!G)return;
   const seg=G.querySelector('.sc38seg');if(seg)seg.classList.add('sc40seg');
-  if((ui.scMap||'cot')!=='nc')return;
+  if((ui.scMap||'cot')!=='nc'){[...G.querySelectorAll(':scope>.card')].forEach(c=>{if(c.querySelector('.tamis,[data-act=lbogen],.dd')||/^Dossiers class|^Paramètres$/.test(((c.querySelector('h2')||{}).textContent||'').trim()))c.remove();});return;}   /* coté : aucune donnée non cotée */
   const T=c=>((c.querySelector('h2')||{}).textContent||'').trim();
   [...G.querySelectorAll(':scope>.card')].forEach(c=>{const t=T(c);if(/^I\. Tamis d'entrée/.test(t)||/^II\. Mapping 1/.test(t)||/^Mapping 2/.test(t)||/^Sociétés cotées comparables/.test(t))c.remove();});
   G.querySelectorAll('.sc38p').forEach(x=>x.remove());
