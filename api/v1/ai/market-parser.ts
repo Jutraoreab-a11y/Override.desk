@@ -16,6 +16,7 @@ import { boardRoute } from '../../../lib/commodities-board.js';
 import { mappingRoute } from '../../../lib/mapping-live.js';
 import { ratesRoute } from '../../../lib/rates-live.js';
 import { saRoute } from '../../../lib/sa-proxy.js';
+import { oilRoute } from '../../../lib/oil-stocks.js';
 const norm = (s: string) => s.replace(/\s+/g, ' ').toLowerCase();
 /** Score de confiance : confiance déclarée par le modèle, plafonnée selon la vérification de l'extrait et de la valeur dans la page. */
 export function confidence(modelConf: number, quoteFound: boolean, valueInQuote: boolean): number {
@@ -32,6 +33,7 @@ export default handler(async (req: Req, res: Res) => {
   if (q(req, 'op') === 'mapping') return mappingRoute(req, res);
   if (q(req, 'op') === 'rates') return ratesRoute(req, res);
   if (q(req, 'op') === 'sa') return saRoute(req, res);
+  if (q(req, 'op') === 'oil') return oilRoute(req, res);
   if (q(req, 'op') === 'mcp') return mcpRoute(req, res);
   if (q(req, 'op') === 'keys') return keysRoute(req, res);
   if (q(req, 'op') === 'jobs') return jobsRoute(req, res);
