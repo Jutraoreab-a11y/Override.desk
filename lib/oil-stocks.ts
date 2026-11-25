@@ -18,3 +18,18 @@ export async function oilRoute(_req: Req, res: Res): Promise<void> {
   try { const out = await oilData(); res.setHeader('Cache-Control', 's-maxage=600, stale-while-revalidate=600'); send(res, 200, out); }
   catch (e) { send(res, 502, { error: 'calendrier indisponible : ' + (e instanceof Error ? e.message : String(e)) }); }
 }
+
+/* GET /api/v1/spot (op=spot) — v8.41 : comptant or et argent, USD/CNH, DXY et S&P 500 (dernier cours, ouverture, clôture précédente)
+   lus sur l'interface publique de TradingView ; la clôture précédente = dernier − variation absolue de la séance. Cache 5 minutes. */
+const SPOT: Array<[string, string]> = [['gold', 'OANDA:XAUUSD'], ['silver', 'OANDA:XAGUSD'], ['cnh', 'FX_IDC:USDCNH'], ['dxy', 'TVC:DXY'], ['spx', 'SP:SPX']];
+export async function spotRoute(_req: Req, res: Res): Promise<void> {
+  try { const r = await fetch('https://scanner.tradingview.com/global/scan', { method: 'POST', headers: { 'Content-Type': 'application/json', 'User-Agent': 'Mozilla/5.0 FOMO.DESK' },
+      body: JSON.stringify({ symbols: { tickers: SPOT.map(x => x[1]) }, columns: ['close', 'open', 'change_abs', 'update_mode'] }) });
+    if (!r.ok) throw new Error('TradingView HTTP ' + r.status);
+    const j = await r.json() as { data?: Array<{ s: string; d: unknown[] }> }, n = (v: unknown) => (typeof v === 'number' && isFinite(v) ? v : null), out: Record<string, unknown> = {};
+    for (const [k, t] of SPOT) { const x = (j.data || []).find(y => y.s === t); if (!x) continue; const c = n(x.d[0]), ch = n(x.d[2]);
+      out[k] = { t, last: c, open: n(x.d[1]), prev: c !== null && ch !== null ? Math.round((c - ch) * 1e5) / 1e5 : null, mode: x.d[3] }; }
+    res.setHeader('Cache-Control', 's-maxage=300, stale-while-revalidate=300');
+    send(res, 200, { at: new Date().toISOString(), src: 'https://www.tradingview.com/ (OANDA XAU/USD et XAG/USD comptant, FX_IDC USD/CNH, TVC DXY, S&P 500)', q: out });
+  } catch (e) { send(res, 502, { error: 'cours indisponibles : ' + (e instanceof Error ? e.message : String(e)) }); }
+}

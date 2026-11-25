@@ -118,7 +118,7 @@ function jobCmFrom(k){try{const s=cmSeries(),keys=[k,...Object.keys(JOB_CM_X[k]|
     for(let i=N-1;i>=Math.max(1,N-120);i--){const d=s.d[i];if(CM_HOL.us.has(d)||CM_HOL.uk.has(d))continue;if(!nn(a[i])||(i>=N-30&&(!nn((s[k+'O']||[])[i])||keys.slice(1).some(x=>s[x]&&!nn(s[x][i])))))from=s.d[i-1];}   /* v8.37 : une ouverture manquante sur 30 séances relance aussi la demande */
   if(from)return from;for(let i=N-1;i>=0;i--)if(nn(a[i]))return s.d[i];}catch(e){}return null;}
 const JOB_CM_X={brent:{brentF:'Brent futur M1 ICE',brentS:'Brent M1 ICE (pour le spread)',wtiF:'WTI M1 NYMEX',cnh:'USD/CNH'},wti:{wtiF:'WTI M1 NYMEX'},
-  gold:{goldF:'Or futur COMEX',cnh:'USD/CNH',spx:'S&P 500'},silver:{silverF:'Argent contrat COMEX',cnh:'USD/CNH'}};
+  gold:{goldF:'Or futur COMEX',cnh:'USD/CNH',spx:'S&P 500',dxy:'Dollar Index (DXY, TVC:DXY)'},silver:{silverF:'Argent contrat COMEX',cnh:'USD/CNH',dxy:'Dollar Index (DXY, TVC:DXY)'}};
 /* séries complémentaires renvoyées par Claude : écrites séance par séance, avec le même garde-fou que les cours (35 % du dernier connu) */
 function jobCmSeries(res){const X=res&&res.series;if(!X||typeof X!=='object')return 0;let n=0;S.cm.add=S.cm.add||{};
   Object.entries(X).forEach(([k,rows])=>{if(!(k in CM_INST)||!Array.isArray(rows))return;let last=null;try{const s=cmSeries(),a=s[k]||[];for(let i=a.length-1;i>=0;i--)if(nn(a[i])){last=a[i];break;}}catch(e){}

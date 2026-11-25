@@ -24,7 +24,7 @@ async function oilLive(force){if(OIL41.busy||(!force&&Date.now()-OIL41.at<10*60e
       if(new Date(e.at).getTime()>now-3*3600e3&&e.actual===null){if(!next[e.k]||e.at<next[e.k])next[e.k]=e.at;}
       if(e.actual===null&&e.forecast===null)return;
       let w=map.get(wk);if(!w){w={wk,api:[null,null,null,null],eia:[null,null,null,null],lvl:null};map.set(wk,w);}
-      const cur=w[e.k]||[];if(cur[2]!==e.actual||cur[3]!==e.forecast)n++;w[e.k]=[P.d,P.t,e.actual,e.forecast];});
+      const cur=w[e.k]||[];if(String(cur[2])!==String(e.actual===null?NaN:e.actual))n++;w[e.k]=[P.d,P.t,e.actual===null?NaN:e.actual,e.forecast===null?NaN:e.forecast];   /* NaN = pas encore publié (affiché « non publié », jamais lu comme 0) */});
     const W=[...map.values()].sort((p,q)=>p.wk<q.wk?-1:1);
     for(let i=1;i<W.length;i++){const w=W[i],p=W[i-1];if(!isFinite(w.lvl)||w.lvlCalc){w.lvl=isFinite(p.lvl)&&isFinite(w.eia[2])?Math.round((p.lvl+w.eia[2])*1000)/1000:null;w.lvlCalc=w.lvl!==null;}}
     OIL_STK.w=W;OIL_STK.at=j.at;OIL_STK.src.api=OIL_STK.src.inv='https://www.tradingview.com/economic-calendar/';OIL_STK.live=true;
@@ -91,3 +91,23 @@ document.addEventListener('keydown',e=>{if(e.key==='Escape'){const o=document.ge
 .macpink{background:var(--pane)!important;border-color:var(--line)!important}.macpink h2{color:var(--hi)!important}
 .macpink .mp div{background:var(--raised)!important;border-color:var(--line)!important}
 .cmconf td,.cmconf th{white-space:nowrap}`;document.head.appendChild(st);}
+
+/* ---- comptant réel (or, argent), USD/CNH, DXY, S&P 500 : clôture de la séance précédente lue en direct chaque jour ----
+   Remplace aussi un « comptant » qui n'était qu'une copie du futur (basis faussement nul). */
+const SPOT41={at:0,busy:false};
+function spotPrevDate(k){const ny=new Date(new Date().toLocaleString('en-US',{timeZone:'America/New_York'})),d=new Date(ny);
+  const metals=['gold','silver','cnh','dxy'].includes(k);if(metals&&ny.getHours()>=17)return wd(d);   /* après 17 h New York, la séance en cours est celle du lendemain */
+  d.setDate(d.getDate()-1);return wd(d);
+  function wd(x){while(x.getDay()===0||x.getDay()===6)x.setDate(x.getDate()-1);return`${x.getFullYear()}-${String(x.getMonth()+1).padStart(2,'0')}-${String(x.getDate()).padStart(2,'0')}`;}}
+async function spotLive(){if(SPOT41.busy||Date.now()-SPOT41.at<5*60e3)return;SPOT41.busy=true;
+  try{const r=await fetch('/api/v1/spot'),j=await r.json();if(!r.ok)throw new Error(j.error||r.status);let n=0;S.cm.add=S.cm.add||{};
+    Object.entries(j.q||{}).forEach(([k,x])=>{if(!x||!isFinite(x.prev)||!(x.prev>0))return;const d=spotPrevDate(k),A=S.cm.add[k]=S.cm.add[k]||{},cur=A[d];
+      let fut=null;try{const s=cmSeries(),i=s.d.indexOf(d);if(i>=0&&s[k+'F'])fut=s[k+'F'][i];if(i>=0&&!cur&&nn(s[k][i])&&Math.abs(s[k][i]/x.prev-1)<0.0005&&!(fut!==null&&s[k][i]===fut))return;}catch(e){}
+      if(cur&&Math.abs(cur[0]/x.prev-1)<0.0005)return;
+      A[d]=[x.prev,cur?cur[1]:null,null];n++;});
+    S.cm.spotAt=j.at;if(n){save();recalc();if(ui.tab==='cm')renderCM();}}
+  catch(e){console.warn('comptant',e);}finally{SPOT41.at=Date.now();SPOT41.busy=false;}}
+{const _cc=cmCalc;cmCalc=function(){const C=_cc.apply(this,arguments);try{const s=C.s;C.R.forEach((r,i)=>{if(!r)return;const j=s.d.indexOf(r.d);if(j<0)return;
+  if(nn(s.gold[j])&&s.goldF&&s.gold[j]===s.goldF[j]){r.bG=null;r.bGSt='NO DATA';r.bGRk='';}
+  if(nn(s.silver[j])&&s.silverF&&s.silver[j]===s.silverF[j]){r.bS=null;r.bSSt='NO DATA';r.bSRk='';}});}catch(e){}return C;};}
+{const _rc2=renderCM;renderCM=function(){const r=_rc2.apply(this,arguments);spotLive();return r;};}
