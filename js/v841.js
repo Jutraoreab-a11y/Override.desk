@@ -111,3 +111,13 @@ async function spotLive(){if(SPOT41.busy||Date.now()-SPOT41.at<5*60e3)return;SPO
   if(nn(s.gold[j])&&s.goldF&&s.gold[j]===s.goldF[j]){r.bG=null;r.bGSt='NO DATA';r.bGRk='';}
   if(nn(s.silver[j])&&s.silverF&&s.silver[j]===s.silverF[j]){r.bS=null;r.bSSt='NO DATA';r.bSRk='';}});}catch(e){}return C;};}
 {const _rc2=renderCM;renderCM=function(){const r=_rc2.apply(this,arguments);spotLive();return r;};}
+
+/* ---- variations calculées pour les séances ajoutées (Claude, comptant en direct) : clôture / clôture précédente − 1 ---- */
+{const _cs=cmSeries;cmSeries=function(){const s=_cs.apply(this,arguments);try{Object.keys(CM_INST).forEach(k=>{const C=s[k],V=s[k+'V'];if(!C||!V)return;let p=null;
+  for(let i=0;i<C.length;i++){if(C[i]===null||C[i]===undefined)continue;if((V[i]===null||V[i]===undefined)&&p>0)V[i]=C[i]/p-1;p=C[i];}});}catch(e){}return s;};}
+/* ---- un comptant égal au futur (copie) compte comme manquant : la séance est redemandée à Claude avec le vrai comptant ---- */
+{const _jf=jobCmFrom;jobCmFrom=function(k){const f=_jf.apply(this,arguments);if(k!=='gold'&&k!=='silver')return f;try{const s=cmSeries(),N=s.d.length,F=s[k+'F'];let from=null;
+  for(let i=N-1;i>=Math.max(1,N-30);i--){if(nn(s[k][i])&&F&&s[k][i]===F[i])from=s.d[i-1];}if(from&&(!f||from<f))return from;}catch(e){}return f;};}
+/* ---- stock commercial : dernier niveau publié tant que l'EIA de la semaine n'est pas sortie ---- */
+{const _oc2=oilCard;oilCard=function(){let h=_oc2.apply(this,arguments);try{const L=[...OIL_STK.w].reverse().find(x=>isFinite(x.lvl));
+  if(L)h=h.replace(/(Stock commercial EIA<\/div><div class="x[^"]*">)—( Mb)/,`$1${nf(L.lvl,1)}$2 <small class="meta">au ${oilFd(L.wk)}</small>`);}catch(e){}return h;};}
