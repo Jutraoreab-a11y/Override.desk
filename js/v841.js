@@ -119,5 +119,5 @@ async function spotLive(){if(SPOT41.busy||Date.now()-SPOT41.at<5*60e3)return;SPO
 {const _jf=jobCmFrom;jobCmFrom=function(k){const f=_jf.apply(this,arguments);if(k!=='gold'&&k!=='silver')return f;try{const s=cmSeries(),N=s.d.length,F=s[k+'F'];let from=null;
   for(let i=N-1;i>=Math.max(1,N-30);i--){if(nn(s[k][i])&&F&&s[k][i]===F[i])from=s.d[i-1];}if(from&&(!f||from<f))return from;}catch(e){}return f;};}
 /* ---- stock commercial : dernier niveau publié tant que l'EIA de la semaine n'est pas sortie ---- */
-{const _oc2=oilCard;oilCard=function(){let h=_oc2.apply(this,arguments);try{const L=[...OIL_STK.w].reverse().find(x=>isFinite(x.lvl));
+{const _oc2=oilCard;oilCard=function(){let h=_oc2.apply(this,arguments);try{const L=[...OIL_STK.w].reverse().find(x=>typeof x.lvl==='number'&&isFinite(x.lvl));
   if(L)h=h.replace(/(Stock commercial EIA<\/div><div class="x[^"]*">)—( Mb)/,`$1${nf(L.lvl,1)}$2 <small class="meta">au ${oilFd(L.wk)}</small>`);}catch(e){}return h;};}
