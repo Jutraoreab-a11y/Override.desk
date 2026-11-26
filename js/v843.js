@@ -110,7 +110,7 @@ function scroll43(){document.querySelectorAll('#main .tw').forEach(w=>{const n=w
 .tw.scroll43 thead th{position:sticky;top:0;z-index:2;background:var(--pane,#111113)}`;document.head.appendChild(st);}
 
 /* ---------- v8.43.2 : version affichée et erreurs visibles (diagnostic à distance) ---------- */
-const FOMO_VER='v8.43.4';
+const FOMO_VER='v8.43.5';
 {const show=m=>{try{let b=document.getElementById('err43');if(!b){b=document.createElement('div');b.id='err43';b.style.cssText='position:fixed;left:50%;transform:translateX(-50%);bottom:40px;z-index:99999;max-width:90vw;background:#7f1d1d;color:#fff;padding:8px 12px;border-radius:8px;font:12px system-ui;box-shadow:0 6px 20px rgba(0,0,0,.4)';document.body.appendChild(b);}
   b.textContent=FOMO_VER+' · erreur d\'affichage : '+String(m).slice(0,240)+' (capture d\'écran à transmettre)';clearTimeout(b.t);b.t=setTimeout(()=>b.remove(),20000);}catch(e){}};
   window.addEventListener('error',e=>show((e.message||'')+' @ '+String(e.filename||'').split('/').pop()+':'+e.lineno));
@@ -127,3 +127,13 @@ function diag43(){let cards=[];try{cards=[...document.querySelectorAll('#p-cm>.g
 {const _ds=deskSnap;deskSnap=function(){const o=_ds.apply(this,arguments);try{o.diag=diag43();}catch(e){}return o;};}
 /* envoi immédiat une fois la vue Commodities affichée */
 setTimeout(async()=>{try{if(!setSess())return;const st=deskSnap();await liveApi('/api/v1/desk',{method:'POST',body:{state:st}});}catch(e){}},12000);
+
+/* ---------- v8.43.5 : mouchard : quel code retire un tableau de la vue Commodities (Safari) ---------- */
+DIAG43.rm=[];DIAG43.mk=[];
+{const _rcd=renderCM;renderCM=function(){const t0=performance.now();let ok=true;try{return _rcd.apply(this,arguments);}catch(e){ok=false;DIAG43.err.push('renderCM : '+(e&&e.message)+' '+String(e&&e.stack||'').split('\n').slice(0,3).join(' | '));throw e;}
+  finally{try{const P=document.getElementById('p-cm');DIAG43.mk.push({ms:Math.round(performance.now()-t0),ok,a:ui.cmA,t:ui.cmT,all:!!ui.cmAll,tables:P?[...P.querySelectorAll('.card>h2')].filter(h=>/Tableau (chronologique|de confirmation)/.test(h.textContent)).length:-1,tbls:P?P.querySelectorAll('table').length:-1});DIAG43.mk=DIAG43.mk.slice(-6);}catch(e){}}};}
+{const o=new MutationObserver(M=>{M.forEach(m=>m.removedNodes.forEach(n=>{try{if(n.nodeType===1&&n.matches&&n.matches('.card')&&/Tableau (chronologique|de confirmation)/.test((n.querySelector('h2')||{}).textContent||'')&&!document.contains(n)){
+  DIAG43.rm.push((n.querySelector('h2').textContent||'').slice(0,30)+' :: '+String(new Error().stack||'').split('\n').slice(1,6).join(' | '));DIAG43.rm=DIAG43.rm.slice(-6);}}catch(e){}}));});
+  const st=()=>{const P=document.getElementById('p-cm');if(P)o.observe(P,{childList:true,subtree:true});else setTimeout(st,300);};st();}
+{const _d=diag43;diag43=function(){const o=_d.apply(this,arguments);o.rm=DIAG43.rm;o.mk=DIAG43.mk;o.ui={cmAll:ui.cmAll,cmSplit:ui.cmSplit,cmX:ui.cmXA,cmOv:ui.cmOvA};o.add=Object.keys(S.cm.add||{}).map(k=>k+':'+Object.keys(S.cm.add[k]).length).join(',');return o;};}
+setTimeout(async()=>{try{if(!setSess())return;await liveApi('/api/v1/desk',{method:'POST',body:{state:deskSnap()}});}catch(e){}},25000);
