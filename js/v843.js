@@ -110,7 +110,7 @@ function scroll43(){document.querySelectorAll('#main .tw').forEach(w=>{const n=w
 .tw.scroll43 thead th{position:sticky;top:0;z-index:2;background:var(--pane,#111113)}`;document.head.appendChild(st);}
 
 /* ---------- v8.43.2 : version affichée et erreurs visibles (diagnostic à distance) ---------- */
-const FOMO_VER='v8.43.5';
+const FOMO_VER='v8.43.6';
 {const show=m=>{try{let b=document.getElementById('err43');if(!b){b=document.createElement('div');b.id='err43';b.style.cssText='position:fixed;left:50%;transform:translateX(-50%);bottom:40px;z-index:99999;max-width:90vw;background:#7f1d1d;color:#fff;padding:8px 12px;border-radius:8px;font:12px system-ui;box-shadow:0 6px 20px rgba(0,0,0,.4)';document.body.appendChild(b);}
   b.textContent=FOMO_VER+' · erreur d\'affichage : '+String(m).slice(0,240)+' (capture d\'écran à transmettre)';clearTimeout(b.t);b.t=setTimeout(()=>b.remove(),20000);}catch(e){}};
   window.addEventListener('error',e=>show((e.message||'')+' @ '+String(e.filename||'').split('/').pop()+':'+e.lineno));
@@ -137,3 +137,17 @@ DIAG43.rm=[];DIAG43.mk=[];
   const st=()=>{const P=document.getElementById('p-cm');if(P)o.observe(P,{childList:true,subtree:true});else setTimeout(st,300);};st();}
 {const _d=diag43;diag43=function(){const o=_d.apply(this,arguments);o.rm=DIAG43.rm;o.mk=DIAG43.mk;o.ui={cmAll:ui.cmAll,cmSplit:ui.cmSplit,cmX:ui.cmXA,cmOv:ui.cmOvA};o.add=Object.keys(S.cm.add||{}).map(k=>k+':'+Object.keys(S.cm.add[k]).length).join(',');return o;};}
 setTimeout(async()=>{try{if(!setSess())return;await liveApi('/api/v1/desk',{method:'POST',body:{state:deskSnap()}});}catch(e){}},25000);
+
+/* ---------- v8.43.6 : traceur synchrone des retraits de tableaux + version dans l'en-tête ---------- */
+DIAG43.tr=[];
+const isTbl43=n=>{try{return n&&n.nodeType===1&&n.matches&&n.matches('.card')&&/Tableau (chronologique|de confirmation)/.test((n.querySelector(':scope>h2')||n.querySelector('h2')||{}).textContent||'');}catch(e){return false;}};
+const tr43=(w,n)=>{try{DIAG43.tr.push(w+' '+((n.querySelector('h2')||{}).textContent||'').slice(0,24)+' :: '+String(new Error().stack||'').split('\n').slice(1,7).map(x=>x.replace(/https:\/\/override-desk\.vercel\.app\/js\//,'').replace(/\?v=\d+/,'')).join(' | '));DIAG43.tr=DIAG43.tr.slice(-10);}catch(e){}};
+{const r0=Element.prototype.remove;Element.prototype.remove=function(){if(isTbl43(this))tr43('remove',this);return r0.apply(this,arguments);};
+ const r1=Node.prototype.removeChild;Node.prototype.removeChild=function(c){if(isTbl43(c))tr43('removeChild',c);return r1.apply(this,arguments);};
+ const r2=Element.prototype.replaceWith;Element.prototype.replaceWith=function(){if(isTbl43(this))tr43('replaceWith',this);return r2.apply(this,arguments);};
+ const d=Object.getOwnPropertyDescriptor(Element.prototype,'innerHTML');Object.defineProperty(Element.prototype,'innerHTML',{configurable:true,get:d.get,set:function(v){
+   if(this.id==='p-cm'||(this.closest&&this.closest('#p-cm')&&[...this.children].some(isTbl43))){const had=this.querySelectorAll?[...this.querySelectorAll('.card')].filter(isTbl43).length:0;d.set.call(this,v);
+     const now=[...this.querySelectorAll('.card')].filter(isTbl43).length;if(this.id!=='p-cm'||now===0){DIAG43.tr.push('innerHTML#'+(this.id||this.className)+' tables '+had+'→'+now+' :: '+String(new Error().stack||'').split('\n').slice(1,6).map(x=>x.replace(/https:\/\/override-desk\.vercel\.app\/js\//,'').replace(/\?v=\d+/,'')).join(' | '));DIAG43.tr=DIAG43.tr.slice(-10);}return;}
+   d.set.call(this,v);}});}
+{const _d2=diag43;diag43=function(){const o=_d2.apply(this,arguments);o.tr=DIAG43.tr;try{o.cmp=JSON.stringify(S.cm.p).slice(0,600);}catch(e){}return o;};}
+{const put=()=>{const b=document.querySelector('.brand');if(!b){setTimeout(put,300);return;}if(document.getElementById('ver43h'))return;b.insertAdjacentHTML('beforeend',`<span id="ver43h" style="margin-left:8px;font:600 10.5px system-ui;color:var(--mute,#A1A1AA);border:1px solid var(--line,#27272A);border-radius:999px;padding:1px 7px">${FOMO_VER}</span>`);const o=document.getElementById('ver43');if(o)o.remove();};setTimeout(put,1600);}
