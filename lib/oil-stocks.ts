@@ -36,15 +36,16 @@ export async function spotRoute(_req: Req, res: Res): Promise<void> {
       if (r2.ok) { const j2 = await r2.json() as { data?: Array<{ s: string; d: unknown[] }> };
         for (const [k, t] of FUT) { const x = (j2.data || []).find(y => y.s === t); if (!x) continue; const c = n(x.d[0]), ch = n(x.d[2]);
           out[k] = { t, last: c, open: n(x.d[1]), prev: c !== null && ch !== null ? Math.round((c - ch) * 1e5) / 1e5 : null, vol: n(x.d[3]), avg10: n(x.d[4]), avg30: n(x.d[5]) }; } } } catch { /* contrats à terme facultatifs */ }
-    /* 2e contrat (Brent ICE, WTI NYMEX) : déduit de l'échéance du 1er contrat, lu directement (pas de symbole continu « 2! ») */
-    try { const MC = 'FGHJKMNQUVXZ', MN: Record<string, number> = { Jan: 0, Feb: 1, Mar: 2, Apr: 3, May: 4, Jun: 5, Jul: 6, Aug: 7, Sep: 8, Oct: 9, Nov: 10, Dec: 11 };
-      const r3 = await fetch('https://scanner.tradingview.com/futures/scan', { method: 'POST', headers: { 'Content-Type': 'application/json', 'User-Agent': 'Mozilla/5.0 FOMO.DESK' }, body: JSON.stringify({ symbols: { tickers: ['ICEEUR:BRN1!', 'NYMEX:CL1!'] }, columns: ['description'] }) });
-      const j3 = await r3.json() as { data?: Array<{ s: string; d: unknown[] }> }, next: Array<[string, string]> = [];
-      for (const x of j3.data || []) { const m = String(x.d[0] || '').match(/\((\w{3}) (\d{4})\)/); if (!m || MN[m[1]] === undefined) continue; let mo = MN[m[1]] + 1, y = +m[2]; if (mo > 11) { mo = 0; y++; }
-        next.push([x.s.startsWith('ICEEUR') ? 'brentF2' : 'wtiF2', (x.s.startsWith('ICEEUR') ? 'ICEEUR:BRN' : 'NYMEX:CL') + MC[mo] + y]); }
-      if (next.length) { const r4 = await fetch('https://scanner.tradingview.com/futures/scan', { method: 'POST', headers: { 'Content-Type': 'application/json', 'User-Agent': 'Mozilla/5.0 FOMO.DESK' }, body: JSON.stringify({ symbols: { tickers: next.map(x => x[1]) }, columns: ['close', 'open', 'change_abs', 'description'] }) });
-        const j4 = await r4.json() as { data?: Array<{ s: string; d: unknown[] }> };
-        for (const [k, t] of next) { const x = (j4.data || []).find(y => y.s === t); if (!x) continue; const c = n(x.d[0]), ch = n(x.d[2]); out[k] = { t, label: x.d[3], last: c, open: n(x.d[1]), prev: c !== null && ch !== null ? Math.round((c - ch) * 1e5) / 1e5 : null }; } } } catch { /* 2e contrat facultatif */ }
+    /* 2e contrat (Brent ICE, WTI NYMEX) : le 1er contrat continu « 1! » est identifié par son prix parmi les 5 prochaines échéances, puis l'échéance suivante est lue directement */
+    try { const MC = 'FGHJKMNQUVXZ', now = new Date(), cand: string[] = [];
+      for (let k = 0; k < 6; k++) { const d = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + k, 1)); for (const root of ['ICEEUR:BRN', 'NYMEX:CL']) cand.push(root + MC[d.getUTCMonth()] + d.getUTCFullYear()); }
+      const r4 = await fetch('https://scanner.tradingview.com/futures/scan', { method: 'POST', headers: { 'Content-Type': 'application/json', 'User-Agent': 'Mozilla/5.0 FOMO.DESK' }, body: JSON.stringify({ symbols: { tickers: cand }, columns: ['close', 'open', 'change_abs', 'description'] }) });
+      const j4 = await r4.json() as { data?: Array<{ s: string; d: unknown[] }> }, got = new Map((j4.data || []).map(x => [x.s, x.d]));
+      for (const [k, root, front] of [['brentF2', 'ICEEUR:BRN', out.brentS], ['wtiF2', 'NYMEX:CL', out.wtiF]] as Array<[string, string, { last?: number | null } | undefined]>) {
+        const fl = front && typeof front.last === 'number' ? front.last : null; if (fl === null) continue;
+        const L = cand.filter(t => t.startsWith(root) && got.has(t)); const fi = L.findIndex(t => { const c = n((got.get(t) as unknown[])[0]); return c !== null && Math.abs(c - fl) < 0.02; });
+        if (fi < 0 || fi + 1 >= L.length) continue; const t = L[fi + 1], x = got.get(t) as unknown[], c = n(x[0]), ch = n(x[2]);
+        out[k] = { t, label: x[3], front: L[fi], last: c, open: n(x[1]), prev: c !== null && ch !== null ? Math.round((c - ch) * 1e5) / 1e5 : null }; } } catch { /* 2e contrat facultatif */ }
     res.setHeader('Cache-Control', 's-maxage=300, stale-while-revalidate=300');
     send(res, 200, { at: new Date().toISOString(), src: 'https://www.tradingview.com/ (OANDA XAU/USD et TVC SILVER comptant, FX_IDC USD/CNH, TVC DXY, S&P 500, premiers contrats COMEX, ICE et NYMEX)', q: out });
   } catch (e) { send(res, 502, { error: 'cours indisponibles : ' + (e instanceof Error ? e.message : String(e)) }); }
