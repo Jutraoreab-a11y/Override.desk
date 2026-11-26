@@ -165,8 +165,9 @@ if(typeof uvOpenCo==='function'){const _uo=uvOpenCo;uvOpenCo=async function(sym)
    - Chaque vue ne montre que ses actifs : taux directeurs, inflation, dollar et propulsion or/argent seulement dans Or / Argent ;
      stocks de brut, WASDE et graphique Brent/WTI seulement dans Brent / WTI ; la matrice cross-asset (tous actifs mélangés) est retirée. */
 if(!ui.cmT||ui.cmT==='t')ui.cmT='all';
-const CM38_HIDE={gold:[/^Stocks de brut/,/^WASDE/,/^Matrice cross-asset/,/Brent/],brent:[/^Taux directeurs/,/^Inflation & politique monétaire/,/^Sensibilité & propulsion/,/^WASDE/,/^Matrice cross-asset/,/^Répartition des signaux Or/,/(^|\s)Or\s·/,/Argent/]};
-const cm38T=c=>((c.querySelector('h2')||{}).textContent||'').trim();
+const CM38_HIDE={gold:[/^Stocks de brut/,/^WASDE/,/^Matrice cross-asset/,/^(?!Graphique principal)[^·]*\bBrent\b(?! ·)/],brent:[/^Taux directeurs/,/^Inflation & politique monétaire/,/^Sensibilité & propulsion/,/^WASDE/,/^Matrice cross-asset/,/^Répartition des signaux Or/,/(^|\s)Or\s·/,/Argent/]};
+/* v8.43.7 : seul le titre compte (jamais le contenu d'un menu ou d'un bouton du titre : la liste « Importer un export » contient « Brent spot ») */
+const cm38T=c=>{const h=c.querySelector(':scope>h2')||c.querySelector('h2');if(!h)return'';const s=h.querySelector(':scope>span');const n=(s||h).cloneNode(true);n.querySelectorAll('select,button,option,.row').forEach(x=>x.remove());return(n.textContent||'').trim();};
 {const _rc=renderCM;renderCM=function(){const all=ui.cmT==='all'||!ui.cmT,a=ui.cmA||'brent';let conf=[];
   try{if(typeof mktX==='function'&&typeof MKT_TO_CMA==='object'){const X=mktX(),v=MKT_TO_CMA[X.main];if(v&&v!==a&&!(a==='gold'&&v==='silver'))X.main=a;}}catch(e){}
   if(all){ui.cmT='c';try{_rc.apply(this,arguments);const P=document.getElementById('p-cm');
