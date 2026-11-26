@@ -30,7 +30,7 @@ export async function spotRoute(_req: Req, res: Res): Promise<void> {
     for (const [k, t] of SPOT) { const x = (j.data || []).find(y => y.s === t); if (!x) continue; const c = n(x.d[0]), ch = n(x.d[2]);
       out[k] = { t, last: c, open: n(x.d[1]), prev: c !== null && ch !== null ? Math.round((c - ch) * 1e5) / 1e5 : null, mode: x.d[3] }; }
     /* v8.42 : premiers contrats à terme (ligne du jour) et volume échangé du contrat or COMEX */
-    const FUT: Array<[string, string]> = [['goldF', 'COMEX:GC1!'], ['silverF', 'COMEX:SI1!'], ['brentS', 'ICEEUR:BRN1!'], ['wtiF', 'NYMEX:CL1!']];
+    const FUT: Array<[string, string]> = [['goldF', 'COMEX:GC1!'], ['silverF', 'COMEX:SI1!'], ['brentS', 'ICEEUR:BRN1!'], ['wtiF', 'NYMEX:CL1!'], ['brentF2', 'ICEEUR:BRN2!'], ['wtiF2', 'NYMEX:CL2!']];
     try { const r2 = await fetch('https://scanner.tradingview.com/futures/scan', { method: 'POST', headers: { 'Content-Type': 'application/json', 'User-Agent': 'Mozilla/5.0 FOMO.DESK' },
         body: JSON.stringify({ symbols: { tickers: FUT.map(x => x[1]) }, columns: ['close', 'open', 'change_abs', 'volume', 'average_volume_10d_calc', 'average_volume_30d_calc'] }) });
       if (r2.ok) { const j2 = await r2.json() as { data?: Array<{ s: string; d: unknown[] }> };
