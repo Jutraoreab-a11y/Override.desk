@@ -117,3 +117,6 @@ document.addEventListener('click',e=>{const b=e.target.closest&&e.target.closest
 .card>h2{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 .card.folded>*:not(h2){display:none!important}.card.folded{padding-bottom:10px}
 .live42{font-size:10.5px;padding:1px 6px;margin-left:4px}`;document.head.appendChild(st);}
+/* v8.42.1 : le passage interne « argent » de la vue Or / Argent ne touche plus la configuration du graphique de l'or */
+{const _mx=mktX;mktX=function(){if(ui.cmSilverPass){if(!ui.cmXsil)ui.cmXsil={main:'silver',cmp:[],b100:false};return ui.cmXsil;}return _mx.apply(this,arguments);};}
+try{if(ui.cmXA&&ui.cmXA.gold&&ui.cmXA.gold.main==='silver'&&!S.v8421){ui.cmXA.gold.main='gold';S.v8421=1;save();}}catch(e){}
