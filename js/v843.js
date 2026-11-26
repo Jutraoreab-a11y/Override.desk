@@ -108,3 +108,12 @@ function scroll43(){document.querySelectorAll('#main .tw').forEach(w=>{const n=w
 {const o=new MutationObserver(()=>{clearTimeout(o.t);o.t=setTimeout(()=>{try{scroll43();}catch(e){}},60);});const st=()=>{const M=document.getElementById('main');if(M)o.observe(M,{childList:true,subtree:true});else setTimeout(st,300);};st();}
 {const st=document.createElement('style');st.textContent=`.tw.scroll43{max-height:520px!important;overflow:auto!important;border:1px solid var(--line,#27272A);border-radius:6px}
 .tw.scroll43 thead th{position:sticky;top:0;z-index:2;background:var(--pane,#111113)}`;document.head.appendChild(st);}
+
+/* ---------- v8.43.2 : version affichée et erreurs visibles (diagnostic à distance) ---------- */
+const FOMO_VER='v8.43.2';
+{const show=m=>{try{let b=document.getElementById('err43');if(!b){b=document.createElement('div');b.id='err43';b.style.cssText='position:fixed;left:50%;transform:translateX(-50%);bottom:40px;z-index:99999;max-width:90vw;background:#7f1d1d;color:#fff;padding:8px 12px;border-radius:8px;font:12px system-ui;box-shadow:0 6px 20px rgba(0,0,0,.4)';document.body.appendChild(b);}
+  b.textContent=FOMO_VER+' · erreur d\'affichage : '+String(m).slice(0,240)+' (capture d\'écran à transmettre)';clearTimeout(b.t);b.t=setTimeout(()=>b.remove(),20000);}catch(e){}};
+  window.addEventListener('error',e=>show((e.message||'')+' @ '+String(e.filename||'').split('/').pop()+':'+e.lineno));
+  const _ce=console.error;console.error=function(){try{const a=[...arguments];if(typeof a[0]==='string'&&/^(cm|v8|sc|bp|pf|uvq|live|fx|af|stocks|bilan|argent)/.test(a[0]))show(a[0]+' : '+(a[1]&&a[1].message||a[1]||''));}catch(e){}return _ce.apply(this,arguments);};}
+{const tag=()=>{const sb=document.querySelector('#status,.status,footer')||document.body;if(document.getElementById('ver43'))return;const s=document.createElement('span');s.id='ver43';s.textContent=FOMO_VER;
+  s.style.cssText='position:fixed;right:8px;bottom:4px;z-index:9998;font:10.5px system-ui;color:var(--mute,#71717A);opacity:.8;pointer-events:none';document.body.appendChild(s);};setTimeout(tag,1500);}
