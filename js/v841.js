@@ -73,7 +73,7 @@ function cmInfoMount(){const P=document.getElementById('p-cm');if(!P)return;
   P.querySelectorAll('table thead th').forEach(th=>{if(th.querySelector('.ihelp'))return;const I=cmInfoOf(th.textContent);if(!I)return;
     th.insertAdjacentHTML('beforeend',` <button class="ihelp noprint" type="button" aria-label="Signification de ${esc(th.textContent.trim())}" data-ih="1">i</button>`);});
   /* tableaux toujours dépliés */
-  [...P.querySelectorAll(':scope>.grid>.card')].forEach(c=>{const t=((c.querySelector('h2')||{}).textContent||'');if(/Tableau chronologique|Tableau de confirmation/.test(t))c.querySelectorAll('.tw').forEach(w=>{w.style.maxHeight='none';w.style.overflowY='visible';});});}
+}
 document.addEventListener('click',e=>{const b=e.target.closest&&e.target.closest('.ihelp[data-ih]');const old=document.getElementById('ihpop');
   if(!b){if(old&&!e.target.closest('#ihpop'))old.remove();return;}e.preventDefault();e.stopPropagation();if(old)old.remove();
   const th=b.closest('th'),lab=th.textContent.replace(/\bi$/,'').trim(),I=cmInfoOf(lab);if(!I)return;const r=b.getBoundingClientRect();

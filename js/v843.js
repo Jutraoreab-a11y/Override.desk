@@ -89,8 +89,8 @@ function cm43Order(){const P=document.getElementById('p-cm'),G=P&&P.querySelecto
     [/^Or · Tableau chronologique/,/^Argent · Tableau chronologique/,/^Or · Tableau de confirmation/,/^Argent · Tableau de confirmation/,/^Or · Volume/].forEach(re=>put(f(re)));
     const inf=f(/^Inflation : PPI/),tx=f(/^Taux directeurs, inflation/);if(inf&&tx)tx.after(inf);}
   else [/^Tableau chronologique/,/^Tableau de confirmation/].forEach(re=>put(f(re)));}
-{const _rc=renderCM;renderCM=function(){const v=ui.cmT==='c'?'c':'t',o=v==='c'?'t':'c';let other=[];
-  try{ui.cmT=o;_rc.apply(this,arguments);other=[...document.querySelectorAll('#p-cm>.grid>.card')].filter(c=>/^(Or · |Argent · )?Tableau (chronologique|de confirmation)/.test(((c.querySelector(':scope>h2')||{}).textContent||'').trim()))
+{const _rc=renderCM;renderCM=function(){const v=ui.cmT==='c'?'c':'t',o=v==='c'?'t':'c';let other=[];ui.cmAll=true;   /* v8.43.1 : une vue = ses tableaux ; tout l'historique, à faire défiler dans un cadre */
+  if(false)try{ui.cmT=o;_rc.apply(this,arguments);other=[...document.querySelectorAll('#p-cm>.grid>.card')].filter(c=>/^(Or · |Argent · )?Tableau (chronologique|de confirmation)/.test(((c.querySelector(':scope>h2')||{}).textContent||'').trim()))
       .map(c=>{c.querySelectorAll('[id]').forEach(e=>e.removeAttribute('id'));return c.outerHTML;});}catch(e){console.error('cm43 pré-rendu',e);}finally{ui.cmT=v;}
   const r=_rc.apply(this,arguments);
   try{const G=document.querySelector('#p-cm>.grid');if(G&&other.length){const t=document.createElement('div');t.innerHTML=other.join('');G.append(...t.children);}
@@ -98,5 +98,13 @@ function cm43Order(){const P=document.getElementById('p-cm'),G=P&&P.querySelecto
     if(a==='gold'&&G&&!G.querySelector('#infl43')){const h=infl43HTML();if(h)G.insertAdjacentHTML('beforeend',h);}
     cm43Order();if(typeof live42Mark==='function')live42Mark();if(typeof cm42Info==='function')cm42Info();
     document.querySelectorAll('#gs-eng tbody td:first-child, #gs-eng thead th').forEach(k=>cm42Btn(k,k.textContent.trim()));
-    document.querySelectorAll('#p-cm .tw').forEach(w=>{const c=w.closest('.card');if(c&&/Tableau|Volume/.test(((c.querySelector(':scope>h2')||{}).textContent||''))){w.style.maxHeight='none';w.style.overflowY='visible';}});}
+    }
   catch(e){console.error('cm43',e);}hist43Load();return r;};}
+
+/* ---------- v8.43.1 : chaque tableau dans un cadre de hauteur fixe, défilement de tout l'historique, en-tête figé (tout le SaaS) ---------- */
+function scroll43(){document.querySelectorAll('#main .tw').forEach(w=>{const n=w.querySelectorAll('tbody tr').length;const on=n>12;if(on!==w.classList.contains('scroll43'))w.classList.toggle('scroll43',on);if(on&&w.style.maxHeight){w.style.maxHeight='';w.style.overflowY='';}});}
+{const _ra=renderAll;renderAll=function(){const r=_ra.apply(this,arguments);try{scroll43();}catch(e){}return r;};}
+{const _rc2=renderCM;renderCM=function(){const r=_rc2.apply(this,arguments);try{scroll43();}catch(e){}return r;};}
+{const o=new MutationObserver(()=>{clearTimeout(o.t);o.t=setTimeout(()=>{try{scroll43();}catch(e){}},60);});const st=()=>{const M=document.getElementById('main');if(M)o.observe(M,{childList:true,subtree:true});else setTimeout(st,300);};st();}
+{const st=document.createElement('style');st.textContent=`.tw.scroll43{max-height:520px!important;overflow:auto!important;border:1px solid var(--line,#27272A);border-radius:6px}
+.tw.scroll43 thead th{position:sticky;top:0;z-index:2;background:var(--pane,#111113)}`;document.head.appendChild(st);}
