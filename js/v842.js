@@ -19,7 +19,7 @@ function live42Day(){const ny=new Date(new Date().toLocaleString('en-US',{timeZo
 async function live42Load(){if(LIVE42.busy||Date.now()-LIVE42.at<4*60e3)return;LIVE42.busy=true;
   try{const r=await fetch('/api/v1/spot'),j=await r.json();if(r.ok&&j.q){LIVE42.q=j.q;LIVE42.ts=j.at;if(ui.tab==='cm')renderCM();}}catch(e){}finally{LIVE42.at=Date.now();LIVE42.busy=false;}}
 {const _cs=cmSeries;cmSeries=function(){const s=_cs.apply(this,arguments);try{const Q=LIVE42.q,d=live42Day();if(!Q||!d||!s.d.length||d<=s.d[s.d.length-1])return s;
-  const val={gold:Q.gold,silver:Q.silver,cnh:Q.cnh,dxy:Q.dxy,spx:Q.spx,goldF:Q.goldF,silverF:Q.silverF,brentF:Q.brentS,brentS:Q.brentS,wtiF:Q.wtiF};
+  const val={gold:Q.gold,silver:Q.silver,cnh:Q.cnh,dxy:Q.dxy,spx:Q.spx,goldF:Q.goldF,silverF:Q.silverF,brentF:Q.brentS,brentS:Q.brentS,wtiF:Q.wtiF,brent:Q.brentS,wti:Q.wtiF};   /* Brent et WTI du jour : premier contrat en direct (comme le provisoire avant publication EIA) */
   s.d.push(d);Object.keys(CM_INST).forEach(k=>{if(!s[k])return;const x=val[k];let c=x&&isFinite(x.last)?x.last:null;if(k==='gvol')c=Q.goldF&&isFinite(Q.goldF.vol)?Q.goldF.vol:null;
     const p=(()=>{for(let i=s[k].length-1;i>=0;i--)if(s[k][i]!==null&&s[k][i]!==undefined)return s[k][i];return null;})();
     s[k].push(c);if(s[k+'O'])s[k+'O'].push(x&&isFinite(x.open)&&k!=='gvol'?x.open:null);if(s[k+'V'])s[k+'V'].push(c!==null&&p>0&&k!=='gvol'?c/p-1:null);});s.live=d;}catch(e){console.error('live42',e);}return s;};}
@@ -105,7 +105,8 @@ function fold42Apply(){const M=document.getElementById('main');if(!M)return;
     const want=shut?'▸':'▾';if(b.textContent!==want){b.textContent=want;b.setAttribute('aria-expanded',String(!shut));b.title=shut?'Ouvrir ce bloc':'Fermer ce bloc';}});}
 document.addEventListener('click',e=>{const b=e.target.closest&&e.target.closest('.fold42');if(!b)return;e.preventDefault();e.stopPropagation();const c=b.closest('.card'),k=c&&fold42Key(c);if(!k)return;
   if(FOLD42[k])delete FOLD42[k];else FOLD42[k]=1;try{localStorage.setItem('fomo.fold',JSON.stringify(FOLD42));}catch(_){}fold42Apply();},true);
-{let q=0;const run=()=>{q=0;try{fold42Apply();if(ui.tab==='cm')cm42Info();}catch(e){}};const obs=new MutationObserver(()=>{if(!q)q=requestAnimationFrame(run);});
+{const _ra42=renderAll;renderAll=function(){const r=_ra42.apply(this,arguments);try{fold42Apply();}catch(e){}return r;};}
+{let q=0;const run=()=>{q=0;try{fold42Apply();if(ui.tab==='cm')cm42Info();}catch(e){}};const obs=new MutationObserver(()=>{if(!q)q=setTimeout(run,40);});
   const start=()=>{const M=document.getElementById('main');if(M){obs.observe(M,{childList:true,subtree:true});run();}else setTimeout(start,300);};start();}
 
 {const st=document.createElement('style');st.textContent=`
