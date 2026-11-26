@@ -1,7 +1,7 @@
 /* GET /api/v1/oil (réécrit vers api/v1/ai/market-parser?op=oil) — v8.41
    Variations hebdomadaires des stocks de brut US : API (mardi soir) et EIA (mercredi), réel, consensus et précédent,
    lues sur le calendrier économique public de TradingView (sources citées : api.org, eia.gov). Cache Vercel 10 minutes. */
-import { send, type Req, type Res } from './http.js';
+import { send, q, type Req, type Res } from './http.js';
 const KEEP: Record<string, 'api' | 'eia'> = { 'API Crude Oil Stock Change': 'api', 'EIA Crude Oil Stocks Change': 'eia' };
 export async function oilData(f: typeof fetch = fetch): Promise<Record<string, unknown>> {
   const from = new Date(Date.now() - 56 * 864e5).toISOString(), to = new Date(Date.now() + 10 * 864e5).toISOString();
@@ -39,4 +39,21 @@ export async function spotRoute(_req: Req, res: Res): Promise<void> {
     res.setHeader('Cache-Control', 's-maxage=300, stale-while-revalidate=300');
     send(res, 200, { at: new Date().toISOString(), src: 'https://www.tradingview.com/ (OANDA XAU/USD et TVC SILVER comptant, FX_IDC USD/CNH, TVC DXY, S&P 500, premiers contrats COMEX, ICE et NYMEX)', q: out });
   } catch (e) { send(res, 502, { error: 'cours indisponibles : ' + (e instanceof Error ? e.message : String(e)) }); }
+}
+
+/* GET /api/v1/hist?sym=GC%3DF (op=hist) — v8.43 : historique quotidien d'un an (ouverture, clôture, volume) lu sur Yahoo Finance
+   (point d'accès public query2). Liste fermée de symboles. Cache Vercel 6 heures. */
+const HIST_OK = new Set(['GC=F', 'SI=F', 'BZ=F', 'CL=F', 'DX-Y.NYB', 'CNH=X', '^GSPC']);
+export async function histRoute(req: Req, res: Res): Promise<void> {
+  const sym = String(q(req, 'sym') || '');
+  if (!HIST_OK.has(sym)) { send(res, 400, { error: 'symbole non autorisé' }); return; }
+  const url = `https://query2.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(sym)}?range=1y&interval=1d`;
+  try { const r = await fetch(url, { headers: { 'User-Agent': 'Mozilla/5.0' } }); if (!r.ok) throw new Error('Yahoo HTTP ' + r.status);
+    const j = await r.json() as { chart?: { result?: Array<{ meta?: { gmtoffset?: number }; timestamp?: number[]; indicators?: { quote?: Array<{ open?: (number | null)[]; close?: (number | null)[]; volume?: (number | null)[] }> } }> } };
+    const R = j.chart && j.chart.result && j.chart.result[0]; if (!R || !R.timestamp) throw new Error('réponse vide');
+    const off = (R.meta && R.meta.gmtoffset) || 0, Q = (R.indicators && R.indicators.quote && R.indicators.quote[0]) || {};
+    const rows = R.timestamp.map((t, i) => ({ d: new Date((t + off) * 1000).toISOString().slice(0, 10), o: Q.open ? Q.open[i] ?? null : null, c: Q.close ? Q.close[i] ?? null : null, v: Q.volume ? Q.volume[i] ?? null : null }));
+    res.setHeader('Cache-Control', 's-maxage=21600, stale-while-revalidate=21600');
+    send(res, 200, { at: new Date().toISOString(), sym, src: `https://finance.yahoo.com/quote/${encodeURIComponent(sym)}/history/`, rows });
+  } catch (e) { send(res, 502, { error: 'historique indisponible : ' + (e instanceof Error ? e.message : String(e)) }); }
 }

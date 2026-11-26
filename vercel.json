@@ -6,6 +6,7 @@
     { "source": "/api/v1/sa", "destination": "/api/v1/ai/market-parser?op=sa" },
     { "source": "/api/v1/oil", "destination": "/api/v1/ai/market-parser?op=oil" },
     { "source": "/api/v1/spot", "destination": "/api/v1/ai/market-parser?op=spot" },
+    { "source": "/api/v1/hist", "destination": "/api/v1/ai/market-parser?op=hist" },
     { "source": "/api/v1/ai/ingest", "destination": "/api/v1/ai/market-parser?op=ingest" },
     { "source": "/api/v1/ai/key", "destination": "/api/v1/ai/market-parser?op=key" },
     { "source": "/api/v1/fundamentals", "destination": "/api/v1/ai/market-parser?op=fundamentals" },
