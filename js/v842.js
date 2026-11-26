@@ -25,7 +25,9 @@ async function live42Load(){if(LIVE42.busy||Date.now()-LIVE42.at<4*60e3)return;L
     s[k].push(c);if(s[k+'O'])s[k+'O'].push(x&&isFinite(x.open)&&k!=='gvol'?x.open:null);if(s[k+'V'])s[k+'V'].push(c!==null&&p>0&&k!=='gvol'?c/p-1:null);});s.live=d;}catch(e){console.error('live42',e);}return s;};}
 
 /* ---------- 3. vue Or / Argent regroupée ---------- */
-{const _cx=ctxHTML;ctxHTML=function(){const h=_cx.apply(this,arguments);if(ui.tab!=='cm')return h;return h.replace(/<div class="seg" role="tablist" aria-label="Vue">[\s\S]*?<\/div>/,'');};}
+/* v8.42.1 : deux vues séparées comme avant (Tendance / pression et Confirmation / corrélations), sans « Tout » ; chaque vue montre les deux actifs de la paire */
+{const _cx=ctxHTML;ctxHTML=function(){const h=_cx.apply(this,arguments);if(ui.tab!=='cm')return h;const t=ui.cmT==='c'?'c':'t';
+  return h.replace(/<div class="seg" role="tablist" aria-label="Vue">[\s\S]*?<\/div>/,`<div class="seg" role="tablist" aria-label="Vue">${[['t','Tendance : pression & approvisionnement'],['c','Confirmation & corrélations']].map(([k,l])=>`<button role="tab" data-act="cmt" data-id="${k}" aria-selected="${t===k}">${l}</button>`).join('')}</div>`);};}
 function cmVolHTML(){const s=cmSeries(),N=s.d.length,V=s.gvol||[],G=s.gold||[],rows=[];
   for(let i=N-1;i>=0&&rows.length<30;i--){if(!nn(V[i])&&s.d[i]!==s.live)continue;const prev=(()=>{for(let j=i-1;j>=0;j--)if(nn(V[j]))return V[j];return null;})();
     const w=[];for(let j=i-1;j>=0&&w.length<20;j--)if(nn(V[j]))w.push(V[j]);const avg=w.length>=5?w.reduce((a,b)=>a+b,0)/w.length:null;
@@ -48,7 +50,7 @@ function cm42Group(){const P=document.getElementById('p-cm'),G=P&&P.querySelecto
   order.forEach(c=>{if(c==='VOL'){const t=document.createElement('div');t.innerHTML=cmVolHTML();c=t.firstElementChild;}if(anchor)anchor.after(c);else G.prepend(c);anchor=c;});
   const so=f(/^Or · Signaux du jour/),sa=f(/^Argent · Signaux du jour/);if(so&&sa){so.classList.remove('s12');so.classList.add('s6');sa.classList.remove('s12');sa.classList.add('s6');}
   const ai=f(/^Argent · indicateurs/);if(ai){const h=ai.querySelector('h2');if(h&&!/piston/.test(h.textContent))h.insertAdjacentHTML('beforeend',' <span class="meta">l\'argent, plus sensible, sert de piston à l\'or</span>');}}
-{const _rc=renderCM;renderCM=function(){ui.cmT='all';const r=_rc.apply(this,arguments);try{cm42Group();live42Mark();cm42Info();}catch(e){console.error('cm42',e);}live42Load();return r;};}
+{const _rc=renderCM;renderCM=function(){if(ui.cmT!=='c')ui.cmT='t';const r=_rc.apply(this,arguments);try{cm42Group();live42Mark();cm42Info();}catch(e){console.error('cm42',e);}live42Load();return r;};}
 function live42Mark(){const d=LIVE42.q&&live42Day();if(!d)return;const fdt=fdate(d),t=LIVE42.ts?new Date(LIVE42.ts).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'}):'';
   document.querySelectorAll('#p-cm tbody tr').forEach(tr=>{const td=tr.cells[0];if(td&&td.textContent.trim().startsWith(fdt)&&!td.querySelector('.live42'))td.insertAdjacentHTML('beforeend',` <span class="tag am live42" title="Séance en cours : cours en direct (TradingView), non clôturé">en direct ${t}</span>`);});}
 
