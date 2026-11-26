@@ -35,6 +35,9 @@ function cm44(){const P=document.getElementById('p-cm');if(!P)return;const Pm=cm
       if(cR>=0){const v=num44(td[cR]&&td[cR].textContent);paint(cR,v===null?null:v>=Pm.gsRef);}
       if(cB>=0){const v=num44(td[cB]&&td[cB].textContent);paint(cB,v===null?null:v>=Pm.gbDis);}
       if(cZ>=0){const v=num44(td[cZ]&&td[cZ].textContent);paint(cZ,v===null||Math.abs(v)<Pm.zAlert?null:v<0);}});});
+  /* Brent : 2e contrat non publié dans l'historique : case vide expliquée, jamais « férié » */
+  P.querySelectorAll('table').forEach(t=>{const H=[...t.querySelectorAll('thead th')].map(th=>th.textContent.replace(/\s*i\s*$/,'').trim()),jf=H.findIndex(h=>/^Brent futur/.test(h)),jb=H.findIndex(h=>/^Basis Brent/.test(h));if(jf<0)return;
+    t.querySelectorAll('tbody tr').forEach(tr=>[jf,jb].forEach(j=>{const c=tr.cells[j];if(c&&/à relire|férié|non renseigné/.test(c.textContent)){c.innerHTML='<span class="meta" title="Deuxième contrat Brent (ICE) : lu en direct pour la séance du jour ; historique non publié gratuitement, jamais recopié du premier contrat">—</span>';}}));});
   /* note de lecture des variations, une fois par tableau */
   [...P.querySelectorAll(':scope>.grid>.card')].forEach(c=>{const h=((c.querySelector(':scope>h2')||{}).textContent||'');if(!/Tableau (chronologique|de confirmation)/.test(h)||c.querySelector('.v44n'))return;
     c.insertAdjacentHTML('beforeend',`<p class="note v44n">Variations : comptant = clôture / clôture de la veille (17 h New York) ; futur = dernier cours / règlement de la veille. Séance du jour : dernier cours en direct (TradingView). Ratios et z-score : fond vert = pousse à l'achat, rouge = à la vente (seuils : ratio or/argent ${Pm.gsRef}, or/Brent ${Pm.gbDis}, z-score ±${Pm.zAlert}).</p>`);});
