@@ -58,7 +58,7 @@ function decTableHTML(a){const C=cmCalc(),{R,N}=C,r=R[N-1],P=cmP(),D=RATES&&RATE
     if(typeof OIL_STK==='object'&&OIL_STK.w.length){const L=OIL_STK.w[OIL_STK.w.length-1],v=L.eia[2];add('Stocks de brut US (EIA, semaine)',isFinite(v)?(v>0?'+':'')+nf(v,2)+' M bbl':'—',isFinite(v)?(v<0?'déstockage : demande soutenue':'stockage : offre abondante'):'non publié',isFinite(v)?(v<0?1:-1):null);}
     if(D&&D.dxy)add('Dollar (DXY) sur 1 mois',v7p(D.dxy.m1),D.dxy.m1<0?'dollar en baisse : pétrole moins cher hors États-Unis':'dollar en hausse : pèse sur la demande',isFinite(D.dxy.m1)?(D.dxy.m1<0?1:-1):null);
   }else{
-    add('Signal or (Yuan / or)',lab(r.sigGold).split(' : ')[0],lab(r.sigGold),sig(r.sigGold));
+    add('Signal or (dollar DXY / or)',lab(r.sigGold).split(' : ')[0],lab(r.sigGold),sig(r.sigGold));
     if(r.sigGoldSt)add('Structure or',lab(r.sigGoldSt).split(' : ')[0],lab(r.sigGoldSt),sig(r.sigGoldSt));
     add('Basis or (spot − futur)',v7n(r.bG),esc(r.bGSt||''),sig(r.bGRk));
     add('Signal argent',lab(r.sigSilver).split(' : ')[0],lab(r.sigSilver),sig(r.sigSilver));
