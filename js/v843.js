@@ -110,7 +110,7 @@ function scroll43(){document.querySelectorAll('#main .tw').forEach(w=>{const n=w
 .tw.scroll43 thead th{position:sticky;top:0;z-index:2;background:var(--pane,#111113)}`;document.head.appendChild(st);}
 
 /* ---------- v8.43.2 : version affichée et erreurs visibles (diagnostic à distance) ---------- */
-const FOMO_VER='v8.43.3';
+const FOMO_VER='v8.43.4';
 {const show=m=>{try{let b=document.getElementById('err43');if(!b){b=document.createElement('div');b.id='err43';b.style.cssText='position:fixed;left:50%;transform:translateX(-50%);bottom:40px;z-index:99999;max-width:90vw;background:#7f1d1d;color:#fff;padding:8px 12px;border-radius:8px;font:12px system-ui;box-shadow:0 6px 20px rgba(0,0,0,.4)';document.body.appendChild(b);}
   b.textContent=FOMO_VER+' · erreur d\'affichage : '+String(m).slice(0,240)+' (capture d\'écran à transmettre)';clearTimeout(b.t);b.t=setTimeout(()=>b.remove(),20000);}catch(e){}};
   window.addEventListener('error',e=>show((e.message||'')+' @ '+String(e.filename||'').split('/').pop()+':'+e.lineno));

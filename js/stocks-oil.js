@@ -51,7 +51,7 @@ function oilCard(){const W=OIL_STK.w.slice(-5),Lw=W[W.length-1],now=new Date(),n
 
 /* mise à jour : lecture des deux calendriers dans le navigateur de l'utilisateur, sans IA */
 function oilParse(txt){const o=[],re=/([A-Z][a-z]{2} \d{1,2}, \d{4})(?:\s*\([A-Z][a-z]{2}\))?\s+(\d{1,2}:\d{2})\s+(-?\d+\.\d+)M\s+(-?\d+\.\d+)M?/g;let m;
-  while((m=re.exec(txt)))o.push({d:new Date(m[1]+' 12:00').toISOString().slice(0,10),a:+m[3],f:+m[4]});return o;}
+  while((m=re.exec(txt)))o.push({d:(()=>{const x=new Date(m[1].replace(/,/g,'')+' 12:00:00');return isNaN(x)?'':x.toISOString().slice(0,10);})(),a:+m[3],f:+m[4]});return o;}
 const oilWk=d=>{const x=new Date(d+'T12:00:00'),back=((x.getDay()-5+7)%7)||7;x.setDate(x.getDate()-back);return x.toISOString().slice(0,10);};
 async function oilRefresh(){if(typeof AI!=='object'||!AI.mcp){toast("Mise à jour : ouvrez FOMO.DESK dans l'application Claude (navigateur intégré ou Firecrawl)");return;}
   ui.oilBusy=true;renderAll();let n=0;

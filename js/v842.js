@@ -14,7 +14,7 @@ try{JOB_CM_X.gold.gvol='Volume quotidien échangé du contrat or COMEX (GC=F, co
 
 /* ---------- 1. ligne du jour en direct ---------- */
 const LIVE42={at:0,busy:false,q:null,ts:null};
-function live42Day(){const ny=new Date(new Date().toLocaleString('en-US',{timeZone:'America/New_York'}));if(ny.getDay()===0||ny.getDay()===6)return null;
+function live42Day(){const ny=nyNow();if(isNaN(ny))return null;if(ny.getDay()===0||ny.getDay()===6)return null;
   return`${ny.getFullYear()}-${String(ny.getMonth()+1).padStart(2,'0')}-${String(ny.getDate()).padStart(2,'0')}`;}
 async function live42Load(){if(LIVE42.busy||Date.now()-LIVE42.at<4*60e3)return;LIVE42.busy=true;
   try{const r=await fetch('/api/v1/spot'),j=await r.json();if(r.ok&&j.q){LIVE42.q=j.q;LIVE42.ts=j.at;if(ui.tab==='cm')renderCM();}}catch(e){}finally{LIVE42.at=Date.now();LIVE42.busy=false;}}

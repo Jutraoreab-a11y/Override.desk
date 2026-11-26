@@ -95,7 +95,8 @@ document.addEventListener('keydown',e=>{if(e.key==='Escape'){const o=document.ge
 /* ---- comptant réel (or, argent), USD/CNH, DXY, S&P 500 : clôture de la séance précédente lue en direct chaque jour ----
    Remplace aussi un « comptant » qui n'était qu'une copie du futur (basis faussement nul). */
 const SPOT41={at:0,busy:false};
-function spotPrevDate(k){const ny=new Date(new Date().toLocaleString('en-US',{timeZone:'America/New_York'})),d=new Date(ny);
+function nyNow(){const P={};new Intl.DateTimeFormat('en-US',{timeZone:'America/New_York',year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',hour12:false}).formatToParts(new Date()).forEach(x=>P[x.type]=x.value);return new Date(+P.year,+P.month-1,+P.day,(+P.hour)%24,0,0);}   /* v8.43.4 : heure de New York sans analyse de texte (compatible Safari) */
+function spotPrevDate(k){const ny=nyNow(),d=new Date(ny);
   const metals=['gold','silver','cnh','dxy'].includes(k);if(metals&&ny.getHours()>=17)return wd(d);   /* après 17 h New York, la séance en cours est celle du lendemain */
   d.setDate(d.getDate()-1);return wd(d);
   function wd(x){while(x.getDay()===0||x.getDay()===6)x.setDate(x.getDate()-1);return`${x.getFullYear()}-${String(x.getMonth()+1).padStart(2,'0')}-${String(x.getDate()).padStart(2,'0')}`;}}
